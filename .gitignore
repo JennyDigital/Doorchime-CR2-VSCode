@@ -1,7 +1,6 @@
 *.plist
 *.d
 *.o
-*.ld
 ./**/*.hzs
 *cppcheck*
 
