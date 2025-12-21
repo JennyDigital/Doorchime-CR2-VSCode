@@ -120,9 +120,6 @@ DMA_HandleTypeDef hdma_spi2_tx;
 
 /* USER CODE BEGIN PV */
 
-I2S_HandleTypeDef hi2s2;
-DMA_HandleTypeDef hdma_spi2_tx;
-
           int16_t     pb_buffer[ PB_BUFF_SZ ] = {0};
 
 volatile  uint8_t *   pb_p8;
@@ -225,9 +222,8 @@ int main(void)
     vol_div = ReadVolume();
 
     //PlaySample( (uint16_t *) harmony8b, HARMONY8B_SZ, I2S_AUDIOFREQ_11K, 8 );
-    //HAL_Delay( 500 );
-
-    PlaySample( (uint16_t *) guitar_riff22k, GUITAR_RIFF22K_SZ, I2S_AUDIOFREQ_22K, 16 );
+  
+    PlaySample( (uint16_t *) quencho_flute11k, QUENCHO_FLUTE11K_SZ, I2S_AUDIOFREQ_11K, 16 );
     WaitForSampleEnd();
 
     // Shutdown the DAC and either loop back of shutdown to save power.
@@ -321,7 +317,8 @@ static void MX_I2S2_Init(void)
   hi2s2.Init.Standard = I2S_STANDARD_PHILIPS;
   hi2s2.Init.DataFormat = I2S_DATAFORMAT_16B;
   hi2s2.Init.MCLKOutput = I2S_MCLKOUTPUT_DISABLE;
-  hi2s2.Init.AudioFreq = I2S_AUDIOFREQ_11K;
+  /* Use the requested playback speed so PlaySample() can change sample rate */
+  hi2s2.Init.AudioFreq = I2S_PlaybackSpeed;
   hi2s2.Init.CPOL = I2S_CPOL_LOW;
   if (HAL_I2S_Init(&hi2s2) != HAL_OK)
   {
@@ -548,12 +545,19 @@ void CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
   //
   for( uint16_t i = 0; i < HALFCHUNK_SZ; i++ )
   {
-    *output = ( (int16_t) (*input) << 8 ) - 0x7FFF;
-    *output = *output / vol_div * VOL_MULT; // Left channel
+    /* Convert unsigned 8-bit (0..255) -> signed 16-bit centered around 0 */
+    {
+      int16_t tmp = ( (int16_t)(*input) - 128 ) << 8;
+      tmp = tmp / vol_div * VOL_MULT; /* Left channel */
+      *output = tmp;
+    }
     output++;
 #ifndef STEREO_INPUT_MODE
-    *output = ( (int16_t) (*input) << 8 ) - 0x7FFF;
-    *output = *output / vol_div * VOL_MULT; // Right channel
+    {
+      int16_t tmp2 = ( (int16_t)(*input) - 128 ) << 8;
+      tmp2 = tmp2 / vol_div * VOL_MULT; /* Right channel */
+      *output = tmp2;
+    }
     output++;
 #endif
         
@@ -655,14 +659,18 @@ void DAC_MasterSwitch( GPIO_PinState setting )
   */
 uint8_t ReadVolume( void )
 {
-  return(
-          (
-            ( ( ( OPT3_GPIO_Port->IDR & OPT3_Pin ) != 0 ) << 2 ) |
-            ( ( ( OPT2_GPIO_Port->IDR & OPT2_Pin ) != 0 ) << 1 ) | 
-            ( ( ( OPT1_GPIO_Port->IDR & OPT1_Pin ) != 0 ) + 1  )
-          ) * VOL_SCALING
-        );
-}
+    uint8_t v = (
+        ( ( (OPT3_GPIO_Port->IDR & OPT3_Pin) != 0 ) << 2 ) |
+        ( ( (OPT2_GPIO_Port->IDR & OPT2_Pin) != 0 ) << 1 ) |
+        ( ( (OPT1_GPIO_Port->IDR & OPT1_Pin) != 0 ) << 0 )
+    );
+
+    /* volume divisor is 1..8 so add 1 to the 3-bit value to make range 1..8 */
+    v = (uint8_t)((v + 1) * VOL_SCALING);
+
+    /* never return 0 even if VOL_SCALING is mis-set */
+    return v ? v : 1;
+} 
 
 
 /** Wait for the trigger signal
