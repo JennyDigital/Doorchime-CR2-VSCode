@@ -5,6 +5,10 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "liveWatch": {
+                "enabled": true,
+                "samplesPerSecond": "4"
+            },
             "type": "stlinkgdbtarget",
             "request": "launch",
             "name": "STM32Cube: STM32 Launch ST-Link GDB Server",

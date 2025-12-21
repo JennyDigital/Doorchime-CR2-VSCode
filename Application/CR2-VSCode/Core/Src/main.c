@@ -99,13 +99,13 @@
 //
 //#define TEST_CYCLING
 //#define FORCE_TRIGGER_OPT
-#define CUSTOMER_BUILD
+//#define CUSTOMER_BUILD
 
 
 // Volume special config
 //
-#define VOL_SCALING           4       // This is the master volume divider multiplication factor
-#define VOL_MULT              3       // Sets the multiplication back so we can use integers.
+#define VOL_SCALING           1       // This is the master volume divider multiplication factor
+#define VOL_MULT              1       // Sets the multiplication back so we can use integers.
 
 /* USER CODE END PD */
 
@@ -227,7 +227,7 @@ int main(void)
     //PlaySample( (uint16_t *) harmony8b, HARMONY8B_SZ, I2S_AUDIOFREQ_11K, 8 );
     //HAL_Delay( 500 );
 
-    PlaySample( (uint16_t *) theremin_quartet11k, THEREMIN_QUARTET11K_SZ, I2S_AUDIOFREQ_11K, 16 );
+    PlaySample( (uint16_t *) guitar_riff22k, GUITAR_RIFF22K_SZ, I2S_AUDIOFREQ_22K, 16 );
     WaitForSampleEnd();
 
     // Shutdown the DAC and either loop back of shutdown to save power.
@@ -389,15 +389,16 @@ static void MX_GPIO_Init(void)
   /* USER CODE END MX_GPIO_Init_2 */
 }
 
+
 /* USER CODE BEGIN 4 */
 /** Handle refilling the first half of the buffer whilst the second half is playing
   *
   * params: hi2s2_p I2S port 2 handle.
   * retval: none.
   *
+  * NOTE: Also shuts down the playback when the recording is done.
+  *
   */
-// NOTE: Also shuts down the playback when the recording is done.
-
 void HAL_I2S_TxHalfCpltCallback( I2S_HandleTypeDef *hi2s2_p )
 {
   UNUSED( hi2s2_p );
@@ -439,9 +440,10 @@ void HAL_I2S_TxHalfCpltCallback( I2S_HandleTypeDef *hi2s2_p )
   *
   * params: hi2s2_p I2S port 2 handle.
   * retval: none.
+  *
+  * NOTE: Also shuts down the playback when the recording is done.
+  *
   */
-// NOTE: Also shuts down the playback when the recording is done.
-
 void HAL_I2S_TxCpltCallback( I2S_HandleTypeDef *hi2s2_p )
 {
   UNUSED( hi2s2_p );
@@ -479,6 +481,14 @@ void HAL_I2S_TxCpltCallback( I2S_HandleTypeDef *hi2s2_p )
 }
 
 
+/** Transfers a chunk of 16-bit samples to the DMA playback buffer
+  *
+  * It also processes for stereo mode
+  *
+  * @param: uint8_t* chunk_p.  The start of the chunk to transfer.
+  * @retval: none.
+  *
+  */
 void CopyNextWaveChunk( int16_t * chunk_p )
 {
   int16_t *input, *output;
@@ -510,6 +520,14 @@ void CopyNextWaveChunk( int16_t * chunk_p )
 }
 
 
+/** Transfers a chunk of 8-bit samples to the DMA playback buffer
+  *
+  * It also processes for stereo mode
+  *
+  * @param: uint8_t* chunk_p.  The start of the chunk to transfer.
+  * @retval: none.
+  *
+  */
 void CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
 {
   uint8_t *input;
@@ -544,6 +562,15 @@ void CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
 }
 
 
+/** Initiates playback of your specified sample
+  *
+  * @param: uint16_t* sample_to_play.  It doesn't matter if your sample is 8-bit, it will still work.
+  * @param: uint32_t sample_set_sz.  Many samples to play back.
+  * @param: uint16_t playback_speed.  This is the sample rate.
+  * @param: uint8_t sample depth.  This should b4e 8 or 16 bits.
+  * @retval: none
+  *
+  */
 void PlaySample( uint16_t *sample_to_play, uint32_t sample_set_sz, uint16_t playback_speed, uint8_t sample_depth )
 {
   // Ignore invalid depths.  This could expand to 32-bit samples later
@@ -584,15 +611,29 @@ void PlaySample( uint16_t *sample_to_play, uint32_t sample_set_sz, uint16_t play
   HAL_I2S_Transmit_DMA( &hi2s2, (uint16_t *) pb_buffer, PB_BUFF_SZ );
 }
 
+
+/** Simple function that waits for the end of playback.
+  *
+  * @param: none
+  * @retval: none
+  *
+  */
 void WaitForSampleEnd( void )
 {
   while( playing );
 }
 
+
+/**Clears the playback buffer so that we don't get audio glitches at the ends of playback.
+  * @param: none
+  * @retval: none
+  *
+  * */
 void ClearBuffer( void )
 {
   for( uint16_t sample_index = 0; sample_index < PB_BUFF_SZ; sample_index++ ) pb_buffer[ sample_index ] = 0;
 }
+
 
 /** Changes NSD_MODE_Pin pin to control the DAC between on and Shutdown
   *
