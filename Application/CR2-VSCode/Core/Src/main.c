@@ -635,7 +635,10 @@ void WaitForSampleEnd( void )
   * */
 void ClearBuffer( void )
 {
-  for( uint16_t sample_index = 0; sample_index < PB_BUFF_SZ; sample_index++ ) pb_buffer[ sample_index ] = 0;
+  for( uint16_t sample_index = 0; sample_index < PB_BUFF_SZ; sample_index++ )
+  {
+    pb_buffer[ sample_index ] = 0;
+  }
 }
 
 
@@ -646,7 +649,10 @@ void ClearBuffer( void )
   */
 void DAC_MasterSwitch( GPIO_PinState setting )
 {
+  /* Change the setting */
   HAL_GPIO_WritePin(NSD_MODE_GPIO_Port, NSD_MODE_Pin, setting );
+  
+  /* Wait 10mS no allow the MAX98357A to settle */
   HAL_Delay( 10 );
 }
 
@@ -659,7 +665,8 @@ void DAC_MasterSwitch( GPIO_PinState setting )
   */
 uint8_t ReadVolume( void )
 {
-    uint8_t v = (
+    uint8_t v = 
+    (
         ( ( (OPT3_GPIO_Port->IDR & OPT3_Pin) != 0 ) << 2 ) |
         ( ( (OPT2_GPIO_Port->IDR & OPT2_Pin) != 0 ) << 1 ) |
         ( ( (OPT1_GPIO_Port->IDR & OPT1_Pin) != 0 ) << 0 )
