@@ -50,6 +50,7 @@
 #include "dreamy.h"
 #include "guitar_small.h"
 #include "guitar_riff.h"
+#include "magic_gong44k.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
