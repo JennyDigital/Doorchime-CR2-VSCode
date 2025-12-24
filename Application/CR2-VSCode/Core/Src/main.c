@@ -134,7 +134,7 @@ volatile  uint16_t *  pb_end16;
           uint8_t     pb_mode;
 volatile  uint8_t     playing                 = 0;
 volatile  uint8_t     half_to_fill;
-          uint8_t     vol_div;
+volatile  uint8_t     vol_div;
           uint8_t     no_channels             = 1;
 volatile  uint16_t    trig_counter            = 0;
 volatile  uint8_t     trig_status             = TRIGGER_CLR;
@@ -323,6 +323,7 @@ static void MX_I2S2_Init(void)
   hi2s2.Init.Standard = I2S_STANDARD_PHILIPS;
   hi2s2.Init.DataFormat = I2S_DATAFORMAT_16B;
   hi2s2.Init.MCLKOutput = I2S_MCLKOUTPUT_DISABLE;
+
   /* Use the requested playback speed so PlaySample() can change sample rate */
   hi2s2.Init.AudioFreq = I2S_PlaybackSpeed;
   hi2s2.Init.CPOL = I2S_CPOL_LOW;
