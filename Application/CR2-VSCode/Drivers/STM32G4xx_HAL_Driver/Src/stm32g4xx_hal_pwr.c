@@ -480,7 +480,6 @@ void HAL_PWR_EnterSLEEPMode(uint32_t Regulator, uint8_t SLEEPEntry)
     __WFE();
     __WFE();
   }
-
 }
 
 

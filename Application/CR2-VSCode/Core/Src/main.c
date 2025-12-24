@@ -51,6 +51,10 @@
 #include "guitar_small.h"
 #include "guitar_riff.h"
 #include "magic_gong44k.h"
+#include "dramatic_organ11k.h"
+#include "haunted_organ22k.h"
+#include "KillBillWhistle11k.h"
+#include "KillBillShort22k.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -123,8 +127,8 @@ DMA_HandleTypeDef hdma_spi2_tx;
 
           int16_t     pb_buffer[ PB_BUFF_SZ ] = {0};
 
-volatile  uint8_t *   pb_p8;
-volatile  uint8_t *   pb_end8;
+volatile  uint8_t  *  pb_p8;
+volatile  uint8_t  *  pb_end8;
 volatile  uint16_t *  pb_p16;
 volatile  uint16_t *  pb_end16;
           uint8_t     pb_mode;
@@ -139,10 +143,10 @@ volatile  uint8_t     trig_status             = TRIGGER_CLR;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
-void SystemClock_Config(void);
-static void MX_GPIO_Init(void);
-static void MX_DMA_Init(void);
-static void MX_I2S2_Init(void);
+void SystemClock_Config                 ( void );
+static  void    MX_GPIO_Init            ( void );
+static  void    MX_DMA_Init             ( void );
+static  void    MX_I2S2_Init            ( void );
 /* USER CODE BEGIN PFP */
 
         void    CopyNextWaveChunk       ( int16_t * chunk_p );
@@ -224,7 +228,8 @@ int main(void)
 
     //PlaySample( (uint16_t *) harmony8b, HARMONY8B_SZ, I2S_AUDIOFREQ_11K, 8 );
   
-    PlaySample( (uint16_t *) quencho_flute11k, QUENCHO_FLUTE11K_SZ, I2S_AUDIOFREQ_11K, 16 );
+    //PlaySample( (uint16_t *) quencho_flute11k, QUENCHO_FLUTE11K_SZ, I2S_AUDIOFREQ_11K, 16 );
+    PlaySample( (uint16_t *) KillBillShort22k, KILLBILLSHORT22K_SZ, I2S_AUDIOFREQ_22K, 16 );
     WaitForSampleEnd();
 
     // Shutdown the DAC and either loop back of shutdown to save power.
