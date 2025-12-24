@@ -308,7 +308,7 @@ void SystemClock_Config(void)
   * @param None
   * @retval None
   */
-static void MX_I2S2_Init(void)
+static void MX_I2S2_Init( void )
 {
 
   /* USER CODE BEGIN I2S2_Init 0 */
@@ -318,16 +318,16 @@ static void MX_I2S2_Init(void)
   /* USER CODE BEGIN I2S2_Init 1 */
 
   /* USER CODE END I2S2_Init 1 */
-  hi2s2.Instance = SPI2;
-  hi2s2.Init.Mode = I2S_MODE_MASTER_TX;
-  hi2s2.Init.Standard = I2S_STANDARD_PHILIPS;
+  hi2s2.Instance        = SPI2;
+  hi2s2.Init.Mode       = I2S_MODE_MASTER_TX;
+  hi2s2.Init.Standard   = I2S_STANDARD_PHILIPS;
   hi2s2.Init.DataFormat = I2S_DATAFORMAT_16B;
   hi2s2.Init.MCLKOutput = I2S_MCLKOUTPUT_DISABLE;
 
   /* Use the requested playback speed so PlaySample() can change sample rate */
-  hi2s2.Init.AudioFreq = I2S_PlaybackSpeed;
-  hi2s2.Init.CPOL = I2S_CPOL_LOW;
-  if (HAL_I2S_Init(&hi2s2) != HAL_OK)
+  hi2s2.Init.AudioFreq  = I2S_PlaybackSpeed;
+  hi2s2.Init.CPOL       = I2S_CPOL_LOW;
+  if( HAL_I2S_Init( &hi2s2)  != HAL_OK )
   {
     Error_Handler();
   }
@@ -340,7 +340,7 @@ static void MX_I2S2_Init(void)
 /**
   * Enable DMA controller clock
   */
-static void MX_DMA_Init(void)
+static void MX_DMA_Init( void )
 {
 
   /* DMA controller clock enable */
@@ -349,8 +349,8 @@ static void MX_DMA_Init(void)
 
   /* DMA interrupt init */
   /* DMA1_Channel1_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
+  HAL_NVIC_SetPriority( DMA1_Channel1_IRQn, 0, 0 );
+  HAL_NVIC_EnableIRQ( DMA1_Channel1_IRQn );
 
 }
 
@@ -359,7 +359,7 @@ static void MX_DMA_Init(void)
   * @param None
   * @retval None
   */
-static void MX_GPIO_Init(void)
+static void MX_GPIO_Init( void )
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
   /* USER CODE BEGIN MX_GPIO_Init_1 */
@@ -371,22 +371,22 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(NSD_MODE_GPIO_Port, NSD_MODE_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin( NSD_MODE_GPIO_Port, NSD_MODE_Pin, GPIO_PIN_RESET );
 
   /*Configure GPIO pin : NSD_MODE_Pin */
-  GPIO_InitStruct.Pin = NSD_MODE_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pin   = NSD_MODE_Pin;
+  GPIO_InitStruct.Mode  = GPIO_MODE_OUTPUT_OD;
+  GPIO_InitStruct.Pull  = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(NSD_MODE_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init( NSD_MODE_GPIO_Port, &GPIO_InitStruct );
 
   /*Configure GPIO pins : TRIGGER_Pin OPT4_Pin OPT3_Pin OPT2_Pin
                            OPT1_Pin */
-  GPIO_InitStruct.Pin = TRIGGER_Pin|OPT4_Pin|OPT3_Pin|OPT2_Pin
-                          |OPT1_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  GPIO_InitStruct.Pin   = TRIGGER_Pin | OPT4_Pin | OPT3_Pin | OPT2_Pin
+                        | OPT1_Pin;
+  GPIO_InitStruct.Mode  = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull  = GPIO_PULLDOWN;
+  HAL_GPIO_Init( GPIOB, &GPIO_InitStruct );
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
