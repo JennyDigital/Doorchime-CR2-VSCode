@@ -88,6 +88,7 @@
 //#define STEREO_INPUT_MODE
 
 // Trigger Option macros
+// These clarify meaning to the code.
 //
 #define AUTO_TRIG_ENABLED     1
 #define AUTO_TRIG_DISABLED    0
@@ -101,10 +102,11 @@
 #define TRIGGER_CLR           0
 
 // Special development/customer switches
+// Adjust as needed.
 //
 //#define TEST_CYCLING
-//#define FORCE_TRIGGER_OPT
-//#define CUSTOMER_BUILD
+#define FORCE_TRIGGER_OPT
+//#define LOCK_BUILD
 
 
 // Volume special config
@@ -186,7 +188,7 @@ int main(void)
 
   /* USER CODE BEGIN Init */
   /* Handle Readout protection. */
-  #ifdef CUSTOMER_BUILD
+  #ifdef LOCK_BUILD
   TOOLS_RDPLevel1_Lock();
   #endif
   /* USER CODE END Init */
