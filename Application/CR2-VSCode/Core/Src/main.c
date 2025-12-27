@@ -229,7 +229,7 @@ int main(void)
     //PlaySample( (uint16_t *) harmony8b, HARMONY8B_SZ, I2S_AUDIOFREQ_11K, 8 );
   
     //PlaySample( (uint16_t *) quencho_flute11k, QUENCHO_FLUTE11K_SZ, I2S_AUDIOFREQ_11K, 16 );
-    PlaySample( (uint16_t *) KillBillShort22k, KILLBILLSHORT22K_SZ, I2S_AUDIOFREQ_22K, 16 );
+    PlaySample( (uint16_t *) KillBill11k, KILLBILL11K_SZ, I2S_AUDIOFREQ_11K, 16 );
     WaitForSampleEnd();
 
     // Shutdown the DAC and either loop back of shutdown to save power.
