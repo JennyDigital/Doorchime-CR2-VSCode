@@ -65,55 +65,6 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
-// Playback engine buffer defines
-//
-#define PB_BUFF_SZ        512U
-#define CHUNK_SZ          ( PB_BUFF_SZ / 2 )
-#define HALFCHUNK_SZ      ( CHUNK_SZ / 2 )
-#define FIRST             0
-#define SECOND            1U
-
-// Bitfields for options
-//
-#define OPT_AUTO_TRIG         0b1000
-#define OPT_VOLUME            0b0111
-
-
-// DAC Switch defines
-//
-#define DAC_ON            1
-#define DAC_OFF           0
-
-// Stereo file playback option
-//#define STEREO_INPUT_MODE
-
-// Trigger Option macros
-// These clarify meaning to the code.
-//
-#define AUTO_TRIG_ENABLED     1
-#define AUTO_TRIG_DISABLED    0
-
-// Trigger counter values
-//
-#define TC_LOW_THRESHOLD      120U
-#define TC_HIGH_THRESHOLD     240U
-#define TC_MAX                360U
-#define TRIGGER_SET           1
-#define TRIGGER_CLR           0
-
-// Special development/customer switches
-// Adjust as needed.
-//
-//#define TEST_CYCLING
-#define FORCE_TRIGGER_OPT
-//#define LOCK_BUILD
-
-
-// Volume special config
-//
-#define VOL_SCALING           1       // This is the master volume divider multiplication factor
-#define VOL_MULT              1       // Sets the multiplication back so we can use integers.
-
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -134,7 +85,7 @@ volatile  uint8_t  *  pb_end8;
 volatile  uint16_t *  pb_p16;
 volatile  uint16_t *  pb_end16;
           uint8_t     pb_mode;
-volatile  uint8_t     playing                 = 0;
+volatile  uint8_t     pb_state                = PB_IDLE;
 volatile  uint8_t     half_to_fill;
 volatile  uint8_t     vol_div;
           uint8_t     no_channels             = 1;
@@ -151,17 +102,20 @@ static  void    MX_DMA_Init             ( void );
 static  void    MX_I2S2_Init            ( void );
 /* USER CODE BEGIN PFP */
 
-        void    CopyNextWaveChunk       ( int16_t * chunk_p );
-        void    CopyNextWaveChunk_8_bit ( uint8_t * chunk_p );
-        void    DAC_MasterSwitch        ( GPIO_PinState setting );
-        uint8_t ReadVolume              ( void );
-        void    WaitForTrigger          ( uint8_t trig_to_wait_for );
-        uint8_t GetTriggerOption        ( void );
-        void    PlaySample              ( uint16_t * sample_to_play, uint32_t sample_set_sz,
-                                          uint16_t playback_speed,  uint8_t sample_depth
-                                        );
-        void    WaitForSampleEnd        ( void );
-        void    ClearBuffer             ( void );
+        PB_StatusTypeDef    CopyNextWaveChunk       ( int16_t * chunk_p );
+        PB_StatusTypeDef    CopyNextWaveChunk_8_bit ( uint8_t * chunk_p );
+        void                DAC_MasterSwitch        ( GPIO_PinState setting );
+        uint8_t             ReadVolume              ( void );
+        void                WaitForTrigger          ( uint8_t trig_to_wait_for );
+        uint8_t             GetTriggerOption        ( void );
+        PB_StatusTypeDef    PlaySample              (
+                                                      uint16_t *  sample_to_play,
+                                                      uint32_t    sample_set_sz,  
+                                                      uint16_t    playback_speed,
+                                                      uint8_t     sample_depth
+                                                    );
+        PB_StatusTypeDef    WaitForSampleEnd        ( void );
+        void                ClearBuffer             ( void );
 
 /* USER CODE END PFP */
 
@@ -228,16 +182,16 @@ int main(void)
     //
     vol_div = ReadVolume();
 
-    //PlaySample( (uint16_t *) harmony8b, HARMONY8B_SZ, I2S_AUDIOFREQ_11K, 8 );
-  
-    //PlaySample( (uint16_t *) quencho_flute11k, QUENCHO_FLUTE11K_SZ, I2S_AUDIOFREQ_11K, 16 );
-    PlaySample( (uint16_t *) KillBill11k, KILLBILL11K_SZ, I2S_AUDIOFREQ_11K, 16 );
+    PlaySample( (uint16_t *) KillBill11k, KILLBILL11K_SZ,
+       I2S_AUDIOFREQ_11K, 16 );
     WaitForSampleEnd();
 
     // Shutdown the DAC and either loop back of shutdown to save power.
     //
     DAC_MasterSwitch( DAC_OFF );
 
+    // Handle sleep if auto-trigger is disabled
+    //
     if( GetTriggerOption() == AUTO_TRIG_DISABLED )
     {
       HAL_SuspendTick();
@@ -275,31 +229,31 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.OscillatorType      = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.HSIState            = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLM = RCC_PLLM_DIV1;
-  RCC_OscInitStruct.PLL.PLLN = 12;
-  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-  RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
-  RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  RCC_OscInitStruct.PLL.PLLState        = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource       = RCC_PLLSOURCE_HSI;
+  RCC_OscInitStruct.PLL.PLLM            = RCC_PLLM_DIV1;
+  RCC_OscInitStruct.PLL.PLLN            = 12;
+  RCC_OscInitStruct.PLL.PLLP            = RCC_PLLP_DIV2;
+  RCC_OscInitStruct.PLL.PLLQ            = RCC_PLLQ_DIV2;
+  RCC_OscInitStruct.PLL.PLLR            = RCC_PLLR_DIV2;
+  if( HAL_RCC_OscConfig(&RCC_OscInitStruct ) != HAL_OK )
   {
     Error_Handler();
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
   */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV2;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.ClockType       = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
+                                    | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+  RCC_ClkInitStruct.SYSCLKSource    = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.AHBCLKDivider   = RCC_SYSCLK_DIV2;
+  RCC_ClkInitStruct.APB1CLKDivider  = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB2CLKDivider  = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
+  if( HAL_RCC_ClockConfig( &RCC_ClkInitStruct, FLASH_LATENCY_1 ) != HAL_OK )
   {
     Error_Handler();
   }
@@ -409,34 +363,36 @@ void HAL_I2S_TxHalfCpltCallback( I2S_HandleTypeDef *hi2s2_p )
 {
   UNUSED( hi2s2_p );
 
-  if( pb_mode == 16 )
-  {
+  if( pb_mode == 16 ) {
     pb_p16 += HALFCHUNK_SZ;
 
-    if( pb_p16 >= pb_end16 )
-    {
-      playing = 0;
+    if( pb_p16 >= pb_end16 ) {
+      pb_state = PB_IDLE;
       HAL_I2S_DMAStop( &hi2s2 );
+      return;
     }
-    else
-    {
+    else {
       half_to_fill = FIRST;
-      CopyNextWaveChunk( (int16_t *) pb_p16 );
+      if( CopyNextWaveChunk( (int16_t *) pb_p16 ) != PLAYING ) { // Handle shutdown
+       HAL_I2S_DMAStop( &hi2s2 );
+       pb_state  = PB_ERROR;
+       return;
+      }
     }
-  }
-  else if( pb_mode == 8 )
-  {
+  } 
+  else if( pb_mode == 8 ) {
     pb_p8 += HALFCHUNK_SZ;
 
-    if( pb_p8 >= pb_end8 )
-    {
-      playing = 0;
+    if( pb_p8 >= pb_end8 ) {
+      pb_state = PB_IDLE;
       HAL_I2S_DMAStop( &hi2s2 );
     }
-    else
-    {
+    else {
       half_to_fill = FIRST;
-      CopyNextWaveChunk_8_bit( (uint8_t *) pb_p8 );
+      if( CopyNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PLAYING ) { // Handle shutdown
+       HAL_I2S_DMAStop( &hi2s2 );
+       return;
+      } 
     }
   }
 }
@@ -454,34 +410,36 @@ void HAL_I2S_TxCpltCallback( I2S_HandleTypeDef *hi2s2_p )
 {
   UNUSED( hi2s2_p );
 
-  if( pb_mode == 16 )
-  {
+  if( pb_mode == 16 ) {
     pb_p16 += HALFCHUNK_SZ;
 
-    if( pb_p16 >= pb_end16 )
-    {
-      playing = 0;
+    if( pb_p16 >= pb_end16 ) {
+      pb_state = PB_IDLE;
       HAL_I2S_DMAStop( &hi2s2 );
+      return;
     }
-    else
-    {
+    else {
       half_to_fill = SECOND;
-      CopyNextWaveChunk( (int16_t *) pb_p16 );
+      if( CopyNextWaveChunk( (int16_t *) pb_p16 ) != PLAYING ) {  // Handle shutdown
+       HAL_I2S_DMAStop( &hi2s2 );
+       return;  
+      }
     }
   }
-  else if( pb_mode == 8 )
-  {
+  else if( pb_mode == 8 ) {
     pb_p8 += HALFCHUNK_SZ;
 
-    if( pb_p8 >= pb_end8 )
-    {
-      playing = 0;
+    if( pb_p8 >= pb_end8 ) {
+      pb_state = PB_IDLE;
       HAL_I2S_DMAStop( &hi2s2 );
+      return;
     }
-    else
-    {
+    else {
       half_to_fill = SECOND;
-      CopyNextWaveChunk_8_bit( (uint8_t *) pb_p8 );
+      if( CopyNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PLAYING ) {  // Handle shutdown
+        HAL_I2S_DMAStop( &hi2s2 );
+        return;  
+      }
     }
   }
 }
@@ -495,9 +453,13 @@ void HAL_I2S_TxCpltCallback( I2S_HandleTypeDef *hi2s2_p )
   * @retval: none.
   *
   */
-void CopyNextWaveChunk( int16_t * chunk_p )
+PB_StatusTypeDef CopyNextWaveChunk( int16_t * chunk_p )
 {
   int16_t *input, *output;
+
+  if( chunk_p == NULL ) {
+    return PB_ERROR;
+  }
 
   vol_div = ReadVolume();
   input = chunk_p;      // Source sample pointer
@@ -523,6 +485,7 @@ void CopyNextWaveChunk( int16_t * chunk_p )
         
     input++;
   }
+  return PLAYING;
 }
 
 
@@ -534,10 +497,14 @@ void CopyNextWaveChunk( int16_t * chunk_p )
   * @retval: none.
   *
   */
-void CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
+PB_StatusTypeDef CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
 {
   uint8_t *input;
   int16_t *output;
+
+  if( chunk_p == NULL ) {
+    return PB_ERROR;
+  }
 
   vol_div = ReadVolume();
   input = chunk_p;      // Source sample pointer
@@ -572,6 +539,7 @@ void CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
         
     input++;
   }
+  return PLAYING;
 }
 
 
@@ -580,18 +548,25 @@ void CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
   * @param: uint16_t* sample_to_play.  It doesn't matter if your sample is 8-bit, it will still work.
   * @param: uint32_t sample_set_sz.  Many samples to play back.
   * @param: uint16_t playback_speed.  This is the sample rate.
-  * @param: uint8_t sample depth.  This should b4e 8 or 16 bits.
+  * @param: uint8_t sample depth.  This should be 8 or 16 bits.
   * @retval: none
   *
   */
-void PlaySample( uint16_t *sample_to_play, uint32_t sample_set_sz, uint16_t playback_speed, uint8_t sample_depth )
+PB_StatusTypeDef PlaySample( uint16_t *sample_to_play, uint32_t sample_set_sz, uint16_t playback_speed, uint8_t sample_depth )
 {
   // Ignore invalid depths.  This could expand to 32-bit samples later
   // but it's unlikely to be of real use other than convenience.
   //
   if( sample_depth != 16 && sample_depth != 8 )
   {
-     return;
+     return PB_ERROR;
+  }
+
+  // Ignore zero-length samples or null pointers.
+  //
+  if( sample_set_sz == 0 || sample_to_play == NULL )
+  {
+    return PB_ERROR;
   }
 
   // Ensure there is no currently playing sound before
@@ -620,20 +595,22 @@ void PlaySample( uint16_t *sample_to_play, uint32_t sample_set_sz, uint16_t play
   
   // Start Playing the recording
   //
-  playing = 1;
+  pb_state = PLAYING;
   HAL_I2S_Transmit_DMA( &hi2s2, (uint16_t *) pb_buffer, PB_BUFF_SZ );
+  return PLAYING;
 }
 
 
 /** Simple function that waits for the end of playback.
   *
   * @param: none
-  * @retval: none
+  * @retval: PB_StatusTypeDef indicating success or failure.
   *
   */
-void WaitForSampleEnd( void )
+PB_StatusTypeDef WaitForSampleEnd( void )
 {
-  while( playing );
+  while( pb_state == PLAYING );
+  return pb_state;
 }
 
 

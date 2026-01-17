@@ -71,6 +71,63 @@ void Error_Handler(void);
 #define OPT1_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
+// Playback engine buffer defines
+//
+#define PB_BUFF_SZ        512U
+#define CHUNK_SZ          ( PB_BUFF_SZ / 2 )
+#define HALFCHUNK_SZ      ( CHUNK_SZ / 2 )
+#define FIRST             0
+#define SECOND            1U
+
+// Bitfields for options
+//
+#define OPT_AUTO_TRIG     0b1000
+#define OPT_VOLUME        0b0111
+
+
+// DAC Switch defines
+//
+#define DAC_ON            1
+#define DAC_OFF           0
+
+// Stereo file playback option
+//#define STEREO_INPUT_MODE
+
+// Trigger Option macros
+// These clarify meaning to the code.
+//
+#define AUTO_TRIG_ENABLED     1
+#define AUTO_TRIG_DISABLED    0
+
+// Trigger counter values
+//
+#define TC_LOW_THRESHOLD      120U
+#define TC_HIGH_THRESHOLD     240U
+#define TC_MAX                360U
+#define TRIGGER_SET           1
+#define TRIGGER_CLR           0
+
+// Special development/customer switches
+// Adjust as needed.
+//
+//#define TEST_CYCLING
+#define FORCE_TRIGGER_OPT
+//#define LOCK_BUILD
+
+
+// Volume special config
+//
+#define VOL_SCALING           1       // This is the master volume divider multiplication factor
+#define VOL_MULT              1       // Sets the multiplication back so we can use integers.
+
+// Playback status type
+//
+typedef enum {
+  PB_IDLE,
+  PB_ERROR,
+  PLAYING,
+  PLAYING_FAILED
+} PB_StatusTypeDef;
 
 /* USER CODE END Private defines */
 
