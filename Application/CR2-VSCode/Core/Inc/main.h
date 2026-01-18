@@ -76,7 +76,7 @@ void Error_Handler(void);
 #define PB_BUFF_SZ        512U
 #define CHUNK_SZ          ( PB_BUFF_SZ / 2 )
 #define HALFCHUNK_SZ      ( CHUNK_SZ / 2 )
-#define FIRST             0
+#define FIRST             0U
 #define SECOND            1U
 
 // Bitfields for options
@@ -90,9 +90,6 @@ void Error_Handler(void);
 #define DAC_ON            1
 #define DAC_OFF           0
 
-// Stereo file playback option
-//#define STEREO_INPUT_MODE
-
 // Trigger Option macros
 // These clarify meaning to the code.
 //
@@ -100,6 +97,9 @@ void Error_Handler(void);
 #define AUTO_TRIG_DISABLED    0
 
 // Trigger counter values
+//
+// These define the thresholds for setting and clearing the trigger state.
+// Calibrated for optimal perfomance.
 //
 #define TC_LOW_THRESHOLD      120U
 #define TC_HIGH_THRESHOLD     240U
@@ -111,13 +111,13 @@ void Error_Handler(void);
 // Adjust as needed.
 //
 //#define TEST_CYCLING
-#define FORCE_TRIGGER_OPT
+//#define FORCE_TRIGGER_OPT
 //#define LOCK_BUILD
 
 
 // Volume special config
 //
-#define VOL_SCALING           1       // This is the master volume divider multiplication factor
+#define VOL_SCALING           8       // This is the master volume divider multiplication factor
 #define VOL_MULT              1       // Sets the multiplication back so we can use integers.
 
 // Playback status type
@@ -128,6 +128,13 @@ typedef enum {
   PLAYING,
   PLAYING_FAILED
 } PB_StatusTypeDef;
+
+// Playback mode type
+//
+typedef enum {
+  Mode_stereo,
+  Mode_mono
+} PB_ModeTypeDef;
 
 /* USER CODE END Private defines */
 

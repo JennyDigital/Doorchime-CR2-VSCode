@@ -23,11 +23,11 @@
 /* USER CODE BEGIN Includes */
 #include <stdint.h>
 #include "lock.h"
-
-//#include "newchallenger.h"
+#include "stm32g474xx.h"
 #include "newchallenger11k.h"
 #include "guitar.h"
 #include "mind_the_door.h"
+#include "stm32g4xx_hal_i2s.h"
 #include "three_tone_arrival_c.h"
 #include "tunnelbarra.h"
 #include "tunnelbarra16.h"
@@ -55,6 +55,9 @@
 #include "haunted_organ22k.h"
 #include "KillBillWhistle11k.h"
 #include "KillBillShort22k.h"
+#include "rooster.h"
+#include "rooster16b2c.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -80,18 +83,20 @@ DMA_HandleTypeDef hdma_spi2_tx;
 
           int16_t     pb_buffer[ PB_BUFF_SZ ] = {0};
 
-volatile  uint8_t  *  pb_p8;
-volatile  uint8_t  *  pb_end8;
-volatile  uint16_t *  pb_p16;
-volatile  uint16_t *  pb_end16;
-          uint8_t     pb_mode;
-volatile  uint8_t     pb_state                = PB_IDLE;
-volatile  uint8_t     half_to_fill;
-volatile  uint8_t     vol_div;
-          uint8_t     no_channels             = 1;
-volatile  uint16_t    trig_counter            = 0;
-volatile  uint8_t     trig_status             = TRIGGER_CLR;
-          uint16_t    I2S_PlaybackSpeed       = I2S_AUDIOFREQ_22K;
+volatile  uint8_t  *      pb_p8;
+volatile  uint8_t  *      pb_end8;
+volatile  uint16_t *      pb_p16;
+volatile  uint16_t *      pb_end16;
+          uint8_t         pb_mode;
+volatile  uint8_t         pb_state          = PB_IDLE;
+volatile  uint8_t         half_to_fill;
+volatile  uint8_t         vol_div;
+          uint8_t         no_channels       = 1;
+volatile  uint16_t        trig_counter      = 0;
+volatile  uint8_t         trig_status       = TRIGGER_CLR;
+          uint16_t        I2S_PlaybackSpeed = I2S_AUDIOFREQ_22K;
+          uint16_t        p_advance;
+          PB_ModeTypeDef  channels          = Mode_mono;
 
 /* USER CODE END PV */
 
@@ -112,7 +117,8 @@ static  void    MX_I2S2_Init            ( void );
                                                       uint16_t *  sample_to_play,
                                                       uint32_t    sample_set_sz,  
                                                       uint16_t    playback_speed,
-                                                      uint8_t     sample_depth
+                                                      uint8_t     sample_depth,
+                                                      PB_ModeTypeDef mode
                                                     );
         PB_StatusTypeDef    WaitForSampleEnd        ( void );
         void                ClearBuffer             ( void );
@@ -182,15 +188,25 @@ int main(void)
     //
     vol_div = ReadVolume();
 
-    PlaySample( (uint16_t *) KillBill11k, KILLBILL11K_SZ,
-       I2S_AUDIOFREQ_11K, 16 );
+    // PlaySample((uint16_t *) rooster16b2c, ROOSTER16B2C_SZ, I2S_AUDIOFREQ_22K, 16, Mode_stereo );
+    // WaitForSampleEnd();
+    // PlaySample( (uint16_t *) rooster8b2c, ROOSTER8B2C_SZ,
+    //    I2S_AUDIOFREQ_22K, 8, Mode_stereo );
+
+    PlaySample( (uint16_t *) harmony8b, HARMONY8B_SZ,
+        I2S_AUDIOFREQ_11K, 8, Mode_mono );
     WaitForSampleEnd();
+    // PlaySample( (uint16_t *) KillBill11k, KILLBILL11K_SZ,
+    //     I2S_AUDIOFREQ_11K, 16, Mode_mono );
+    // WaitForSampleEnd();
 
     // Shutdown the DAC and either loop back of shutdown to save power.
     //
     DAC_MasterSwitch( DAC_OFF );
 
-    // Handle sleep if auto-trigger is disabled
+    // Handle permanent sleep if auto-trigger is disabled
+    // Otherwise wait for trigger signal.
+    // Wake from interrupt on pin may be considered later.
     //
     if( GetTriggerOption() == AUTO_TRIG_DISABLED )
     {
@@ -363,37 +379,42 @@ void HAL_I2S_TxHalfCpltCallback( I2S_HandleTypeDef *hi2s2_p )
 {
   UNUSED( hi2s2_p );
 
-  if( pb_mode == 16 ) {
-    pb_p16 += HALFCHUNK_SZ;
-
+  if( pb_mode == 16 ) {             // 16-bit samples exhausted check.
     if( pb_p16 >= pb_end16 ) {
       pb_state = PB_IDLE;
       HAL_I2S_DMAStop( &hi2s2 );
       return;
     }
-    else {
+    else {                          // Refill the first half of the buffer with 16-bit samples.
       half_to_fill = FIRST;
       if( CopyNextWaveChunk( (int16_t *) pb_p16 ) != PLAYING ) { // Handle shutdown
-       HAL_I2S_DMAStop( &hi2s2 );
-       pb_state  = PB_ERROR;
-       return;
+        HAL_I2S_DMAStop( &hi2s2 );
+        pb_state  = PB_ERROR;
+        return;
       }
     }
   } 
-  else if( pb_mode == 8 ) {
-    pb_p8 += HALFCHUNK_SZ;
+  else if( pb_mode == 8 ) {             // 8-bit samples exhausted check.
 
     if( pb_p8 >= pb_end8 ) {
       pb_state = PB_IDLE;
       HAL_I2S_DMAStop( &hi2s2 );
+      return;
     }
-    else {
+    else {                              // Refill the first half of the buffer with 8-bit samples.
       half_to_fill = FIRST;
       if( CopyNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PLAYING ) { // Handle shutdown
-       HAL_I2S_DMAStop( &hi2s2 );
-       return;
+        HAL_I2S_DMAStop( &hi2s2 );
+        return;
       } 
     }
+  }
+
+  if( pb_mode == 16 ) {  // Advance the sample pointer
+    pb_p16 += p_advance;
+  }
+  else if( pb_mode == 8 ) {
+    pb_p8 += p_advance;
   }
 }
 
@@ -411,7 +432,6 @@ void HAL_I2S_TxCpltCallback( I2S_HandleTypeDef *hi2s2_p )
   UNUSED( hi2s2_p );
 
   if( pb_mode == 16 ) {
-    pb_p16 += HALFCHUNK_SZ;
 
     if( pb_p16 >= pb_end16 ) {
       pb_state = PB_IDLE;
@@ -427,7 +447,6 @@ void HAL_I2S_TxCpltCallback( I2S_HandleTypeDef *hi2s2_p )
     }
   }
   else if( pb_mode == 8 ) {
-    pb_p8 += HALFCHUNK_SZ;
 
     if( pb_p8 >= pb_end8 ) {
       pb_state = PB_IDLE;
@@ -441,6 +460,13 @@ void HAL_I2S_TxCpltCallback( I2S_HandleTypeDef *hi2s2_p )
         return;  
       }
     }
+  }
+
+  if( pb_mode == 16 ) {   // Advance the sample pointer
+    pb_p16 += p_advance;
+  }
+  else if( pb_mode == 8 ) {
+    pb_p8 += p_advance;
   }
 }
 
@@ -456,6 +482,7 @@ void HAL_I2S_TxCpltCallback( I2S_HandleTypeDef *hi2s2_p )
 PB_StatusTypeDef CopyNextWaveChunk( int16_t * chunk_p )
 {
   int16_t *input, *output;
+  int16_t leftsample, rightsample;
 
   if( chunk_p == NULL ) {
     return PB_ERROR;
@@ -476,14 +503,21 @@ PB_StatusTypeDef CopyNextWaveChunk( int16_t * chunk_p )
   //
   for( uint16_t i = 0; i < HALFCHUNK_SZ; i++ )
   {
-    *output = ( (int16_t) (*input) / vol_div ) * VOL_MULT; // Left channel
-    output++;
-#ifndef STEREO_INPUT_MODE
-    *output = ( (int16_t) (*input) / vol_div ) * VOL_MULT; // Right channel
-    output++;
-#endif
-        
+    leftsample = ( (int16_t) (*input) / vol_div ) * VOL_MULT; // Left channel
     input++;
+
+    if( channels == Mode_mono ) {
+      rightsample = leftsample; // Right channel is the same as left.
+    }
+    else {
+      rightsample = ( (int16_t) (*input) / vol_div ) * VOL_MULT; // Right channel
+      input++;
+    }
+
+    *output = leftsample;       // Write samples to output buffer
+    output++;
+    *output = rightsample;
+    output++;
   }
   return PLAYING;
 }
@@ -501,6 +535,7 @@ PB_StatusTypeDef CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
 {
   uint8_t *input;
   int16_t *output;
+  int16_t leftsample, rightsample;
 
   if( chunk_p == NULL ) {
     return PB_ERROR;
@@ -521,23 +556,24 @@ PB_StatusTypeDef CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
   //
   for( uint16_t i = 0; i < HALFCHUNK_SZ; i++ )
   {
-    /* Convert unsigned 8-bit (0..255) -> signed 16-bit centered around 0 */
-    {
-      int16_t tmp = ( (int16_t)(*input) - 128 ) << 8;
-      tmp = tmp / vol_div * VOL_MULT; /* Left channel */
-      *output = tmp;
-    }
-    output++;
-#ifndef STEREO_INPUT_MODE
-    {
-      int16_t tmp2 = ( (int16_t)(*input) - 128 ) << 8;
-      tmp2 = tmp2 / vol_div * VOL_MULT; /* Right channel */
-      *output = tmp2;
-    }
-    output++;
-#endif
-        
+  /* Convert unsigned 8-bit (0..255) -> signed 16-bit centered around 0 */
+    leftsample = ( (int16_t)(*input) - 128 ) << 8;          /* Left channel. */
+    leftsample = leftsample / vol_div * VOL_MULT;           /* Scale for volume */
     input++;
+
+    if( channels == Mode_mono ) {
+      rightsample = leftsample;                                /* Right channel is same as left */  
+    }
+    else {                    
+      rightsample = ( (int16_t)(*input) - 128 ) << 8;         /* Right channel. */
+      rightsample = rightsample / vol_div * VOL_MULT;         /* Scale for volume */
+      input++;
+    }
+
+    *output = leftsample;                                   /* Transfer samples to output buffer */
+    output++;
+    *output = rightsample;
+    output++;
   }
   return PLAYING;
 }
@@ -552,21 +588,29 @@ PB_StatusTypeDef CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
   * @retval: none
   *
   */
-PB_StatusTypeDef PlaySample( uint16_t *sample_to_play, uint32_t sample_set_sz, uint16_t playback_speed, uint8_t sample_depth )
+PB_StatusTypeDef PlaySample( uint16_t *sample_to_play, uint32_t sample_set_sz, uint16_t playback_speed, uint8_t sample_depth, PB_ModeTypeDef mode )
 {
   // Ignore invalid depths.  This could expand to 32-bit samples later
   // but it's unlikely to be of real use other than convenience.
   //
-  if( sample_depth != 16 && sample_depth != 8 )
-  {
+  if( sample_depth != 16 && sample_depth != 8 ) {
      return PB_ERROR;
   }
 
   // Ignore zero-length samples or null pointers.
   //
-  if( sample_set_sz == 0 || sample_to_play == NULL )
-  {
+  if( sample_set_sz == 0 || sample_to_play == NULL ) {
     return PB_ERROR;
+  }
+
+  // Pointer advance amount for stereo/mono mode.
+  if( mode == Mode_stereo ) {
+     p_advance = CHUNK_SZ;
+     channels  = Mode_stereo;
+  }
+  else {
+    p_advance = HALFCHUNK_SZ;
+    channels  = Mode_mono;
   }
 
   // Ensure there is no currently playing sound before
@@ -722,8 +766,10 @@ void HAL_IncTick( void )
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
+  /* Shutdown playback, disable interrupts amd switch off DAC */
   __disable_irq();
+  HAL_I2S_DMAStop(  &hi2s2 );
+  DAC_MasterSwitch( DAC_OFF );
   while (1)
   {
   }
