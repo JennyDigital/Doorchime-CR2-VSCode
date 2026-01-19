@@ -122,8 +122,8 @@ void Error_Handler(void);
 
 // Midpoint for Signed/Unsigned silence.
 //
-#define MIDPOINT_U8          127U
-#define MIDPOINT_S16        0
+#define MIDPOINT_U8           127U
+#define MIDPOINT_S16          0
 
 // Playback status type
 //

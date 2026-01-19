@@ -188,13 +188,13 @@ int main(void)
     //
     vol_div = ReadVolume();
 
-    // PlaySample((uint16_t *) rooster16b2c, ROOSTER16B2C_SZ, I2S_AUDIOFREQ_22K, 16, Mode_stereo );
-    // WaitForSampleEnd();
-    // PlaySample( (uint16_t *) rooster8b2c, ROOSTER8B2C_SZ,
-    //    I2S_AUDIOFREQ_22K, 8, Mode_stereo );
+    PlaySample((uint16_t *) rooster16b2c, ROOSTER16B2C_SZ, I2S_AUDIOFREQ_22K, 16, Mode_stereo );
+    WaitForSampleEnd();
+    PlaySample( (uint16_t *) rooster8b2c, ROOSTER8B2C_SZ,
+       I2S_AUDIOFREQ_22K, 8, Mode_stereo );
 
-    PlaySample( (uint16_t *) harmony8b, HARMONY8B_SZ,
-        I2S_AUDIOFREQ_11K, 8, Mode_mono );
+    // PlaySample( (uint16_t *) harmony8b, HARMONY8B_SZ,
+    //     I2S_AUDIOFREQ_11K, 8, Mode_mono );
     // PlaySample( (uint16_t *) KillBill11k, KILLBILL11K_SZ,
     //     I2S_AUDIOFREQ_11K, 16, Mode_mono );
     WaitForSampleEnd();
@@ -264,11 +264,11 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.ClockType       = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
                                     | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource    = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider   = RCC_SYSCLK_DIV2;
+  RCC_ClkInitStruct.AHBCLKDivider   = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider  = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider  = RCC_HCLK_DIV1;
 
-  if( HAL_RCC_ClockConfig( &RCC_ClkInitStruct, FLASH_LATENCY_1 ) != HAL_OK )
+  if( HAL_RCC_ClockConfig( &RCC_ClkInitStruct, FLASH_LATENCY_3 ) != HAL_OK )
   {
     Error_Handler();
   }
@@ -410,9 +410,19 @@ void HAL_I2S_TxHalfCpltCallback( I2S_HandleTypeDef *hi2s2_p )
 
   if( pb_mode == 16 ) {  // Advance the sample pointer
     pb_p16 += p_advance;
+    if( pb_p16 >= pb_end16 ) {
+      pb_state = PB_IDLE;
+      HAL_I2S_DMAStop( &hi2s2 );
+      return;
+    }
   }
   else if( pb_mode == 8 ) {
     pb_p8 += p_advance;
+    if( pb_p8 >= pb_end8 ) {
+      pb_state = PB_IDLE;
+      HAL_I2S_DMAStop( &hi2s2 );
+      return;
+    }
   }
 }
 
@@ -460,11 +470,21 @@ void HAL_I2S_TxCpltCallback( I2S_HandleTypeDef *hi2s2_p )
     }
   }
 
-  if( pb_mode == 16 ) {   // Advance the sample pointer
+  if( pb_mode == 16 ) {  // Advance the sample pointer
     pb_p16 += p_advance;
+    if( pb_p16 >= pb_end16 ) {
+      pb_state = PB_IDLE;
+      HAL_I2S_DMAStop( &hi2s2 );
+      return;
+    }
   }
   else if( pb_mode == 8 ) {
     pb_p8 += p_advance;
+    if( pb_p8 >= pb_end8 ) {
+      pb_state = PB_IDLE;
+      HAL_I2S_DMAStop( &hi2s2 );
+      return;
+    }
   }
 }
 
@@ -488,7 +508,6 @@ PB_StatusTypeDef CopyNextWaveChunk( int16_t * chunk_p )
 
   vol_div = ReadVolume();
   input = chunk_p;      // Source sample pointer
-
   output = ( half_to_fill == SECOND ) ? (pb_buffer + CHUNK_SZ ) : pb_buffer;
 
   // Transfer mono audio (scaled for volume) into the stereo buffer.
@@ -509,23 +528,16 @@ PB_StatusTypeDef CopyNextWaveChunk( int16_t * chunk_p )
     }
     input++;
 
-    if( channels == Mode_mono ) {
-      rightsample = leftsample; // Right channel is the same as left.
-    }
+    if( channels == Mode_mono ) { rightsample = leftsample; }   // Right channel is the same as left.
     else {
       if( (uint16_t *) input >=  pb_end16 ) {                   /* Check for end of sample data */
         rightsample = MIDPOINT_S16;                             /* Pad with silence if at end */
       }
-      else {
-        rightsample = ( (int16_t) (*input) / vol_div ) * VOL_MULT; // Right channel
-      } 
+      else { rightsample = ( (int16_t) (*input) / vol_div ) * VOL_MULT; } // Right channel 
       input++;
     }
-
-    *output = leftsample;       // Write samples to output buffer
-    output++;
-    *output = rightsample;
-    output++;
+    *output = leftsample;  output++;                            // Write samples to output buffer
+    *output = rightsample; output++;
   }
   return PLAYING;
 }
@@ -548,10 +560,8 @@ PB_StatusTypeDef CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
   if( chunk_p == NULL ) {   // Sanity check
     return PB_ERROR;
   }
-
   vol_div = ReadVolume();
-  input = chunk_p;      // Source sample pointer
-
+  input = chunk_p;                                               /* Source sample pointer */
   output = ( half_to_fill == SECOND ) ? (pb_buffer + CHUNK_SZ ) : pb_buffer;
 
   // Transfer mono audio (scaled for volume) into the stereo buffer.
@@ -574,9 +584,7 @@ PB_StatusTypeDef CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
     }
     input++;
 
-    if( channels == Mode_mono ) {
-      rightsample = leftsample;                                  /* Right channel is same as left */  
-    }
+    if( channels == Mode_mono ) { rightsample = leftsample; }   // Right channel is the same as left.
     else {    
       if( (uint8_t *) input >=  pb_end8 ) {                      /* Check for end of sample data */
         rightsample = MIDPOINT_S16;                              /* Pad with silence if at end */
@@ -587,11 +595,8 @@ PB_StatusTypeDef CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
       }
       input++;
     }
-
-    *output = leftsample;                                         /* Transfer samples to output buffer */
-    output++;
-    *output = rightsample;
-    output++;
+    *output = leftsample;  output++;                              /* Transfer samples to output buffer */
+    *output = rightsample; output++;
   }
   return PLAYING;
 }
@@ -627,8 +632,8 @@ PB_StatusTypeDef PlaySample( uint16_t *sample_to_play, uint32_t sample_set_sz, u
      channels  = Mode_stereo;
   }
   else {
-    p_advance  = HALFCHUNK_SZ;
-    channels   = Mode_mono;     // One channels worth of samples per chunk
+    p_advance  = HALFCHUNK_SZ;  // One channels worth of samples per chunk
+    channels   = Mode_mono;     
   }
 
   // Turn the DAC on in readyness and initialize I2S with the requested sample rate.
@@ -639,7 +644,7 @@ PB_StatusTypeDef PlaySample( uint16_t *sample_to_play, uint32_t sample_set_sz, u
   // Ensure there is no currently playing sound before
   // starting the current one and turn on the DAC
   //
-  HAL_I2S_DMAStop(  &hi2s2 );
+  HAL_I2S_DMAStop( &hi2s2 );
   DAC_MasterSwitch( DAC_ON );
 
   // Clear the playback buffer and setup playback pointers.
@@ -708,7 +713,7 @@ void DAC_MasterSwitch( GPIO_PinState setting )
 }
 
 
-/** Read the master volumr level for playback.
+/** Read the master volume level for playback.
   *
   * params: none
   * retval: uint8_t between 1 and 8 for the audio data divisor.
