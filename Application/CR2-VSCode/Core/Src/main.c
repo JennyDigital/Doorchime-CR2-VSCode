@@ -482,7 +482,7 @@ PB_StatusTypeDef CopyNextWaveChunk( int16_t * chunk_p )
   int16_t *input, *output;
   int16_t leftsample, rightsample;
 
-  if( chunk_p == NULL ) {
+  if( chunk_p == NULL ) {   // Sanity check
     return PB_ERROR;
   }
 
@@ -501,8 +501,8 @@ PB_StatusTypeDef CopyNextWaveChunk( int16_t * chunk_p )
   //
   for( uint16_t i = 0; i < HALFCHUNK_SZ; i++ )
   {
-    if( (uint16_t *) input >=  pb_end16 ) {                                 /* Check for end of sample data */
-      leftsample = 0;                                         /* Pad with silence if at end */
+    if( (uint16_t *) input >=  pb_end16 ) {                     /* Check for end of sample data */
+      leftsample = MIDPOINT_S16;                                /* Pad with silence if at end */
     }
     else {
       leftsample = ( (int16_t) (*input) / vol_div ) * VOL_MULT; // Left channel
@@ -513,8 +513,8 @@ PB_StatusTypeDef CopyNextWaveChunk( int16_t * chunk_p )
       rightsample = leftsample; // Right channel is the same as left.
     }
     else {
-      if( (uint16_t *) input >=  pb_end16 ) {                               /* Check for end of sample data */
-        rightsample = 0;                                       /* Pad with silence if at end */
+      if( (uint16_t *) input >=  pb_end16 ) {                   /* Check for end of sample data */
+        rightsample = MIDPOINT_S16;                             /* Pad with silence if at end */
       }
       else {
         rightsample = ( (int16_t) (*input) / vol_div ) * VOL_MULT; // Right channel
@@ -545,7 +545,7 @@ PB_StatusTypeDef CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
   int16_t *output;
   int16_t leftsample, rightsample;
 
-  if( chunk_p == NULL ) {
+  if( chunk_p == NULL ) {   // Sanity check
     return PB_ERROR;
   }
 
@@ -564,13 +564,13 @@ PB_StatusTypeDef CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
   //
   for( uint16_t i = 0; i < HALFCHUNK_SZ; i++ )
   {
-    if( (uint8_t *) input >=  pb_end8 ) {                                  /* Check for end of sample data */
-      leftsample = 127;                                        /* Pad with midpoint if at end */
+    if( (uint8_t *) input >=  pb_end8 ) {                      /* Check for end of sample data */
+      leftsample = MIDPOINT_U8;                               /* Pad with silence if at end */
     }
     else {
       /* Convert unsigned 8-bit (0..255) -> signed 16-bit centered around 0 */
-      leftsample = ( (int16_t)(*input) - 128 ) << 8;              /* Left channel. */
-      leftsample = ( leftsample / vol_div ) * VOL_MULT;           /* Scale for volume */
+      leftsample = ( (int16_t)(*input) - 128 ) << 8;             /* Left channel. */
+      leftsample = ( leftsample / vol_div ) * VOL_MULT;          /* Scale for volume */
     }
     input++;
 
@@ -578,8 +578,8 @@ PB_StatusTypeDef CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
       rightsample = leftsample;                                 /* Right channel is same as left */  
     }
     else {    
-      if( (uint8_t *) input >=  pb_end8 ) {                                  /* Check for end of sample data */
-        rightsample = 127;                                      /* Pad with midpoint if at end */
+      if( (uint8_t *) input >=  pb_end8 ) {                      /* Check for end of sample data */
+        rightsample = MIDPOINT_U8;                               /* Pad with silence if at end */
       }
       else {               
         rightsample = ( (int16_t)(*input) - 128 ) << 8;           /* Right channel. */

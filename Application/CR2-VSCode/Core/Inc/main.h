@@ -120,6 +120,11 @@ void Error_Handler(void);
 #define VOL_SCALING           8       // This is the master volume divider multiplication factor
 #define VOL_MULT              1       // Sets the multiplication back so we can use integers.
 
+// Midpoint for Signed/Unsigned silence.
+//
+#define MIDPOINT_U8          127U
+#define MIDPOINT_S16        0
+
 // Playback status type
 //
 typedef enum {
