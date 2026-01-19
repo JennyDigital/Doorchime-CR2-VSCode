@@ -73,7 +73,7 @@ void Error_Handler(void);
 /* USER CODE BEGIN Private defines */
 // Playback engine buffer defines
 //
-#define PB_BUFF_SZ        512U
+#define PB_BUFF_SZ        1024U
 #define CHUNK_SZ          ( PB_BUFF_SZ / 2 )
 #define HALFCHUNK_SZ      ( CHUNK_SZ / 2 )
 #define FIRST             0U

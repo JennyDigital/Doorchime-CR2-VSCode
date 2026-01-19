@@ -192,9 +192,13 @@ int main(void)
     WaitForSampleEnd();
     PlaySample( (uint16_t *) rooster8b2c, ROOSTER8B2C_SZ,
        I2S_AUDIOFREQ_22K, 8, Mode_stereo );
+    WaitForSampleEnd();
 
-    // PlaySample( (uint16_t *) harmony8b, HARMONY8B_SZ,
-    //     I2S_AUDIOFREQ_11K, 8, Mode_mono );
+    PlaySample( (uint16_t *) harmony8b, HARMONY8B_SZ,
+        I2S_AUDIOFREQ_11K, 8, Mode_mono );
+    WaitForSampleEnd();
+
+    PlaySample( (uint16_t*) tt_arrival, TT_ARRIVAL_SZ, I2S_AUDIOFREQ_11K, 16, Mode_mono );
     // PlaySample( (uint16_t *) KillBill11k, KILLBILL11K_SZ,
     //     I2S_AUDIOFREQ_11K, 16, Mode_mono );
     WaitForSampleEnd();
