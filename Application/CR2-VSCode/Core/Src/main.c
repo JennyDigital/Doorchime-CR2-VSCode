@@ -193,10 +193,10 @@ int main(void)
     // PlaySample( (uint16_t *) rooster8b2c, ROOSTER8B2C_SZ,
     //    I2S_AUDIOFREQ_22K, 8, Mode_stereo );
 
-    // PlaySample( (uint16_t *) harmony8b, HARMONY8B_SZ,
-    //     I2S_AUDIOFREQ_11K, 8, Mode_mono );
-    PlaySample( (uint16_t *) KillBill11k, KILLBILL11K_SZ,
-        I2S_AUDIOFREQ_11K, 16, Mode_mono );
+    PlaySample( (uint16_t *) harmony8b, HARMONY8B_SZ,
+        I2S_AUDIOFREQ_11K, 8, Mode_mono );
+    // PlaySample( (uint16_t *) KillBill11k, KILLBILL11K_SZ,
+    //     I2S_AUDIOFREQ_11K, 16, Mode_mono );
     WaitForSampleEnd();
 
     // Shutdown the DAC and either loop back of shutdown to save power.
@@ -564,8 +564,8 @@ PB_StatusTypeDef CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
   //
   for( uint16_t i = 0; i < HALFCHUNK_SZ; i++ )
   {
-    if( (uint8_t *) input >=  pb_end8 ) {                      /* Check for end of sample data */
-      leftsample = MIDPOINT_U8;                               /* Pad with silence if at end */
+    if( (uint8_t *) input >=  pb_end8 ) {                        /* Check for end of sample data */
+      leftsample = MIDPOINT_S16;                                 /* Pad with silence if at end */
     }
     else {
       /* Convert unsigned 8-bit (0..255) -> signed 16-bit centered around 0 */
@@ -575,11 +575,11 @@ PB_StatusTypeDef CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
     input++;
 
     if( channels == Mode_mono ) {
-      rightsample = leftsample;                                 /* Right channel is same as left */  
+      rightsample = leftsample;                                  /* Right channel is same as left */  
     }
     else {    
       if( (uint8_t *) input >=  pb_end8 ) {                      /* Check for end of sample data */
-        rightsample = MIDPOINT_U8;                               /* Pad with silence if at end */
+        rightsample = MIDPOINT_S16;                              /* Pad with silence if at end */
       }
       else {               
         rightsample = ( (int16_t)(*input) - 128 ) << 8;           /* Right channel. */
@@ -588,7 +588,7 @@ PB_StatusTypeDef CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
       input++;
     }
 
-    *output = leftsample;                                       /* Transfer samples to output buffer */
+    *output = leftsample;                                         /* Transfer samples to output buffer */
     output++;
     *output = rightsample;
     output++;
@@ -688,7 +688,7 @@ void ClearBuffer( void )
 {
   for( uint16_t sample_index = 0; sample_index < PB_BUFF_SZ; sample_index++ )
   {
-    pb_buffer[ sample_index ] = 0;
+    pb_buffer[ sample_index ] = MIDPOINT_S16;
   }
 }
 
