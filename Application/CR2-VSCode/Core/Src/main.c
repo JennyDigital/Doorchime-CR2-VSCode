@@ -24,6 +24,7 @@
 #include <stdint.h>
 #include "lock.h"
 #include "stm32g474xx.h"
+
 #include "newchallenger11k.h"
 #include "guitar.h"
 #include "mind_the_door.h"
@@ -163,7 +164,6 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
-  MX_I2S2_Init();
   /* USER CODE BEGIN 2 */
 
   HAL_Delay( 150 );
@@ -193,12 +193,11 @@ int main(void)
     // PlaySample( (uint16_t *) rooster8b2c, ROOSTER8B2C_SZ,
     //    I2S_AUDIOFREQ_22K, 8, Mode_stereo );
 
-    PlaySample( (uint16_t *) harmony8b, HARMONY8B_SZ,
-        I2S_AUDIOFREQ_11K, 8, Mode_mono );
+    // PlaySample( (uint16_t *) harmony8b, HARMONY8B_SZ,
+    //     I2S_AUDIOFREQ_11K, 8, Mode_mono );
+    PlaySample( (uint16_t *) KillBill11k, KILLBILL11K_SZ,
+        I2S_AUDIOFREQ_11K, 16, Mode_mono );
     WaitForSampleEnd();
-    // PlaySample( (uint16_t *) KillBill11k, KILLBILL11K_SZ,
-    //     I2S_AUDIOFREQ_11K, 16, Mode_mono );
-    // WaitForSampleEnd();
 
     // Shutdown the DAC and either loop back of shutdown to save power.
     //
@@ -389,7 +388,6 @@ void HAL_I2S_TxHalfCpltCallback( I2S_HandleTypeDef *hi2s2_p )
       half_to_fill = FIRST;
       if( CopyNextWaveChunk( (int16_t *) pb_p16 ) != PLAYING ) { // Handle shutdown
         HAL_I2S_DMAStop( &hi2s2 );
-        pb_state  = PB_ERROR;
         return;
       }
     }
@@ -503,14 +501,24 @@ PB_StatusTypeDef CopyNextWaveChunk( int16_t * chunk_p )
   //
   for( uint16_t i = 0; i < HALFCHUNK_SZ; i++ )
   {
-    leftsample = ( (int16_t) (*input) / vol_div ) * VOL_MULT; // Left channel
+    if( (uint16_t *) input >=  pb_end16 ) {                                 /* Check for end of sample data */
+      leftsample = 0;                                         /* Pad with silence if at end */
+    }
+    else {
+      leftsample = ( (int16_t) (*input) / vol_div ) * VOL_MULT; // Left channel
+    }
     input++;
 
     if( channels == Mode_mono ) {
       rightsample = leftsample; // Right channel is the same as left.
     }
     else {
-      rightsample = ( (int16_t) (*input) / vol_div ) * VOL_MULT; // Right channel
+      if( (uint16_t *) input >=  pb_end16 ) {                               /* Check for end of sample data */
+        rightsample = 0;                                       /* Pad with silence if at end */
+      }
+      else {
+        rightsample = ( (int16_t) (*input) / vol_div ) * VOL_MULT; // Right channel
+      } 
       input++;
     }
 
@@ -556,21 +564,31 @@ PB_StatusTypeDef CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
   //
   for( uint16_t i = 0; i < HALFCHUNK_SZ; i++ )
   {
-  /* Convert unsigned 8-bit (0..255) -> signed 16-bit centered around 0 */
-    leftsample = ( (int16_t)(*input) - 128 ) << 8;          /* Left channel. */
-    leftsample = leftsample / vol_div * VOL_MULT;           /* Scale for volume */
+    if( (uint8_t *) input >=  pb_end8 ) {                                  /* Check for end of sample data */
+      leftsample = 127;                                        /* Pad with midpoint if at end */
+    }
+    else {
+      /* Convert unsigned 8-bit (0..255) -> signed 16-bit centered around 0 */
+      leftsample = ( (int16_t)(*input) - 128 ) << 8;              /* Left channel. */
+      leftsample = ( leftsample / vol_div ) * VOL_MULT;           /* Scale for volume */
+    }
     input++;
 
     if( channels == Mode_mono ) {
-      rightsample = leftsample;                                /* Right channel is same as left */  
+      rightsample = leftsample;                                 /* Right channel is same as left */  
     }
-    else {                    
-      rightsample = ( (int16_t)(*input) - 128 ) << 8;         /* Right channel. */
-      rightsample = rightsample / vol_div * VOL_MULT;         /* Scale for volume */
+    else {    
+      if( (uint8_t *) input >=  pb_end8 ) {                                  /* Check for end of sample data */
+        rightsample = 127;                                      /* Pad with midpoint if at end */
+      }
+      else {               
+        rightsample = ( (int16_t)(*input) - 128 ) << 8;           /* Right channel. */
+        rightsample = ( rightsample / vol_div ) * VOL_MULT;       /* Scale for volume */
+      }
       input++;
     }
 
-    *output = leftsample;                                   /* Transfer samples to output buffer */
+    *output = leftsample;                                       /* Transfer samples to output buffer */
     output++;
     *output = rightsample;
     output++;
@@ -605,24 +623,27 @@ PB_StatusTypeDef PlaySample( uint16_t *sample_to_play, uint32_t sample_set_sz, u
 
   // Pointer advance amount for stereo/mono mode.
   if( mode == Mode_stereo ) {
-     p_advance = CHUNK_SZ;
+     p_advance = CHUNK_SZ;      // Two channels worth of samples per chunk
      channels  = Mode_stereo;
   }
   else {
-    p_advance = HALFCHUNK_SZ;
-    channels  = Mode_mono;
+    p_advance  = HALFCHUNK_SZ;
+    channels   = Mode_mono;     // One channels worth of samples per chunk
   }
 
-  // Ensure there is no currently playing sound before
-  // starting the current one.
-  //
-  HAL_I2S_DMAStop(  &hi2s2 );
-
-  // Turn the DAC on in readyness.
+  // Turn the DAC on in readyness and initialize I2S with the requested sample rate.
   //
   I2S_PlaybackSpeed = playback_speed;
   MX_I2S2_Init();
+
+  // Ensure there is no currently playing sound before
+  // starting the current one and turn on the DAC
+  //
+  HAL_I2S_DMAStop(  &hi2s2 );
   DAC_MasterSwitch( DAC_ON );
+
+  // Clear the playback buffer and setup playback pointers.
+  //
   ClearBuffer();
   if( sample_depth == 16 )
   {
@@ -637,7 +658,7 @@ PB_StatusTypeDef PlaySample( uint16_t *sample_to_play, uint32_t sample_set_sz, u
     pb_mode = 8;
   }
   
-  // Start Playing the recording
+  // Start playback of the recording
   //
   pb_state = PLAYING;
   HAL_I2S_Transmit_DMA( &hi2s2, (uint16_t *) pb_buffer, PB_BUFF_SZ );
@@ -703,7 +724,7 @@ uint8_t ReadVolume( void )
     );
 
     /* volume divisor is 1..8 so add 1 to the 3-bit value to make range 1..8 */
-    v = (uint8_t)((v + 1) * VOL_SCALING);
+    v = (uint8_t) ( ( v + 1 ) * VOL_SCALING) ;
 
     /* never return 0 even if VOL_SCALING is mis-set */
     return v ? v : 1;
@@ -739,7 +760,11 @@ uint8_t GetTriggerOption( void )
 #endif
 }
 
-
+/** Systick IRQ including trigger handling
+  *
+  * params: none
+  * retval: none
+  */
 void HAL_IncTick( void )
 {
   uwTick += uwTickFreq;
