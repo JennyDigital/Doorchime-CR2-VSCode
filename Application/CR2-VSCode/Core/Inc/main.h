@@ -111,7 +111,7 @@ void Error_Handler(void);
 // Adjust as needed.
 //
 //#define TEST_CYCLING
-//#define FORCE_TRIGGER_OPT
+#define FORCE_TRIGGER_OPT
 //#define LOCK_BUILD
 
 

@@ -28,7 +28,10 @@
 #include "newchallenger11k.h"
 #include "guitar.h"
 #include "mind_the_door.h"
+#include "stm32g4xx_hal.h"
+#include "stm32g4xx_hal_gpio.h"
 #include "stm32g4xx_hal_i2s.h"
+#include "stm32g4xx_hal_pwr.h"
 #include "three_tone_arrival_c.h"
 #include "tunnelbarra.h"
 #include "tunnelbarra16.h"
@@ -102,7 +105,7 @@ volatile  uint8_t         trig_status       = TRIGGER_CLR;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
-void SystemClock_Config                 ( void );
+        void    SystemClock_Config      ( void );
 static  void    MX_GPIO_Init            ( void );
 static  void    MX_DMA_Init             ( void );
 static  void    MX_I2S2_Init            ( void );
@@ -209,16 +212,22 @@ int main(void)
 
     // Handle permanent sleep if auto-trigger is disabled
     // Otherwise wait for trigger signal.
-    // Wake from interrupt on pin may be considered later.
+    // Wake from interrupt on TRIGGER pin.
     //
     if( GetTriggerOption() == AUTO_TRIG_DISABLED )
     {
       HAL_SuspendTick();
       HAL_PWR_EnterSLEEPMode( PWR_LOWPOWERREGULATOR_ON, PWR_SLEEPENTRY_WFE );
+      HAL_ResumeTick();
     }
     else
     {
 #ifndef TEST_CYCLING
+      HAL_SuspendTick();
+      HAL_PWR_EnterSLEEPMode( PWR_LOWPOWERREGULATOR_ON, PWR_SLEEPENTRY_WFI );
+      HAL_PWREx_DisableLowPowerRunMode();
+      SystemClock_Config();
+      HAL_ResumeTick();
       WaitForTrigger( TRIGGER_CLR );
 #else
       HAL_Delay( 1000 );
@@ -355,10 +364,16 @@ static void MX_GPIO_Init( void )
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init( NSD_MODE_GPIO_Port, &GPIO_InitStruct );
 
-  /*Configure GPIO pins : TRIGGER_Pin OPT4_Pin OPT3_Pin OPT2_Pin
-                           OPT1_Pin */
-  GPIO_InitStruct.Pin   = TRIGGER_Pin | OPT4_Pin | OPT3_Pin | OPT2_Pin
-                        | OPT1_Pin;
+  /*Configure GPIO pins : TRIGGER_Pin with interrupt */
+  GPIO_InitStruct.Pin   = TRIGGER_Pin;
+  GPIO_InitStruct.Mode  = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull  = GPIO_PULLDOWN;
+  HAL_GPIO_Init( TRIGGER_GPIO_Port, &GPIO_InitStruct );
+  HAL_NVIC_SetPriority( EXTI4_IRQn, 0, 0 );
+  HAL_NVIC_EnableIRQ( EXTI4_IRQn );
+
+  /*Configure GPIO pins : OPT4_Pin OPT3_Pin OPT2_Pin OPT1_Pin */
+  GPIO_InitStruct.Pin   = OPT4_Pin | OPT3_Pin | OPT2_Pin | OPT1_Pin;
   GPIO_InitStruct.Mode  = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull  = GPIO_PULLDOWN;
   HAL_GPIO_Init( GPIOB, &GPIO_InitStruct );

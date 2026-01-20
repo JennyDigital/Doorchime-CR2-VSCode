@@ -19,6 +19,8 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "stm32g474xx.h"
+#include "stm32g4xx_hal.h"
 #include "stm32g4xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -46,7 +48,7 @@
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN PFP */
-
+void    SystemClock_Config      ( void );
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -214,4 +216,18 @@ void DMA1_Channel1_IRQHandler(void)
 
 /* USER CODE BEGIN 1 */
 
+void EXTI4_IRQHandler(void)
+{
+  HAL_GPIO_EXTI_IRQHandler( TRIGGER_Pin );
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+  /* Prevent unused argument(s) compilation warning */
+  UNUSED(GPIO_Pin);
+  if( GPIO_Pin != TRIGGER_Pin )
+  {
+    return;
+  }
+}
 /* USER CODE END 1 */
