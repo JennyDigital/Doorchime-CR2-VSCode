@@ -95,15 +95,18 @@ volatile  uint8_t  *      pb_end8;
 volatile  uint16_t *      pb_p16;
 volatile  uint16_t *      pb_end16;
           uint8_t         pb_mode;
-volatile  uint8_t         pb_state          = PB_IDLE;
+volatile  uint8_t         pb_state              = PB_IDLE;
 volatile  uint8_t         half_to_fill;
 volatile  uint8_t         vol_div;
-          uint8_t         no_channels       = 1;
-volatile  uint16_t        trig_counter      = 0;
-volatile  uint8_t         trig_status       = TRIGGER_CLR;
-          uint16_t        I2S_PlaybackSpeed = I2S_AUDIOFREQ_22K;
+          uint8_t         no_channels           = 1;
+volatile  uint16_t        trig_counter          = 0;
+volatile  uint8_t         trig_timeout_flag     = 0;
+volatile  uint16_t        trig_timeout_counter  = 0;
+
+volatile  uint8_t         trig_status           = TRIGGER_CLR;
+          uint16_t        I2S_PlaybackSpeed     = I2S_AUDIOFREQ_22K;
           uint16_t        p_advance;
-          PB_ModeTypeDef  channels          = Mode_mono;
+          PB_ModeTypeDef  channels              = Mode_mono;
 
 /* USER CODE END PV */
 
@@ -196,15 +199,15 @@ int main(void)
     //
     vol_div = ReadVolume();
 
-    // PlaySample((uint16_t *) rooster16b2c, ROOSTER16B2C_SZ, I2S_AUDIOFREQ_22K, 16, Mode_stereo );
-    // WaitForSampleEnd();
-    // PlaySample( (uint16_t *) rooster8b2c, ROOSTER8B2C_SZ,
-    //    I2S_AUDIOFREQ_22K, 8, Mode_stereo );
-    // WaitForSampleEnd();
+    PlaySample((uint16_t *) rooster16b2c, ROOSTER16B2C_SZ, I2S_AUDIOFREQ_22K, 16, Mode_stereo );
+    WaitForSampleEnd();
+    PlaySample( (uint16_t *) rooster8b2c, ROOSTER8B2C_SZ,
+       I2S_AUDIOFREQ_22K, 8, Mode_stereo );
+    WaitForSampleEnd();
 
-    // PlaySample( (uint16_t *) harmony8b, HARMONY8B_SZ,
-    //     I2S_AUDIOFREQ_11K, 8, Mode_mono );
-    // WaitForSampleEnd();
+    PlaySample( (uint16_t *) harmony8b, HARMONY8B_SZ,
+        I2S_AUDIOFREQ_11K, 8, Mode_mono );
+    WaitForSampleEnd();
 
     PlaySample( (uint16_t*) tt_arrival, TT_ARRIVAL_SZ, I2S_AUDIOFREQ_11K, 16, Mode_mono );
     // PlaySample( (uint16_t *) KillBill11k, KILLBILL11K_SZ,
@@ -230,27 +233,6 @@ int main(void)
     else
     {
 #ifndef TEST_CYCLING
-      /* Prep for sleep mode */
-      LPSystemClock_Config();                     // Reduce clock speed for low power sleep
-      HAL_SuspendTick();                          // Stop SysTick interrupts to prevent wakeups
-      __HAL_GPIO_EXTI_CLEAR_IT( TRIGGER_Pin );    // Clear EXTI pending bit
-
-      /* Enter low power sleep mode and wait for the trigger */
-      HAL_PWR_EnterSLEEPMode( PWR_LOWPOWERREGULATOR_ON, PWR_SLEEPENTRY_WFI );
-
-      /* Rise from your slumber mighty microcontroller! */
-      __HAL_GPIO_EXTI_CLEAR_IT( TRIGGER_Pin );   // Clear EXTI pending bit
-      HAL_PWREx_DisableLowPowerRunMode();
-      HAL_Init();
-      SystemClock_Config();
-      MX_GPIO_Init();
-      MX_DMA_Init();
-      HAL_ResumeTick();
-
-      /* Reset trigger state */
-      trig_counter = 0;
-      trig_status = TRIGGER_CLR;
-
       /* Wait for trigger to clear, we need this because people might hold the trigger button */
       WaitForTrigger( TRIGGER_CLR );
 #else
@@ -789,7 +771,40 @@ uint8_t ReadVolume( void )
  */
 inline void WaitForTrigger( uint8_t trig_to_wait_for )
 {
-  while ( trig_status != trig_to_wait_for );
+  /* Reset trigger state */
+  // trig_counter = 0;
+  // trig_status = TRIGGER_CLR;
+
+  trig_timeout_flag = 0;
+  while( trig_status != trig_to_wait_for )
+  {
+    HAL_Delay( 1 );
+    trig_timeout_counter++;
+    if( trig_timeout_counter >= TRIG_TIMEOUT_MS )
+    {
+      trig_timeout_flag = 1;
+      trig_timeout_counter = 0;
+      break;
+    }
+  }
+  if( trig_status == trig_to_wait_for ) return;
+
+/* Prep for sleep mode */
+      LPSystemClock_Config();                     // Reduce clock speed for low power sleep
+      HAL_SuspendTick();                          // Stop SysTick interrupts to prevent wakeups
+      __HAL_GPIO_EXTI_CLEAR_IT( TRIGGER_Pin );    // Clear EXTI pending bit
+
+      /* Enter low power sleep mode and wait for the trigger */
+      HAL_PWR_EnterSLEEPMode( PWR_LOWPOWERREGULATOR_ON, PWR_SLEEPENTRY_WFI );
+
+      /* Rise from your slumber mighty microcontroller! */
+      __HAL_GPIO_EXTI_CLEAR_IT( TRIGGER_Pin );   // Clear EXTI pending bit
+      HAL_PWREx_DisableLowPowerRunMode();
+      HAL_Init();
+      SystemClock_Config();
+      MX_GPIO_Init();
+      MX_DMA_Init();
+      HAL_ResumeTick();
 }
 
 
