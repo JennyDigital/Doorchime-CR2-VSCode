@@ -29,9 +29,12 @@
 #include "guitar.h"
 #include "mind_the_door.h"
 #include "stm32g4xx_hal.h"
+#include "stm32g4xx_hal_dma.h"
 #include "stm32g4xx_hal_gpio.h"
 #include "stm32g4xx_hal_i2s.h"
 #include "stm32g4xx_hal_pwr.h"
+#include "stm32g4xx_hal_pwr_ex.h"
+#include "stm32g4xx_hal_rcc.h"
 #include "three_tone_arrival_c.h"
 #include "tunnelbarra.h"
 #include "tunnelbarra16.h"
@@ -126,6 +129,7 @@ static  void    MX_I2S2_Init            ( void );
                                                     );
         PB_StatusTypeDef    WaitForSampleEnd        ( void );
         void                ClearBuffer             ( void );
+        void                LPSystemClock_Config    ( void );
 
 /* USER CODE END PFP */
 
@@ -148,6 +152,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+
   HAL_Init();
 
   /* USER CODE BEGIN Init */
@@ -191,15 +196,15 @@ int main(void)
     //
     vol_div = ReadVolume();
 
-    PlaySample((uint16_t *) rooster16b2c, ROOSTER16B2C_SZ, I2S_AUDIOFREQ_22K, 16, Mode_stereo );
-    WaitForSampleEnd();
-    PlaySample( (uint16_t *) rooster8b2c, ROOSTER8B2C_SZ,
-       I2S_AUDIOFREQ_22K, 8, Mode_stereo );
-    WaitForSampleEnd();
+    // PlaySample((uint16_t *) rooster16b2c, ROOSTER16B2C_SZ, I2S_AUDIOFREQ_22K, 16, Mode_stereo );
+    // WaitForSampleEnd();
+    // PlaySample( (uint16_t *) rooster8b2c, ROOSTER8B2C_SZ,
+    //    I2S_AUDIOFREQ_22K, 8, Mode_stereo );
+    // WaitForSampleEnd();
 
-    PlaySample( (uint16_t *) harmony8b, HARMONY8B_SZ,
-        I2S_AUDIOFREQ_11K, 8, Mode_mono );
-    WaitForSampleEnd();
+    // PlaySample( (uint16_t *) harmony8b, HARMONY8B_SZ,
+    //     I2S_AUDIOFREQ_11K, 8, Mode_mono );
+    // WaitForSampleEnd();
 
     PlaySample( (uint16_t*) tt_arrival, TT_ARRIVAL_SZ, I2S_AUDIOFREQ_11K, 16, Mode_mono );
     // PlaySample( (uint16_t *) KillBill11k, KILLBILL11K_SZ,
@@ -216,18 +221,37 @@ int main(void)
     //
     if( GetTriggerOption() == AUTO_TRIG_DISABLED )
     {
+      LPSystemClock_Config();
       HAL_SuspendTick();
-      HAL_PWR_EnterSLEEPMode( PWR_LOWPOWERREGULATOR_ON, PWR_SLEEPENTRY_WFE );
-      HAL_ResumeTick();
+      while( 1 ) {  // Infinite sleep loop
+        HAL_PWR_EnterSLEEPMode( PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFE );
+      }
     }
     else
     {
 #ifndef TEST_CYCLING
-      HAL_SuspendTick();
+      /* Prep for sleep mode */
+      LPSystemClock_Config();                     // Reduce clock speed for low power sleep
+      HAL_SuspendTick();                          // Stop SysTick interrupts to prevent wakeups
+      __HAL_GPIO_EXTI_CLEAR_IT( TRIGGER_Pin );    // Clear EXTI pending bit
+
+      /* Enter low power sleep mode and wait for the trigger */
       HAL_PWR_EnterSLEEPMode( PWR_LOWPOWERREGULATOR_ON, PWR_SLEEPENTRY_WFI );
+
+      /* Rise from your slumber mighty microcontroller! */
+      __HAL_GPIO_EXTI_CLEAR_IT( TRIGGER_Pin );   // Clear EXTI pending bit
       HAL_PWREx_DisableLowPowerRunMode();
+      HAL_Init();
       SystemClock_Config();
+      MX_GPIO_Init();
+      MX_DMA_Init();
       HAL_ResumeTick();
+
+      /* Reset trigger state */
+      trig_counter = 0;
+      trig_status = TRIGGER_CLR;
+
+      /* Wait for trigger to clear, we need this because people might hold the trigger button */
       WaitForTrigger( TRIGGER_CLR );
 #else
       HAL_Delay( 1000 );
@@ -806,6 +830,41 @@ void HAL_IncTick( void )
   if( trig_counter > TC_HIGH_THRESHOLD )  trig_status = TRIGGER_SET;
 
 }
+
+
+
+
+
+void LPSystemClock_Config( void )
+{
+  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+
+  /** Initializes the CPU, AHB and APB buses clocks
+  */
+  RCC_ClkInitStruct.ClockType       = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
+                                    | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+  RCC_ClkInitStruct.SYSCLKSource    = RCC_SYSCLKSOURCE_HSI;
+  RCC_ClkInitStruct.AHBCLKDivider   = RCC_SYSCLK_DIV16;
+  RCC_ClkInitStruct.APB1CLKDivider  = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB2CLKDivider  = RCC_HCLK_DIV1;
+
+  if( HAL_RCC_ClockConfig( &RCC_ClkInitStruct, FLASH_LATENCY_1 ) != HAL_OK )
+  {
+    Error_Handler();
+  }
+  HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE2);
+  HAL_PWREx_EnableLowPowerRunMode();
+}
+
+
+
+
+
+
+
+
+
+
 /* USER CODE END 4 */
 
 /**
