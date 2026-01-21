@@ -109,7 +109,7 @@ void Error_Handler(void);
 #define TRIG_TIMEOUT_MAX     5000U   // Number of main loop cycles before timeout
 #define TRIG_TIMEOUT_ENABLED  1
 #define TRIG_TIMEOUT_DISABLED 0
-#define TRIG_TIMEOUT_MS       500U    // Timeout period in milliseconds
+#define TRIG_TIMEOUT_MS       1000U  // Timeout period in milliseconds
 
 // Special development/customer switches
 // Adjust as needed.

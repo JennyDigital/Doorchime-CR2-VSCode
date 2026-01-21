@@ -771,40 +771,39 @@ uint8_t ReadVolume( void )
  */
 inline void WaitForTrigger( uint8_t trig_to_wait_for )
 {
-  /* Reset trigger state */
-  // trig_counter = 0;
-  // trig_status = TRIGGER_CLR;
-
-  trig_timeout_flag = 0;
-  while( trig_status != trig_to_wait_for )
+  while( 1 )
   {
-    HAL_Delay( 1 );
-    trig_timeout_counter++;
-    if( trig_timeout_counter >= TRIG_TIMEOUT_MS )
+    trig_timeout_flag = 0;
+    while( trig_status != trig_to_wait_for )
     {
-      trig_timeout_flag = 1;
-      trig_timeout_counter = 0;
-      break;
+      HAL_Delay( 1 );
+      trig_timeout_counter++;
+      if( trig_timeout_counter >= TRIG_TIMEOUT_MS )
+      {
+        trig_timeout_flag = 1;
+        trig_timeout_counter = 0;
+        break;
+      }
     }
+    if( trig_status == trig_to_wait_for ) return;
+
+  /* Prep for sleep mode */
+    LPSystemClock_Config();                     // Reduce clock speed for low power sleep
+    HAL_SuspendTick();                          // Stop SysTick interrupts to prevent wakeups
+    __HAL_GPIO_EXTI_CLEAR_IT( TRIGGER_Pin );    // Clear EXTI pending bit
+
+    /* Enter low power sleep mode and wait for the trigger */
+    HAL_PWR_EnterSLEEPMode( PWR_LOWPOWERREGULATOR_ON, PWR_SLEEPENTRY_WFI );
+
+    /* Rise from your slumber mighty microcontroller! */
+    __HAL_GPIO_EXTI_CLEAR_IT( TRIGGER_Pin );   // Clear EXTI pending bit
+    HAL_PWREx_DisableLowPowerRunMode();
+    HAL_Init();
+    SystemClock_Config();
+    MX_GPIO_Init();
+    MX_DMA_Init();
+    HAL_ResumeTick();
   }
-  if( trig_status == trig_to_wait_for ) return;
-
-/* Prep for sleep mode */
-      LPSystemClock_Config();                     // Reduce clock speed for low power sleep
-      HAL_SuspendTick();                          // Stop SysTick interrupts to prevent wakeups
-      __HAL_GPIO_EXTI_CLEAR_IT( TRIGGER_Pin );    // Clear EXTI pending bit
-
-      /* Enter low power sleep mode and wait for the trigger */
-      HAL_PWR_EnterSLEEPMode( PWR_LOWPOWERREGULATOR_ON, PWR_SLEEPENTRY_WFI );
-
-      /* Rise from your slumber mighty microcontroller! */
-      __HAL_GPIO_EXTI_CLEAR_IT( TRIGGER_Pin );   // Clear EXTI pending bit
-      HAL_PWREx_DisableLowPowerRunMode();
-      HAL_Init();
-      SystemClock_Config();
-      MX_GPIO_Init();
-      MX_DMA_Init();
-      HAL_ResumeTick();
 }
 
 
