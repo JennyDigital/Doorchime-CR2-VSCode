@@ -410,13 +410,13 @@ void HAL_I2S_TxHalfCpltCallback( I2S_HandleTypeDef *hi2s2_p )
   if( pb_mode == 16 ) {             // 16-bit samples exhausted check.
     if( pb_p16 >= pb_end16 ) {
       pb_state = PB_IDLE;
-      //HAL_I2S_DMAStop( &hi2s2 );
+      ClearBuffer();
+      HAL_I2S_DMAStop( &hi2s2 );
       return;
     }
     else {                          // Refill the first half of the buffer with 16-bit samples.
       half_to_fill = FIRST;
-      if( CopyNextWaveChunk( (int16_t *) pb_p16 ) != PLAYING ) { // Handle shutdown
-        HAL_I2S_DMAStop( &hi2s2 );
+      if( CopyNextWaveChunk( (int16_t *) pb_p16 ) != PLAYING ) {
         return;
       }
     }
@@ -425,13 +425,11 @@ void HAL_I2S_TxHalfCpltCallback( I2S_HandleTypeDef *hi2s2_p )
 
     if( pb_p8 >= pb_end8 ) {
       pb_state = PB_IDLE;
-      HAL_I2S_DMAStop( &hi2s2 );
       return;
     }
     else {                              // Refill the first half of the buffer with 8-bit samples.
       half_to_fill = FIRST;
-      if( CopyNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PLAYING ) { // Handle shutdown
-        HAL_I2S_DMAStop( &hi2s2 );
+      if( CopyNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PLAYING ) {
         return;
       } 
     }
@@ -456,13 +454,13 @@ void HAL_I2S_TxCpltCallback( I2S_HandleTypeDef *hi2s2_p )
 
     if( pb_p16 >= pb_end16 ) {
       pb_state = PB_IDLE;
+      ClearBuffer();
       HAL_I2S_DMAStop( &hi2s2 );
       return;
     }
     else {
       half_to_fill = SECOND;
-      if( CopyNextWaveChunk( (int16_t *) pb_p16 ) != PLAYING ) {  // Handle shutdown
-       HAL_I2S_DMAStop( &hi2s2 );
+      if( CopyNextWaveChunk( (int16_t *) pb_p16 ) != PLAYING ) {
        return;  
       }
     }
@@ -471,14 +469,12 @@ void HAL_I2S_TxCpltCallback( I2S_HandleTypeDef *hi2s2_p )
 
     if( pb_p8 >= pb_end8 ) {
       pb_state = PB_IDLE;
-      HAL_I2S_DMAStop( &hi2s2 );
       return;
     }
     else {
       half_to_fill = SECOND;
-      if( CopyNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PLAYING ) {  // Handle shutdown
-        HAL_I2S_DMAStop( &hi2s2 );
-        return;  
+      if( CopyNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PLAYING ) {  
+          return;  
       }
     }
   }
@@ -487,11 +483,10 @@ void HAL_I2S_TxCpltCallback( I2S_HandleTypeDef *hi2s2_p )
 
 void AdvanceSamplePointer( void )
 {
-   if( pb_mode == 16 ) {  // Advance the sample pointer
+  if( pb_mode == 16 ) {  // Advance the sample pointer
     pb_p16 += p_advance;
     if( pb_p16 >= pb_end16 ) {
       pb_state = PB_IDLE;
-      HAL_I2S_DMAStop( &hi2s2 );
       return;
     }
   }
@@ -499,7 +494,6 @@ void AdvanceSamplePointer( void )
     pb_p8 += p_advance;
     if( pb_p8 >= pb_end8 ) {
       pb_state = PB_IDLE;
-      HAL_I2S_DMAStop( &hi2s2 );
       return;
     }
   } 
