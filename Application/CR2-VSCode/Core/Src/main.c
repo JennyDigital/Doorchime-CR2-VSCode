@@ -64,6 +64,7 @@
 #include "KillBillShort22k.h"
 #include "rooster.h"
 #include "rooster16b2c.h"
+#include "dalby_tritone16b16k.h"
 
 /* USER CODE END Includes */
 
@@ -199,20 +200,23 @@ int main(void)
     //
     vol_div = ReadVolume();
 
-    PlaySample((uint16_t *) rooster16b2c, ROOSTER16B2C_SZ, I2S_AUDIOFREQ_22K, 16, Mode_stereo );
-    WaitForSampleEnd();
-    PlaySample( (uint16_t *) rooster8b2c, ROOSTER8B2C_SZ,
-       I2S_AUDIOFREQ_22K, 8, Mode_stereo );
-    WaitForSampleEnd();
+    PlaySample( (uint16_t *) custom_tritone16k, CUSTOM_TRITONE16K_SZ,
+        I2S_AUDIOFREQ_16K, 16, Mode_mono );
+        WaitForSampleEnd();
+    // PlaySample((uint16_t *) rooster16b2c, ROOSTER16B2C_SZ, I2S_AUDIOFREQ_22K, 16, Mode_stereo );
+    // WaitForSampleEnd();
+    // PlaySample( (uint16_t *) rooster8b2c, ROOSTER8B2C_SZ,
+    //    I2S_AUDIOFREQ_22K, 8, Mode_stereo );
+    // WaitForSampleEnd();
 
-    PlaySample( (uint16_t *) harmony8b, HARMONY8B_SZ,
-        I2S_AUDIOFREQ_11K, 8, Mode_mono );
-    WaitForSampleEnd();
+    // PlaySample( (uint16_t *) harmony8b, HARMONY8B_SZ,
+    //     I2S_AUDIOFREQ_11K, 8, Mode_mono );
+    // WaitForSampleEnd();
 
-    PlaySample( (uint16_t*) tt_arrival, TT_ARRIVAL_SZ, I2S_AUDIOFREQ_11K, 16, Mode_mono );
-    // PlaySample( (uint16_t *) KillBill11k, KILLBILL11K_SZ,
-    //     I2S_AUDIOFREQ_11K, 16, Mode_mono );
-    WaitForSampleEnd();
+    // PlaySample( (uint16_t*) tt_arrival, TT_ARRIVAL_SZ, I2S_AUDIOFREQ_11K, 16, Mode_mono );
+    // // PlaySample( (uint16_t *) KillBill11k, KILLBILL11K_SZ,
+    // //     I2S_AUDIOFREQ_11K, 16, Mode_mono );
+    // WaitForSampleEnd();
 
     // Shutdown the DAC and either loop back of shutdown to save power.
     //
@@ -798,10 +802,7 @@ inline void WaitForTrigger( uint8_t trig_to_wait_for )
     /* Rise from your slumber mighty microcontroller! */
     __HAL_GPIO_EXTI_CLEAR_IT( TRIGGER_Pin );   // Clear EXTI pending bit
     HAL_PWREx_DisableLowPowerRunMode();
-    HAL_Init();
     SystemClock_Config();
-    MX_GPIO_Init();
-    MX_DMA_Init();
     HAL_ResumeTick();
   }
 }

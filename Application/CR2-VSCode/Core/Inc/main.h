@@ -121,8 +121,8 @@ void Error_Handler(void);
 
 // Volume special config
 //
-#define VOL_SCALING           8       // This is the master volume divider multiplication factor
-#define VOL_MULT              1       // Sets the multiplication back so we can use integers.
+#define VOL_SCALING           4       // This is the master volume divider multiplication factor
+#define VOL_MULT              3       // Sets the multiplication back so we can use integers.
 
 // Midpoint for Signed/Unsigned silence.
 //
