@@ -99,7 +99,6 @@ volatile  uint16_t *      pb_end16;
 volatile  uint8_t         pb_state              = PB_IDLE;
 volatile  uint8_t         half_to_fill;
 volatile  uint8_t         vol_div;
-          uint8_t         no_channels           = 1;
 volatile  uint16_t        trig_counter          = 0;
 volatile  uint8_t         trig_timeout_flag     = 0;
 volatile  uint16_t        trig_timeout_counter  = 0;
@@ -134,6 +133,7 @@ static  void    MX_I2S2_Init            ( void );
         PB_StatusTypeDef    WaitForSampleEnd        ( void );
         void                ClearBuffer             ( void );
         void                LPSystemClock_Config    ( void );
+        void                AdvanceSamplePointer    ( void );
 
 /* USER CODE END PFP */
 
@@ -201,8 +201,8 @@ int main(void)
     vol_div = ReadVolume();
 
     PlaySample( (uint16_t *) custom_tritone16k, CUSTOM_TRITONE16K_SZ,
-        I2S_AUDIOFREQ_16K, 16, Mode_mono );
-        WaitForSampleEnd();
+      I2S_AUDIOFREQ_16K, 16, Mode_mono );
+    WaitForSampleEnd();
     // PlaySample((uint16_t *) rooster16b2c, ROOSTER16B2C_SZ, I2S_AUDIOFREQ_22K, 16, Mode_stereo );
     // WaitForSampleEnd();
     // PlaySample( (uint16_t *) rooster8b2c, ROOSTER8B2C_SZ,
@@ -213,10 +213,10 @@ int main(void)
     //     I2S_AUDIOFREQ_11K, 8, Mode_mono );
     // WaitForSampleEnd();
 
-    // PlaySample( (uint16_t*) tt_arrival, TT_ARRIVAL_SZ, I2S_AUDIOFREQ_11K, 16, Mode_mono );
-    // // PlaySample( (uint16_t *) KillBill11k, KILLBILL11K_SZ,
-    // //     I2S_AUDIOFREQ_11K, 16, Mode_mono );
-    // WaitForSampleEnd();
+    //PlaySample( (uint16_t*) tt_arrival, TT_ARRIVAL_SZ, I2S_AUDIOFREQ_11K, 16, Mode_mono );
+    // PlaySample( (uint16_t *) KillBill11k, KILLBILL11K_SZ,
+    //      I2S_AUDIOFREQ_11K, 16, Mode_mono );
+    //WaitForSampleEnd();
 
     // Shutdown the DAC and either loop back of shutdown to save power.
     //
@@ -410,7 +410,7 @@ void HAL_I2S_TxHalfCpltCallback( I2S_HandleTypeDef *hi2s2_p )
   if( pb_mode == 16 ) {             // 16-bit samples exhausted check.
     if( pb_p16 >= pb_end16 ) {
       pb_state = PB_IDLE;
-      HAL_I2S_DMAStop( &hi2s2 );
+      //HAL_I2S_DMAStop( &hi2s2 );
       return;
     }
     else {                          // Refill the first half of the buffer with 16-bit samples.
@@ -436,23 +436,7 @@ void HAL_I2S_TxHalfCpltCallback( I2S_HandleTypeDef *hi2s2_p )
       } 
     }
   }
-
-  if( pb_mode == 16 ) {  // Advance the sample pointer
-    pb_p16 += p_advance;
-    if( pb_p16 >= pb_end16 ) {
-      pb_state = PB_IDLE;
-      HAL_I2S_DMAStop( &hi2s2 );
-      return;
-    }
-  }
-  else if( pb_mode == 8 ) {
-    pb_p8 += p_advance;
-    if( pb_p8 >= pb_end8 ) {
-      pb_state = PB_IDLE;
-      HAL_I2S_DMAStop( &hi2s2 );
-      return;
-    }
-  }
+  AdvanceSamplePointer();
 }
 
 
@@ -498,8 +482,12 @@ void HAL_I2S_TxCpltCallback( I2S_HandleTypeDef *hi2s2_p )
       }
     }
   }
+  AdvanceSamplePointer();
+}
 
-  if( pb_mode == 16 ) {  // Advance the sample pointer
+void AdvanceSamplePointer( void )
+{
+   if( pb_mode == 16 ) {  // Advance the sample pointer
     pb_p16 += p_advance;
     if( pb_p16 >= pb_end16 ) {
       pb_state = PB_IDLE;
@@ -514,9 +502,8 @@ void HAL_I2S_TxCpltCallback( I2S_HandleTypeDef *hi2s2_p )
       HAL_I2S_DMAStop( &hi2s2 );
       return;
     }
-  }
+  } 
 }
-
 
 /** Transfers a chunk of 16-bit samples to the DMA playback buffer
   *
