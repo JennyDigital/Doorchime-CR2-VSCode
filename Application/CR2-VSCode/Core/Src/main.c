@@ -58,6 +58,7 @@
 #include "rooster.h"
 #include "rooster16b2c.h"
 #include "dalby_tritone16b16k.h"
+#include "handpan_c16b.h"
 
 /* USER CODE END Includes */
 
@@ -214,9 +215,12 @@ int main(void)
 #endif
 
 
-    PlaySample( (uint16_t *) magic_gong44k, MAGIC_GONG44K_SZ,
+    PlaySample( (uint16_t *) handpan16bm, HANDPAN16BM_SZ,
         I2S_AUDIOFREQ_44K, 16, Mode_mono );
     WaitForSampleEnd();
+    // PlaySample( (uint16_t *) magic_gong44k, MAGIC_GONG44K_SZ,
+    //     I2S_AUDIOFREQ_44K, 16, Mode_mono );
+    // WaitForSampleEnd();
     // PlaySample( (uint16_t *) custom_tritone16k, CUSTOM_TRITONE16K_SZ,
     //   I2S_AUDIOFREQ_16K, 16, Mode_mono );
     // WaitForSampleEnd();
