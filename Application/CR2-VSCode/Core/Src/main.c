@@ -101,6 +101,7 @@ volatile  uint8_t         trig_status                   = TRIGGER_CLR;
           uint16_t        p_advance;
           PB_ModeTypeDef  channels                      = Mode_mono;
 volatile  uint32_t        fadeout_samples_remaining     = 0;
+volatile  uint32_t        fadein_samples_remaining      = 0;
 volatile  int32_t         dc_filter_prev_input_left     = 0;
 volatile  int32_t         dc_filter_prev_input_right    = 0;
 volatile  int32_t         dc_filter_prev_output_left    = 0;
@@ -199,13 +200,10 @@ int main(void)
     }
 #endif
 
-    // Setup for playback
-    //
-    vol_div = ReadVolume();
 
-    // PlaySample( (uint16_t *) magic_gong44k, MAGIC_GONG44K_SZ,
-    //     I2S_AUDIOFREQ_44K, 16, Mode_mono );
-    // WaitForSampleEnd();
+    PlaySample( (uint16_t *) magic_gong44k, MAGIC_GONG44K_SZ,
+        I2S_AUDIOFREQ_44K, 16, Mode_mono );
+    WaitForSampleEnd();
     // PlaySample( (uint16_t *) custom_tritone16k, CUSTOM_TRITONE16K_SZ,
     //   I2S_AUDIOFREQ_16K, 16, Mode_mono );
     // WaitForSampleEnd();
@@ -223,9 +221,13 @@ int main(void)
     // WaitForSampleEnd();
 
     //PlaySample( (uint16_t*) tt_arrival, TT_ARRIVAL_SZ, I2S_AUDIOFREQ_11K, 16, Mode_mono );
-    PlaySample( (uint16_t *) KillBill11k, KILLBILL11K_SZ,
-         I2S_AUDIOFREQ_11K, 16, Mode_mono );
-    WaitForSampleEnd();
+    // PlaySample( (uint16_t *) KillBill11k, KILLBILL11K_SZ,
+    //      I2S_AUDIOFREQ_11K, 16, Mode_mono );
+    // WaitForSampleEnd();
+
+    // PlaySample( (uint16_t *) guitar_riff22k, GUITAR_RIFF22K_SZ,
+    //      I2S_AUDIOFREQ_22K, 16, Mode_mono );
+    // WaitForSampleEnd();
 
     ShutDownAudio();
 
@@ -238,7 +240,9 @@ int main(void)
       LPSystemClock_Config();
       HAL_SuspendTick();
       while( 1 ) {  // Infinite sleep loop
-        HAL_PWR_EnterSTOPMode( PWR_LOWPOWERREGULATOR_ON, PWR_SLEEPENTRY_WFE );
+        __DSB();  // Data synchronization barrier
+        __WFE();  // Wait for event (STOP mode)
+        __ISB();  // Instruction synchronization barrier
       }
     }
     else
@@ -543,6 +547,13 @@ PB_StatusTypeDef CopyNextWaveChunk( int16_t * chunk_p )
     else {
       leftsample = ( (int16_t) (*input) / vol_div ) * VOL_MULT; // Left channel
       
+      // Apply fade-in if we're in the initial samples
+      if( fadein_samples_remaining > 0 ) {
+        int32_t fadein_mult = FADEIN_SAMPLES - fadein_samples_remaining;
+        leftsample = (int32_t) leftsample * fadein_mult / FADEIN_SAMPLES;
+        fadein_samples_remaining--;
+      }
+      
       // Apply DC blocking filter
       leftsample = ApplyDCBlockingFilter(leftsample, &dc_filter_prev_input_left, &dc_filter_prev_output_left);
       
@@ -560,6 +571,12 @@ PB_StatusTypeDef CopyNextWaveChunk( int16_t * chunk_p )
       }
       else { 
         rightsample = ( (int16_t) (*input) / vol_div ) * VOL_MULT; // Right channel
+        
+        // Apply fade-in if we're in the initial samples
+        if( fadein_samples_remaining > 0 ) {
+          int32_t fadein_mult = FADEIN_SAMPLES - fadein_samples_remaining;
+          rightsample = (int32_t)rightsample * fadein_mult / FADEIN_SAMPLES;
+        }
         
         // Apply DC blocking filter
         rightsample = ApplyDCBlockingFilter(rightsample, &dc_filter_prev_input_right, &dc_filter_prev_output_right);
@@ -621,15 +638,20 @@ PB_StatusTypeDef CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
       /* Convert unsigned 8-bit (0..255) -> signed 16-bit centered around 0 */
       /* Replicate MSB into LSB for smoother conversion and better SNR */
       uint8_t sample8 = *input;
-      leftsample = ( (int16_t)(sample8 - 128) << 8 ) | sample8;  /* Left channel. */
+      leftsample = ( (int16_t) ( sample8 - 128 ) << 8 ) | sample8;  /* Left channel. */
       leftsample = ( leftsample / vol_div ) * VOL_MULT;          /* Scale for volume */
-      
-      // Apply DC blocking filter
-      leftsample = ApplyDCBlockingFilter(leftsample, &dc_filter_prev_input_left, &dc_filter_prev_output_left);
+            // Apply fade-in if we're in the initial samples
+      if( fadein_samples_remaining > 0 ) {
+        int32_t fadein_mult = FADEIN_SAMPLES - fadein_samples_remaining;
+        leftsample = (int32_t) leftsample * fadein_mult / FADEIN_SAMPLES;
+        fadein_samples_remaining--;
+      }
+            // Apply DC blocking filter
+      leftsample = ApplyDCBlockingFilter( leftsample, &dc_filter_prev_input_left, &dc_filter_prev_output_left );
       
       // Apply fade-out if we're in the final samples
       if( fadeout_samples_remaining > 0 && fadeout_samples_remaining <= FADEOUT_SAMPLES ) {
-        leftsample = (int32_t)leftsample * fadeout_samples_remaining / FADEOUT_SAMPLES;
+        leftsample = ( int32_t ) leftsample * fadeout_samples_remaining / FADEOUT_SAMPLES;
       }
     }
     input++;
@@ -642,15 +664,19 @@ PB_StatusTypeDef CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
       else {               
         /* Replicate MSB into LSB for smoother conversion and better SNR */
         uint8_t sample8 = *input;
-        rightsample = ( (int16_t)(sample8 - 128) << 8 ) | sample8; /* Right channel. */
-        rightsample = ( rightsample / vol_div ) * VOL_MULT;       /* Scale for volume */
-        
-        // Apply DC blocking filter
-        rightsample = ApplyDCBlockingFilter(rightsample, &dc_filter_prev_input_right, &dc_filter_prev_output_right);
+        rightsample = ( (int16_t) ( sample8 - 128 ) << 8 ) | sample8; /* Right channel. */
+        rightsample = ( rightsample / vol_div ) * VOL_MULT;           /* Scale for volume */
+                // Apply fade-in if we're in the initial samples
+        if( fadein_samples_remaining > 0 ) {
+          int32_t fadein_mult = FADEIN_SAMPLES - fadein_samples_remaining;
+          rightsample = (int32_t)rightsample * fadein_mult / FADEIN_SAMPLES;
+        }
+                // Apply DC blocking filter
+        rightsample = ApplyDCBlockingFilter( rightsample, &dc_filter_prev_input_right, &dc_filter_prev_output_right );
         
         // Apply fade-out if we're in the final samples
         if( fadeout_samples_remaining > 0 && fadeout_samples_remaining <= FADEOUT_SAMPLES ) {
-          rightsample = (int32_t)rightsample * fadeout_samples_remaining / FADEOUT_SAMPLES;
+          rightsample = ( int32_t ) rightsample * fadeout_samples_remaining / FADEOUT_SAMPLES;
         }
       }
       input++;
@@ -685,58 +711,51 @@ PB_StatusTypeDef PlaySample( uint16_t *sample_to_play, uint32_t sample_set_sz, u
      return PB_ERROR;
   }
 
-  // Ignore zero-length samples or null pointers.
-  //
-  if( sample_set_sz == 0 || sample_to_play == NULL ) {
+  if( sample_set_sz == 0 || sample_to_play == NULL ) {   // Ignore zero-length samples or null pointers.
     return PB_ERROR;
   }
 
-  // Pointer advance amount for stereo/mono mode.
-  if( mode == Mode_stereo ) {
-     p_advance = CHUNK_SZ;      // Two channels worth of samples per chunk
+  vol_div = ReadVolume();               // Read volume setting from hardware pins for initialization.
+
+  if( mode == Mode_stereo ) {           // Pointer advance amount for stereo/mono mode.
+     p_advance = CHUNK_SZ;              // Two channels worth of samples per chunk
      channels  = Mode_stereo;
   }
-  else {
-    p_advance  = HALFCHUNK_SZ;  // One channels worth of samples per chunk
+  else {                                // One channels worth of samples per chunk
+    p_advance  = HALFCHUNK_SZ;
     channels   = Mode_mono;     
   }
 
-  // Turn the DAC on in readyness and initialize I2S with the requested sample rate.
-  //
-  I2S_PlaybackSpeed = playback_speed;
+  I2S_PlaybackSpeed = playback_speed;   // Turn the DAC on in readyness and initialize I2S with the requested sample rate.
   MX_I2S2_Init();
 
-  // Ensure there is no currently playing sound before
-  // starting the current one and turn on the DAC
-  //
-  HAL_I2S_DMAStop( &hi2s2 );
-  DAC_MasterSwitch( DAC_ON );
+  HAL_I2S_DMAStop( &hi2s2 );       // Ensure there is no currently playing sound before starting the current one and turn on the DAC  
+  DAC_MasterSwitch( DAC_ON );   // starting the current one and turn on the DAC
 
-  // Clear the playback buffer and setup playback pointers.
-  //
-  ClearBuffer();
+  ClearBuffer();                        // Clear the playback buffer to avoid glitches
   
   // Reset DC blocking filter state for new sample
-  dc_filter_prev_input_left = 0;
-  dc_filter_prev_input_right = 0;
-  dc_filter_prev_output_left = 0;
+  //
+  dc_filter_prev_input_left   = 0;
+  dc_filter_prev_input_right  = 0;
+  dc_filter_prev_output_left  = 0;
   dc_filter_prev_output_right = 0;
   
-  if( sample_depth == 16 )
-  {
+  if( sample_depth == 16 ) {
     pb_p16 = (uint16_t *) sample_to_play;
     pb_end16 = pb_p16 + sample_set_sz;
     pb_mode = 16;
-    // Initialize fade-out counter to total samples (will count down at end)
+    // Initialize fade counters
     fadeout_samples_remaining = sample_set_sz;
+    fadein_samples_remaining = FADEIN_SAMPLES;
   }
-  else if( sample_depth == 8 )
-  {
+  else if( sample_depth == 8 ) {
     pb_p8 = (uint8_t *) sample_to_play;
     pb_end8 = pb_p8 + sample_set_sz;
     pb_mode = 8;
-    // Initialize fade-out counter to total samples (will count down at end)
+    // Initialize fade counters
     fadeout_samples_remaining = sample_set_sz;
+    fadein_samples_remaining = FADEIN_SAMPLES;
   }
   
   // Start playback of the recording
@@ -755,7 +774,9 @@ PB_StatusTypeDef PlaySample( uint16_t *sample_to_play, uint32_t sample_set_sz, u
   */
 PB_StatusTypeDef WaitForSampleEnd( void )
 {
-  while( pb_state == PLAYING );
+  while( pb_state == PLAYING ) {
+    __NOP();  // Prevent optimizer from removing loop
+  }
   return pb_state;
 }
 
@@ -789,17 +810,17 @@ int16_t ApplyDCBlockingFilter( volatile int16_t input, volatile int32_t *prev_in
   // Apply filter: output = input - prev_input + (α * prev_output)
   // α = 0.98 in fixed-point (DC_FILTER_ALPHA / 2^DC_FILTER_SHIFT)
   int32_t output = input - *prev_input + 
-                   ((*prev_output * DC_FILTER_ALPHA) >> DC_FILTER_SHIFT);
+                   ( ( *prev_output * DC_FILTER_ALPHA ) >> DC_FILTER_SHIFT );
   
   // Update state
-  *prev_input = input;
-  *prev_output = output;
+  *prev_input   = input;
+  *prev_output  = output;
   
   // Clamp to 16-bit range
-  if (output > 32767) output = 32767;
-  if (output < -32768) output = -32768;
+  if ( output > 32767 )   output = 32767;
+  if ( output < -32768 )  output = -32768;
   
-  return (int16_t)output;
+  return ( int16_t ) output;
 }
 
 
@@ -868,6 +889,10 @@ inline void WaitForTrigger( uint8_t trig_to_wait_for )
     LPSystemClock_Config();                     // Reduce clock speed for low power sleep
     HAL_SuspendTick();                          // Stop SysTick interrupts to prevent wakeups
     __HAL_GPIO_EXTI_CLEAR_IT( TRIGGER_Pin );    // Clear EXTI pending bit
+    
+    /* Memory barrier to ensure all writes complete before sleep */
+    __DSB();
+    __ISB();
 
     /* Enter low power sleep mode and wait for the trigger */
     HAL_PWR_EnterSLEEPMode( PWR_LOWPOWERREGULATOR_ON, PWR_SLEEPENTRY_WFI );
@@ -925,18 +950,15 @@ void HAL_IncTick( void )
 {
   uwTick += uwTickFreq;
 
-  if( ( TRIGGER_GPIO_Port->IDR & TRIGGER_Pin ) != 0 )
-  {
+  if( ( TRIGGER_GPIO_Port->IDR & TRIGGER_Pin ) != 0 ) {
     if( trig_counter < TC_MAX ) trig_counter++;
   }
-  else
-  {
-    if (trig_counter > 0 ) trig_counter--;
+  else {
+    if ( trig_counter > 0 ) trig_counter--;
   }
 
   if( trig_counter < TC_LOW_THRESHOLD )   trig_status = TRIGGER_CLR;
   if( trig_counter > TC_HIGH_THRESHOLD )  trig_status = TRIGGER_SET;
-
 }
 
 
