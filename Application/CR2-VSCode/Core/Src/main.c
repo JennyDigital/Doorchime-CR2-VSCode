@@ -82,22 +82,29 @@ DMA_HandleTypeDef hdma_spi2_tx;
 
 /* USER CODE BEGIN PV */
 
-          int16_t     pb_buffer[ PB_BUFF_SZ ]           = {0};
+// Playback buffer size definitions
+          int16_t         pb_buffer[ PB_BUFF_SZ ]       = {0};
 
 volatile  uint8_t  *      pb_p8;
 volatile  uint8_t  *      pb_end8;
 volatile  uint16_t *      pb_p16;
 volatile  uint16_t *      pb_end16;
+
+// Playback control variables
           uint8_t         pb_mode;
 volatile  uint8_t         pb_state                      = PB_IDLE;
 volatile  uint8_t         half_to_fill;
+
+// volume and trigger control variables
 volatile  uint8_t         vol_div;
 volatile  uint16_t        trig_counter                  = 0;
 volatile  uint8_t         trig_timeout_flag             = 0;
 volatile  uint16_t        trig_timeout_counter          = 0;
-
 volatile  uint8_t         trig_status                   = TRIGGER_CLR;
+
           uint16_t        I2S_PlaybackSpeed             = I2S_AUDIOFREQ_22K;
+
+// Playback engine control variables
           uint16_t        p_advance;
           PB_ModeTypeDef  channels                      = Mode_mono;
 volatile  uint32_t        fadeout_samples_remaining     = 0;
@@ -116,28 +123,35 @@ static  void    MX_DMA_Init             ( void );
 static  void    MX_I2S2_Init            ( void );
 /* USER CODE BEGIN PFP */
 
+// Playback engine function prototypes
         PB_StatusTypeDef    CopyNextWaveChunk       ( int16_t * chunk_p );
         PB_StatusTypeDef    CopyNextWaveChunk_8_bit ( uint8_t * chunk_p );
+        void                AdvanceSamplePointer    ( void );
+
+// Signal processing function prototypes
+        int16_t             ApplyDCBlockingFilter   ( volatile int16_t input,
+                                                      volatile int32_t *prev_input,
+                                                      volatile int32_t *prev_output
+                                                    );
+
+// Application function prototypes
         void                DAC_MasterSwitch        ( GPIO_PinState setting );
         uint8_t             ReadVolume              ( void );
         void                WaitForTrigger          ( uint8_t trig_to_wait_for );
         uint8_t             GetTriggerOption        ( void );
         PB_StatusTypeDef    PlaySample              (
-                                                      uint16_t *  sample_to_play,
-                                                      uint32_t    sample_set_sz,  
-                                                      uint16_t    playback_speed,
-                                                      uint8_t     sample_depth,
-                                                      PB_ModeTypeDef mode
+                                                      uint16_t *      sample_to_play,
+                                                      uint32_t        sample_set_sz,  
+                                                      uint16_t        playback_speed,
+                                                      uint8_t         sample_depth,
+                                                      PB_ModeTypeDef  mode
                                                     );
         PB_StatusTypeDef    WaitForSampleEnd        ( void );
         void                ClearBuffer             ( void );
         void                LPSystemClock_Config    ( void );
-        void                AdvanceSamplePointer    ( void );
+
         void                ShutDownAudio           ( void );
-        int16_t             ApplyDCBlockingFilter   ( volatile int16_t input,
-                                                      volatile int32_t *prev_input,
-                                                      volatile int32_t *prev_output
-                                                    );
+
 
 /* USER CODE END PFP */
 
@@ -194,8 +208,7 @@ int main(void)
     // Wait for playback trigger (if enabled)
     //
 #ifndef TEST_CYCLING
-    if( GetTriggerOption() == AUTO_TRIG_ENABLED )
-    {
+    if( GetTriggerOption() == AUTO_TRIG_ENABLED ) {
       WaitForTrigger( TRIGGER_SET );
     }
 #endif
@@ -235,8 +248,7 @@ int main(void)
     // Otherwise wait for trigger signal.
     // Wake from interrupt on TRIGGER pin.
     //
-    if( GetTriggerOption() == AUTO_TRIG_DISABLED )
-    {
+    if( GetTriggerOption() == AUTO_TRIG_DISABLED ) {
       LPSystemClock_Config();
       HAL_SuspendTick();
       while( 1 ) {  // Infinite sleep loop
@@ -245,8 +257,7 @@ int main(void)
         __ISB();  // Instruction synchronization barrier
       }
     }
-    else
-    {
+    else {
 #ifndef TEST_CYCLING
       /* Wait for trigger to clear, we need this because people might hold the trigger button */
       WaitForTrigger( TRIGGER_CLR );
@@ -619,7 +630,7 @@ PB_StatusTypeDef CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
   }
   vol_div = ReadVolume();
   input = chunk_p;                                               /* Source sample pointer */
-  output = ( half_to_fill == SECOND ) ? (pb_buffer + CHUNK_SZ ) : pb_buffer;
+  output = ( half_to_fill == SECOND ) ? ( pb_buffer + CHUNK_SZ ) : pb_buffer;
 
   // Transfer mono audio (scaled for volume) into the stereo buffer.
   // This is done both to eliminate the need for a second resistor
@@ -638,7 +649,7 @@ PB_StatusTypeDef CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
       /* Convert unsigned 8-bit (0..255) -> signed 16-bit centered around 0 */
       /* Replicate MSB into LSB for smoother conversion and better SNR */
       uint8_t sample8 = *input;
-      leftsample = ( (int16_t) ( sample8 - 128 ) << 8 ) | sample8;  /* Left channel. */
+      leftsample = ( ( int16_t) ( sample8 - 128 ) << 8 ) | sample8;  /* Left channel. */
       leftsample = ( leftsample / vol_div ) * VOL_MULT;          /* Scale for volume */
             // Apply fade-in if we're in the initial samples
       if( fadein_samples_remaining > 0 ) {
@@ -669,7 +680,7 @@ PB_StatusTypeDef CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
                 // Apply fade-in if we're in the initial samples
         if( fadein_samples_remaining > 0 ) {
           int32_t fadein_mult = FADEIN_SAMPLES - fadein_samples_remaining;
-          rightsample = (int32_t)rightsample * fadein_mult / FADEIN_SAMPLES;
+          rightsample = ( int32_t )rightsample * fadein_mult / FADEIN_SAMPLES;
         }
                 // Apply DC blocking filter
         rightsample = ApplyDCBlockingFilter( rightsample, &dc_filter_prev_input_right, &dc_filter_prev_output_right );
@@ -747,7 +758,7 @@ PB_StatusTypeDef PlaySample( uint16_t *sample_to_play, uint32_t sample_set_sz, u
     pb_mode = 16;
     // Initialize fade counters
     fadeout_samples_remaining = sample_set_sz;
-    fadein_samples_remaining = FADEIN_SAMPLES;
+    fadein_samples_remaining  = FADEIN_SAMPLES;
   }
   else if( sample_depth == 8 ) {
     pb_p8 = (uint8_t *) sample_to_play;
@@ -755,7 +766,7 @@ PB_StatusTypeDef PlaySample( uint16_t *sample_to_play, uint32_t sample_set_sz, u
     pb_mode = 8;
     // Initialize fade counters
     fadeout_samples_remaining = sample_set_sz;
-    fadein_samples_remaining = FADEIN_SAMPLES;
+    fadein_samples_remaining  = FADEIN_SAMPLES;
   }
   
   // Start playback of the recording
@@ -1000,7 +1011,7 @@ void Error_Handler(void)
   /* USER CODE BEGIN Error_Handler_Debug */
   /* Shutdown playback, disable interrupts amd switch off DAC */
   __disable_irq();
-  HAL_I2S_DMAStop(  &hi2s2 );
+  HAL_I2S_DMAStop( &hi2s2 );
   DAC_MasterSwitch( DAC_OFF );
   while (1)
   {
