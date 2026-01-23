@@ -128,6 +128,12 @@ void Error_Handler(void);
 //
 #define FADEOUT_SAMPLES       4096U    // About 100ms at 22kHz
 
+// DC blocking filter configuration
+// High-pass filter to remove DC offset from audio
+//
+#define DC_FILTER_ALPHA       64225    // 0.98 in fixed-point (64225/65536)
+#define DC_FILTER_SHIFT       16       // Right shift for fixed-point division
+
 // Midpoint for Signed/Unsigned silence.
 //
 #define MIDPOINT_U8           127U

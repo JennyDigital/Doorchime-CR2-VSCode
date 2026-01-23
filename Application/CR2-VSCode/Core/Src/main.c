@@ -101,6 +101,10 @@ volatile  uint8_t         trig_status               = TRIGGER_CLR;
           uint16_t        p_advance;
           PB_ModeTypeDef  channels                  = Mode_mono;
 volatile  uint32_t        fadeout_samples_remaining = 0;
+volatile  int32_t         dc_filter_prev_input_left  = 0;
+volatile  int32_t         dc_filter_prev_input_right = 0;
+volatile  int32_t         dc_filter_prev_output_left = 0;
+volatile  int32_t         dc_filter_prev_output_right = 0;
 
 /* USER CODE END PV */
 
@@ -129,6 +133,7 @@ static  void    MX_I2S2_Init            ( void );
         void                LPSystemClock_Config    ( void );
         void                AdvanceSamplePointer    ( void );
         void                ShutDownAudio           ( void );
+        int16_t             ApplyDCBlockingFilter   ( volatile int16_t input, volatile int32_t *prev_input, volatile int32_t *prev_output );
 
 /* USER CODE END PFP */
 
@@ -210,14 +215,14 @@ int main(void)
     //    I2S_AUDIOFREQ_22K, 8, Mode_stereo );
     // WaitForSampleEnd();
 
-    PlaySample( (uint16_t *) harmony8b, HARMONY8B_SZ,
-        I2S_AUDIOFREQ_11K, 8, Mode_mono );
-    WaitForSampleEnd();
+    // PlaySample( (uint16_t *) harmony8b, HARMONY8B_SZ,
+    //     I2S_AUDIOFREQ_11K, 8, Mode_mono );
+    // WaitForSampleEnd();
 
     //PlaySample( (uint16_t*) tt_arrival, TT_ARRIVAL_SZ, I2S_AUDIOFREQ_11K, 16, Mode_mono );
-    // PlaySample( (uint16_t *) KillBill11k, KILLBILL11K_SZ,
-    //      I2S_AUDIOFREQ_11K, 16, Mode_mono );
-    //WaitForSampleEnd();
+    PlaySample( (uint16_t *) KillBill11k, KILLBILL11K_SZ,
+         I2S_AUDIOFREQ_11K, 16, Mode_mono );
+    WaitForSampleEnd();
 
     ShutDownAudio();
 
@@ -535,6 +540,9 @@ PB_StatusTypeDef CopyNextWaveChunk( int16_t * chunk_p )
     else {
       leftsample = ( (int16_t) (*input) / vol_div ) * VOL_MULT; // Left channel
       
+      // Apply DC blocking filter
+      leftsample = ApplyDCBlockingFilter(leftsample, &dc_filter_prev_input_left, &dc_filter_prev_output_left);
+      
       // Apply fade-out if we're in the final samples
       if( fadeout_samples_remaining > 0 && fadeout_samples_remaining <= FADEOUT_SAMPLES ) {
         leftsample = (int32_t)leftsample * fadeout_samples_remaining / FADEOUT_SAMPLES;
@@ -549,6 +557,9 @@ PB_StatusTypeDef CopyNextWaveChunk( int16_t * chunk_p )
       }
       else { 
         rightsample = ( (int16_t) (*input) / vol_div ) * VOL_MULT; // Right channel
+        
+        // Apply DC blocking filter
+        rightsample = ApplyDCBlockingFilter(rightsample, &dc_filter_prev_input_right, &dc_filter_prev_output_right);
         
         // Apply fade-out if we're in the final samples
         if( fadeout_samples_remaining > 0 && fadeout_samples_remaining <= FADEOUT_SAMPLES ) {
@@ -610,6 +621,9 @@ PB_StatusTypeDef CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
       leftsample = ( (int16_t)(sample8 - 128) << 8 ) | sample8;  /* Left channel. */
       leftsample = ( leftsample / vol_div ) * VOL_MULT;          /* Scale for volume */
       
+      // Apply DC blocking filter
+      leftsample = ApplyDCBlockingFilter(leftsample, &dc_filter_prev_input_left, &dc_filter_prev_output_left);
+      
       // Apply fade-out if we're in the final samples
       if( fadeout_samples_remaining > 0 && fadeout_samples_remaining <= FADEOUT_SAMPLES ) {
         leftsample = (int32_t)leftsample * fadeout_samples_remaining / FADEOUT_SAMPLES;
@@ -627,6 +641,9 @@ PB_StatusTypeDef CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
         uint8_t sample8 = *input;
         rightsample = ( (int16_t)(sample8 - 128) << 8 ) | sample8; /* Right channel. */
         rightsample = ( rightsample / vol_div ) * VOL_MULT;       /* Scale for volume */
+        
+        // Apply DC blocking filter
+        rightsample = ApplyDCBlockingFilter(rightsample, &dc_filter_prev_input_right, &dc_filter_prev_output_right);
         
         // Apply fade-out if we're in the final samples
         if( fadeout_samples_remaining > 0 && fadeout_samples_remaining <= FADEOUT_SAMPLES ) {
@@ -695,6 +712,13 @@ PB_StatusTypeDef PlaySample( uint16_t *sample_to_play, uint32_t sample_set_sz, u
   // Clear the playback buffer and setup playback pointers.
   //
   ClearBuffer();
+  
+  // Reset DC blocking filter state for new sample
+  dc_filter_prev_input_left = 0;
+  dc_filter_prev_input_right = 0;
+  dc_filter_prev_output_left = 0;
+  dc_filter_prev_output_right = 0;
+  
   if( sample_depth == 16 )
   {
     pb_p16 = (uint16_t *) sample_to_play;
@@ -744,6 +768,35 @@ void ClearBuffer( void )
   {
     pb_buffer[ sample_index ] = MIDPOINT_S16;
   }
+}
+
+
+/** DC blocking filter to remove DC offset from audio signal
+  *
+  * Implements a first-order IIR high-pass filter: y[n] = x[n] - x[n-1] + α * y[n-1]
+  * This removes any DC bias while preserving audio content.
+  *
+  * @param: input - Current audio sample
+  * @param: prev_input - Pointer to previous input sample state
+  * @param: prev_output - Pointer to previous output sample state
+  * @retval: Filtered 16-bit audio sample
+  */
+int16_t ApplyDCBlockingFilter( volatile int16_t input, volatile int32_t *prev_input, volatile int32_t *prev_output )
+{
+  // Apply filter: output = input - prev_input + (α * prev_output)
+  // α = 0.98 in fixed-point (DC_FILTER_ALPHA / 2^DC_FILTER_SHIFT)
+  int32_t output = input - *prev_input + 
+                   ((*prev_output * DC_FILTER_ALPHA) >> DC_FILTER_SHIFT);
+  
+  // Update state
+  *prev_input = input;
+  *prev_output = output;
+  
+  // Clamp to 16-bit range
+  if (output > 32767) output = 32767;
+  if (output < -32768) output = -32768;
+  
+  return (int16_t)output;
 }
 
 
