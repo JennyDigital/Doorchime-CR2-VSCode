@@ -572,7 +572,6 @@ PB_StatusTypeDef CopyNextWaveChunk( int16_t * chunk_p )
       if( fadein_samples_remaining > 0 ) {
         int32_t fadein_mult = FADEIN_SAMPLES - fadein_samples_remaining;
         leftsample = (int32_t) leftsample * fadein_mult / FADEIN_SAMPLES;
-        fadein_samples_remaining--;
       }
       
       // Apply DC blocking filter
@@ -612,7 +611,12 @@ PB_StatusTypeDef CopyNextWaveChunk( int16_t * chunk_p )
     *output = leftsample;  output++;                            // Write samples to output buffer
     *output = rightsample; output++;
     
-    // Decrement fade-out counter
+    // Decrement fade counters based on samples processed
+    uint8_t samples_processed = (channels == Mode_stereo) ? 2 : 1;
+    if( fadein_samples_remaining > 0 ) {
+      fadein_samples_remaining = (fadein_samples_remaining > samples_processed) ? 
+                                 fadein_samples_remaining - samples_processed : 0;
+    }
     if( fadeout_samples_remaining > 0 ) {
       fadeout_samples_remaining--;
     }
@@ -665,7 +669,6 @@ PB_StatusTypeDef CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
       if( fadein_samples_remaining > 0 ) {
         int32_t fadein_mult = FADEIN_SAMPLES - fadein_samples_remaining;
         leftsample = (int32_t) leftsample * fadein_mult / FADEIN_SAMPLES;
-        fadein_samples_remaining--;
       }
             // Apply DC blocking filter
       leftsample = ApplyDCBlockingFilter( leftsample, &dc_filter_prev_input_left, &dc_filter_prev_output_left );
@@ -705,7 +708,12 @@ PB_StatusTypeDef CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
     *output = leftsample;  output++;                              /* Transfer samples to output buffer */
     *output = rightsample; output++;
     
-    // Decrement fade-out counter
+    // Decrement fade counters based on samples processed
+    uint8_t samples_processed = (channels == Mode_stereo) ? 2 : 1;
+    if( fadein_samples_remaining > 0 ) {
+      fadein_samples_remaining = (fadein_samples_remaining > samples_processed) ? 
+                                 fadein_samples_remaining - samples_processed : 0;
+    }
     if( fadeout_samples_remaining > 0 ) {
       fadeout_samples_remaining--;
     }
@@ -720,23 +728,19 @@ PB_StatusTypeDef CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
   * @param: uint32_t sample_set_sz.  Many samples to play back.
   * @param: uint16_t playback_speed.  This is the sample rate.
   * @param: uint8_t sample depth.  This should be 8 or 16 bits.
+  * @param: PB_ModeTypeDef mode.  Mono or stereo playback.
   * @retval: none
   *
   */
 PB_StatusTypeDef PlaySample( uint16_t *sample_to_play, uint32_t sample_set_sz, uint16_t playback_speed, uint8_t sample_depth, PB_ModeTypeDef mode )
 {
-  // Ignore invalid depths.  This could expand to 32-bit samples later
-  // but it's unlikely to be of real use other than convenience.
+  // Parameter sanity checks
   //
-  if( sample_depth != 16 && sample_depth != 8 ) {
-     return PB_ERROR;
-  }
-
-  if( sample_set_sz == 0 || sample_to_play == NULL ) {   // Ignore zero-length samples or null pointers.
-    return PB_ERROR;
-  }
-
-  vol_div = ReadVolume();               // Read volume setting from hardware pins for initialization.
+  if( ( sample_depth != 16 && sample_depth != 8 ) || 
+      ( mode != Mode_mono && mode != Mode_stereo) ||
+      sample_set_sz   == 0                        ||
+      sample_to_play  == NULL
+    ) { return PB_ERROR; }
 
   if( mode == Mode_stereo ) {           // Pointer advance amount for stereo/mono mode.
      p_advance = CHUNK_SZ;              // Two channels worth of samples per chunk
@@ -757,27 +761,22 @@ PB_StatusTypeDef PlaySample( uint16_t *sample_to_play, uint32_t sample_set_sz, u
   
   // Reset DC blocking filter state for new sample
   //
-  dc_filter_prev_input_left   = 0;
-  dc_filter_prev_input_right  = 0;
-  dc_filter_prev_output_left  = 0;
-  dc_filter_prev_output_right = 0;
+  dc_filter_prev_input_left   = 0;    dc_filter_prev_input_right  = 0;
+  dc_filter_prev_output_left  = 0;    dc_filter_prev_output_right = 0;
   
-  if( sample_depth == 16 ) {
+  if( sample_depth == 16 ) {            // Initialize 16-bit sample playback pointers
     pb_p16 = (uint16_t *) sample_to_play;
     pb_end16 = pb_p16 + sample_set_sz;
     pb_mode = 16;
-    // Initialize fade counters
-    fadeout_samples_remaining = sample_set_sz;
-    fadein_samples_remaining  = FADEIN_SAMPLES;
   }
-  else if( sample_depth == 8 ) {
+  else if( sample_depth == 8 ) {        // Initialize 8-bit sample playback pointers
     pb_p8 = (uint8_t *) sample_to_play;
     pb_end8 = pb_p8 + sample_set_sz;
     pb_mode = 8;
-    // Initialize fade counters
-    fadeout_samples_remaining = sample_set_sz;
-    fadein_samples_remaining  = FADEIN_SAMPLES;
   }
+  // Initialize fade counters
+  fadeout_samples_remaining = sample_set_sz;
+  fadein_samples_remaining  = FADEIN_SAMPLES;
   
   // Start playback of the recording
   //
