@@ -215,9 +215,9 @@ int main(void)
 #endif
 
 
-    PlaySample( (uint16_t *) handpan16bm, HANDPAN16BM_SZ,
-        I2S_AUDIOFREQ_44K, 16, Mode_mono );
-    WaitForSampleEnd();
+    // PlaySample( (uint16_t *) handpan16bm, HANDPAN16BM_SZ,
+    //     I2S_AUDIOFREQ_44K, 16, Mode_mono );
+    // WaitForSampleEnd();
     // PlaySample( (uint16_t *) magic_gong44k, MAGIC_GONG44K_SZ,
     //     I2S_AUDIOFREQ_44K, 16, Mode_mono );
     // WaitForSampleEnd();
@@ -237,10 +237,10 @@ int main(void)
     //     I2S_AUDIOFREQ_11K, 8, Mode_mono );
     // WaitForSampleEnd();
 
-    //PlaySample( (uint16_t*) tt_arrival, TT_ARRIVAL_SZ, I2S_AUDIOFREQ_11K, 16, Mode_mono );
+    PlaySample( (uint16_t*) tt_arrival, TT_ARRIVAL_SZ, I2S_AUDIOFREQ_11K, 16, Mode_mono );
     // PlaySample( (uint16_t *) KillBill11k, KILLBILL11K_SZ,
     //      I2S_AUDIOFREQ_11K, 16, Mode_mono );
-    // WaitForSampleEnd();
+    WaitForSampleEnd();
 
     // PlaySample( (uint16_t *) guitar_riff22k, GUITAR_RIFF22K_SZ,
     //      I2S_AUDIOFREQ_22K, 16, Mode_mono );
@@ -435,8 +435,8 @@ void HAL_I2S_TxHalfCpltCallback( I2S_HandleTypeDef *hi2s2_p )
 
   if( pb_mode == 16 ) {             // 16-bit samples exhausted check.
     if( pb_p16 >= pb_end16 ) {
-      // Don't stop immediately - let the buffer finish playing
-      // The remaining half of the buffer contains the faded-out samples
+      // Stop DMA transmission to prevent buffer repeat
+      HAL_I2S_DMAStop( &hi2s2 );
       pb_state = PB_IDLE;
       return;
     }
@@ -450,6 +450,8 @@ void HAL_I2S_TxHalfCpltCallback( I2S_HandleTypeDef *hi2s2_p )
   else if( pb_mode == 8 ) {             // 8-bit samples exhausted check.
 
     if( pb_p8 >= pb_end8 ) {
+      // Stop DMA transmission to prevent buffer repeat
+      HAL_I2S_DMAStop( &hi2s2 );
       pb_state = PB_IDLE;
       return;
     }
@@ -479,8 +481,8 @@ void HAL_I2S_TxCpltCallback( I2S_HandleTypeDef *hi2s2_p )
   if( pb_mode == 16 ) {
 
     if( pb_p16 >= pb_end16 ) {
-      // Don't stop immediately - let the buffer finish playing
-      // The remaining half of the buffer contains the faded-out samples
+      // Stop DMA transmission to prevent buffer repeat
+      HAL_I2S_DMAStop( &hi2s2 );
       pb_state = PB_IDLE;
       return;
     }
@@ -494,6 +496,8 @@ void HAL_I2S_TxCpltCallback( I2S_HandleTypeDef *hi2s2_p )
   else if( pb_mode == 8 ) {
 
     if( pb_p8 >= pb_end8 ) {
+      // Stop DMA transmission to prevent buffer repeat
+      HAL_I2S_DMAStop( &hi2s2 );
       pb_state = PB_IDLE;
       return;
     }
