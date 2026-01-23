@@ -756,15 +756,12 @@ uint8_t ReadVolume( void )
  */
 inline void WaitForTrigger( uint8_t trig_to_wait_for )
 {
-  while( 1 )
-  {
+  while( 1 ) {
     trig_timeout_flag = 0;
-    while( trig_status != trig_to_wait_for )
-    {
+    while( trig_status != trig_to_wait_for ) {
       HAL_Delay( 1 );
       trig_timeout_counter++;
-      if( trig_timeout_counter >= TRIG_TIMEOUT_MS )
-      {
+      if( trig_timeout_counter >= TRIG_TIMEOUT_MS ) {
         trig_timeout_flag = 1;
         trig_timeout_counter = 0;
         break;
