@@ -82,29 +82,29 @@ DMA_HandleTypeDef hdma_spi2_tx;
 
 /* USER CODE BEGIN PV */
 
-          int16_t     pb_buffer[ PB_BUFF_SZ ]       = {0};
+          int16_t     pb_buffer[ PB_BUFF_SZ ]           = {0};
 
 volatile  uint8_t  *      pb_p8;
 volatile  uint8_t  *      pb_end8;
 volatile  uint16_t *      pb_p16;
 volatile  uint16_t *      pb_end16;
           uint8_t         pb_mode;
-volatile  uint8_t         pb_state                  = PB_IDLE;
+volatile  uint8_t         pb_state                      = PB_IDLE;
 volatile  uint8_t         half_to_fill;
 volatile  uint8_t         vol_div;
-volatile  uint16_t        trig_counter              = 0;
-volatile  uint8_t         trig_timeout_flag         = 0;
-volatile  uint16_t        trig_timeout_counter      = 0;
+volatile  uint16_t        trig_counter                  = 0;
+volatile  uint8_t         trig_timeout_flag             = 0;
+volatile  uint16_t        trig_timeout_counter          = 0;
 
-volatile  uint8_t         trig_status               = TRIGGER_CLR;
-          uint16_t        I2S_PlaybackSpeed         = I2S_AUDIOFREQ_22K;
+volatile  uint8_t         trig_status                   = TRIGGER_CLR;
+          uint16_t        I2S_PlaybackSpeed             = I2S_AUDIOFREQ_22K;
           uint16_t        p_advance;
-          PB_ModeTypeDef  channels                  = Mode_mono;
-volatile  uint32_t        fadeout_samples_remaining = 0;
-volatile  int32_t         dc_filter_prev_input_left  = 0;
-volatile  int32_t         dc_filter_prev_input_right = 0;
-volatile  int32_t         dc_filter_prev_output_left = 0;
-volatile  int32_t         dc_filter_prev_output_right = 0;
+          PB_ModeTypeDef  channels                      = Mode_mono;
+volatile  uint32_t        fadeout_samples_remaining     = 0;
+volatile  int32_t         dc_filter_prev_input_left     = 0;
+volatile  int32_t         dc_filter_prev_input_right    = 0;
+volatile  int32_t         dc_filter_prev_output_left    = 0;
+volatile  int32_t         dc_filter_prev_output_right   = 0;
 
 /* USER CODE END PV */
 
@@ -133,7 +133,10 @@ static  void    MX_I2S2_Init            ( void );
         void                LPSystemClock_Config    ( void );
         void                AdvanceSamplePointer    ( void );
         void                ShutDownAudio           ( void );
-        int16_t             ApplyDCBlockingFilter   ( volatile int16_t input, volatile int32_t *prev_input, volatile int32_t *prev_output );
+        int16_t             ApplyDCBlockingFilter   ( volatile int16_t input,
+                                                      volatile int32_t *prev_input,
+                                                      volatile int32_t *prev_output
+                                                    );
 
 /* USER CODE END PFP */
 
@@ -962,14 +965,6 @@ void LPSystemClock_Config( void )
   HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE2);
   HAL_PWREx_EnableLowPowerRunMode();
 }
-
-
-
-
-
-
-
-
 
 
 /* USER CODE END 4 */
