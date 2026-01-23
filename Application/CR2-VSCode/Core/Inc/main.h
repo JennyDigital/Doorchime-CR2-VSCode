@@ -126,7 +126,7 @@ void Error_Handler(void);
 // Fade-out configuration
 // Number of samples to fade out at the end (prevents pop)
 //
-#define FADEOUT_SAMPLES       2048U    // About 100ms at 22kHz
+#define FADEOUT_SAMPLES       4096U    // About 100ms at 22kHz
 
 // Midpoint for Signed/Unsigned silence.
 //

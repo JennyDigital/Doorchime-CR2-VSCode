@@ -28,13 +28,6 @@
 #include "newchallenger11k.h"
 #include "guitar.h"
 #include "mind_the_door.h"
-#include "stm32g4xx_hal.h"
-#include "stm32g4xx_hal_dma.h"
-#include "stm32g4xx_hal_gpio.h"
-#include "stm32g4xx_hal_i2s.h"
-#include "stm32g4xx_hal_pwr.h"
-#include "stm32g4xx_hal_pwr_ex.h"
-#include "stm32g4xx_hal_rcc.h"
 #include "three_tone_arrival_c.h"
 #include "tunnelbarra.h"
 #include "tunnelbarra16.h"
@@ -202,10 +195,16 @@ int main(void)
     //
     vol_div = ReadVolume();
 
+    // PlaySample( (uint16_t *) magic_gong44k, MAGIC_GONG44K_SZ,
+    //     I2S_AUDIOFREQ_44K, 16, Mode_mono );
+    // WaitForSampleEnd();
     // PlaySample( (uint16_t *) custom_tritone16k, CUSTOM_TRITONE16K_SZ,
     //   I2S_AUDIOFREQ_16K, 16, Mode_mono );
     // WaitForSampleEnd();
     // PlaySample((uint16_t *) rooster16b2c, ROOSTER16B2C_SZ, I2S_AUDIOFREQ_22K, 16, Mode_stereo );
+    // WaitForSampleEnd();
+    // PlaySample( (uint16_t *) ocarina32k, OCARINA32K_SZ,
+    //     I2S_AUDIOFREQ_32K, 16, Mode_mono );
     // WaitForSampleEnd();
     // PlaySample( (uint16_t *) rooster8b2c, ROOSTER8B2C_SZ,
     //    I2S_AUDIOFREQ_22K, 8, Mode_stereo );
@@ -222,7 +221,7 @@ int main(void)
 
     ShutDownAudio();
 
-    // Handle permanent sleep if auto-trigger is disabled
+    // Handle ppermanent stop if auto-trigger is disabled
     // Otherwise wait for trigger signal.
     // Wake from interrupt on TRIGGER pin.
     //
@@ -231,7 +230,7 @@ int main(void)
       LPSystemClock_Config();
       HAL_SuspendTick();
       while( 1 ) {  // Infinite sleep loop
-        HAL_PWR_EnterSLEEPMode( PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFE );
+        HAL_PWR_EnterSTOPMode( PWR_LOWPOWERREGULATOR_ON, PWR_SLEEPENTRY_WFE );
       }
     }
     else
@@ -606,7 +605,9 @@ PB_StatusTypeDef CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
     }
     else {
       /* Convert unsigned 8-bit (0..255) -> signed 16-bit centered around 0 */
-      leftsample = ( (int16_t)(*input) - 128 ) << 8;             /* Left channel. */
+      /* Replicate MSB into LSB for smoother conversion and better SNR */
+      uint8_t sample8 = *input;
+      leftsample = ( (int16_t)(sample8 - 128) << 8 ) | sample8;  /* Left channel. */
       leftsample = ( leftsample / vol_div ) * VOL_MULT;          /* Scale for volume */
       
       // Apply fade-out if we're in the final samples
@@ -622,7 +623,9 @@ PB_StatusTypeDef CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
         rightsample = MIDPOINT_S16;                              /* Pad with silence if at end */
       }
       else {               
-        rightsample = ( (int16_t)(*input) - 128 ) << 8;           /* Right channel. */
+        /* Replicate MSB into LSB for smoother conversion and better SNR */
+        uint8_t sample8 = *input;
+        rightsample = ( (int16_t)(sample8 - 128) << 8 ) | sample8; /* Right channel. */
         rightsample = ( rightsample / vol_div ) * VOL_MULT;       /* Scale for volume */
         
         // Apply fade-out if we're in the final samples
