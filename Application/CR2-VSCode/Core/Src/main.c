@@ -89,24 +89,25 @@ DMA_HandleTypeDef hdma_spi2_tx;
 
 /* USER CODE BEGIN PV */
 
-          int16_t     pb_buffer[ PB_BUFF_SZ ] = {0};
+          int16_t     pb_buffer[ PB_BUFF_SZ ]       = {0};
 
 volatile  uint8_t  *      pb_p8;
 volatile  uint8_t  *      pb_end8;
 volatile  uint16_t *      pb_p16;
 volatile  uint16_t *      pb_end16;
           uint8_t         pb_mode;
-volatile  uint8_t         pb_state              = PB_IDLE;
+volatile  uint8_t         pb_state                  = PB_IDLE;
 volatile  uint8_t         half_to_fill;
 volatile  uint8_t         vol_div;
-volatile  uint16_t        trig_counter          = 0;
-volatile  uint8_t         trig_timeout_flag     = 0;
-volatile  uint16_t        trig_timeout_counter  = 0;
+volatile  uint16_t        trig_counter              = 0;
+volatile  uint8_t         trig_timeout_flag         = 0;
+volatile  uint16_t        trig_timeout_counter      = 0;
 
-volatile  uint8_t         trig_status           = TRIGGER_CLR;
-          uint16_t        I2S_PlaybackSpeed     = I2S_AUDIOFREQ_22K;
+volatile  uint8_t         trig_status               = TRIGGER_CLR;
+          uint16_t        I2S_PlaybackSpeed         = I2S_AUDIOFREQ_22K;
           uint16_t        p_advance;
-          PB_ModeTypeDef  channels              = Mode_mono;
+          PB_ModeTypeDef  channels                  = Mode_mono;
+volatile  uint32_t        fadeout_samples_remaining = 0;
 
 /* USER CODE END PV */
 
@@ -134,6 +135,7 @@ static  void    MX_I2S2_Init            ( void );
         void                ClearBuffer             ( void );
         void                LPSystemClock_Config    ( void );
         void                AdvanceSamplePointer    ( void );
+        void                ShutDownAudio           ( void );
 
 /* USER CODE END PFP */
 
@@ -200,27 +202,25 @@ int main(void)
     //
     vol_div = ReadVolume();
 
-    PlaySample( (uint16_t *) custom_tritone16k, CUSTOM_TRITONE16K_SZ,
-      I2S_AUDIOFREQ_16K, 16, Mode_mono );
-    WaitForSampleEnd();
+    // PlaySample( (uint16_t *) custom_tritone16k, CUSTOM_TRITONE16K_SZ,
+    //   I2S_AUDIOFREQ_16K, 16, Mode_mono );
+    // WaitForSampleEnd();
     // PlaySample((uint16_t *) rooster16b2c, ROOSTER16B2C_SZ, I2S_AUDIOFREQ_22K, 16, Mode_stereo );
     // WaitForSampleEnd();
     // PlaySample( (uint16_t *) rooster8b2c, ROOSTER8B2C_SZ,
     //    I2S_AUDIOFREQ_22K, 8, Mode_stereo );
     // WaitForSampleEnd();
 
-    // PlaySample( (uint16_t *) harmony8b, HARMONY8B_SZ,
-    //     I2S_AUDIOFREQ_11K, 8, Mode_mono );
-    // WaitForSampleEnd();
+    PlaySample( (uint16_t *) harmony8b, HARMONY8B_SZ,
+        I2S_AUDIOFREQ_11K, 8, Mode_mono );
+    WaitForSampleEnd();
 
     //PlaySample( (uint16_t*) tt_arrival, TT_ARRIVAL_SZ, I2S_AUDIOFREQ_11K, 16, Mode_mono );
     // PlaySample( (uint16_t *) KillBill11k, KILLBILL11K_SZ,
     //      I2S_AUDIOFREQ_11K, 16, Mode_mono );
     //WaitForSampleEnd();
 
-    // Shutdown the DAC and either loop back of shutdown to save power.
-    //
-    DAC_MasterSwitch( DAC_OFF );
+    ShutDownAudio();
 
     // Handle permanent sleep if auto-trigger is disabled
     // Otherwise wait for trigger signal.
@@ -409,9 +409,9 @@ void HAL_I2S_TxHalfCpltCallback( I2S_HandleTypeDef *hi2s2_p )
 
   if( pb_mode == 16 ) {             // 16-bit samples exhausted check.
     if( pb_p16 >= pb_end16 ) {
+      // Don't stop immediately - let the buffer finish playing
+      // The remaining half of the buffer contains the faded-out samples
       pb_state = PB_IDLE;
-      ClearBuffer();
-      HAL_I2S_DMAStop( &hi2s2 );
       return;
     }
     else {                          // Refill the first half of the buffer with 16-bit samples.
@@ -453,9 +453,9 @@ void HAL_I2S_TxCpltCallback( I2S_HandleTypeDef *hi2s2_p )
   if( pb_mode == 16 ) {
 
     if( pb_p16 >= pb_end16 ) {
+      // Don't stop immediately - let the buffer finish playing
+      // The remaining half of the buffer contains the faded-out samples
       pb_state = PB_IDLE;
-      ClearBuffer();
-      HAL_I2S_DMAStop( &hi2s2 );
       return;
     }
     else {
@@ -535,6 +535,11 @@ PB_StatusTypeDef CopyNextWaveChunk( int16_t * chunk_p )
     }
     else {
       leftsample = ( (int16_t) (*input) / vol_div ) * VOL_MULT; // Left channel
+      
+      // Apply fade-out if we're in the final samples
+      if( fadeout_samples_remaining > 0 && fadeout_samples_remaining <= FADEOUT_SAMPLES ) {
+        leftsample = (int32_t)leftsample * fadeout_samples_remaining / FADEOUT_SAMPLES;
+      }
     }
     input++;
 
@@ -543,11 +548,23 @@ PB_StatusTypeDef CopyNextWaveChunk( int16_t * chunk_p )
       if( (uint16_t *) input >=  pb_end16 ) {                   /* Check for end of sample data */
         rightsample = MIDPOINT_S16;                             /* Pad with silence if at end */
       }
-      else { rightsample = ( (int16_t) (*input) / vol_div ) * VOL_MULT; } // Right channel 
+      else { 
+        rightsample = ( (int16_t) (*input) / vol_div ) * VOL_MULT; // Right channel
+        
+        // Apply fade-out if we're in the final samples
+        if( fadeout_samples_remaining > 0 && fadeout_samples_remaining <= FADEOUT_SAMPLES ) {
+          rightsample = (int32_t)rightsample * fadeout_samples_remaining / FADEOUT_SAMPLES;
+        }
+      } 
       input++;
     }
     *output = leftsample;  output++;                            // Write samples to output buffer
     *output = rightsample; output++;
+    
+    // Decrement fade-out counter
+    if( fadeout_samples_remaining > 0 ) {
+      fadeout_samples_remaining--;
+    }
   }
   return PLAYING;
 }
@@ -591,6 +608,11 @@ PB_StatusTypeDef CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
       /* Convert unsigned 8-bit (0..255) -> signed 16-bit centered around 0 */
       leftsample = ( (int16_t)(*input) - 128 ) << 8;             /* Left channel. */
       leftsample = ( leftsample / vol_div ) * VOL_MULT;          /* Scale for volume */
+      
+      // Apply fade-out if we're in the final samples
+      if( fadeout_samples_remaining > 0 && fadeout_samples_remaining <= FADEOUT_SAMPLES ) {
+        leftsample = (int32_t)leftsample * fadeout_samples_remaining / FADEOUT_SAMPLES;
+      }
     }
     input++;
 
@@ -602,11 +624,21 @@ PB_StatusTypeDef CopyNextWaveChunk_8_bit( uint8_t * chunk_p )
       else {               
         rightsample = ( (int16_t)(*input) - 128 ) << 8;           /* Right channel. */
         rightsample = ( rightsample / vol_div ) * VOL_MULT;       /* Scale for volume */
+        
+        // Apply fade-out if we're in the final samples
+        if( fadeout_samples_remaining > 0 && fadeout_samples_remaining <= FADEOUT_SAMPLES ) {
+          rightsample = (int32_t)rightsample * fadeout_samples_remaining / FADEOUT_SAMPLES;
+        }
       }
       input++;
     }
     *output = leftsample;  output++;                              /* Transfer samples to output buffer */
     *output = rightsample; output++;
+    
+    // Decrement fade-out counter
+    if( fadeout_samples_remaining > 0 ) {
+      fadeout_samples_remaining--;
+    }
   }
   return PLAYING;
 }
@@ -665,12 +697,16 @@ PB_StatusTypeDef PlaySample( uint16_t *sample_to_play, uint32_t sample_set_sz, u
     pb_p16 = (uint16_t *) sample_to_play;
     pb_end16 = pb_p16 + sample_set_sz;
     pb_mode = 16;
+    // Initialize fade-out counter to total samples (will count down at end)
+    fadeout_samples_remaining = sample_set_sz;
   }
   else if( sample_depth == 8 )
   {
     pb_p8 = (uint8_t *) sample_to_play;
     pb_end8 = pb_p8 + sample_set_sz;
     pb_mode = 8;
+    // Initialize fade-out counter to total samples (will count down at end)
+    fadeout_samples_remaining = sample_set_sz;
   }
   
   // Start playback of the recording
@@ -801,6 +837,26 @@ uint8_t GetTriggerOption( void )
 #endif
 }
 
+
+/* Shuts down audio playback and DAC 
+ * 
+ * @params: none
+ * @retval: none
+ */
+void ShutDownAudio( void )
+{
+      // Allow DMA buffer to fully drain and MAX98357A to output final samples
+    HAL_Delay( 150 );
+    
+    // Stop I2S DMA transmission
+    HAL_I2S_DMAStop( &hi2s2 );
+    
+    // Shutdown the DAC and either loop back of shutdown to save power.
+    //
+    DAC_MasterSwitch( DAC_OFF );
+}
+
+
 /** Systick IRQ including trigger handling
   *
   * params: none
@@ -825,9 +881,11 @@ void HAL_IncTick( void )
 }
 
 
-
-
-
+/** Configures the system clock for low power sleep mode
+  * 
+  * params: none
+  * retval: none
+  */
 void LPSystemClock_Config( void )
 {
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
@@ -837,7 +895,7 @@ void LPSystemClock_Config( void )
   RCC_ClkInitStruct.ClockType       = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
                                     | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource    = RCC_SYSCLKSOURCE_HSI;
-  RCC_ClkInitStruct.AHBCLKDivider   = RCC_SYSCLK_DIV16;
+  RCC_ClkInitStruct.AHBCLKDivider   = RCC_SYSCLK_DIV64;
   RCC_ClkInitStruct.APB1CLKDivider  = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider  = RCC_HCLK_DIV1;
 

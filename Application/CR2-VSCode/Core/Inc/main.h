@@ -118,11 +118,15 @@ void Error_Handler(void);
 #define FORCE_TRIGGER_OPT
 //#define LOCK_BUILD
 
-
 // Volume special config
 //
 #define VOL_SCALING           4       // This is the master volume divider multiplication factor
 #define VOL_MULT              3       // Sets the multiplication back so we can use integers.
+
+// Fade-out configuration
+// Number of samples to fade out at the end (prevents pop)
+//
+#define FADEOUT_SAMPLES       2048U    // About 100ms at 22kHz
 
 // Midpoint for Signed/Unsigned silence.
 //
