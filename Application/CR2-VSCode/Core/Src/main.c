@@ -21,10 +21,12 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+//
 #include <stdint.h>
 #include "lock.h"
 #include "stm32g474xx.h"
 
+// Sample data includes, use as needed.
 #include "newchallenger11k.h"
 #include "guitar.h"
 #include "mind_the_door.h"
