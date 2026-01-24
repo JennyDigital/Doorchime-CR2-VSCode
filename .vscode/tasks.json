@@ -1,0 +1,140 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "FLASH STM32 Device (Debug)",
+            "command": "STM32_Programmer_CLI",
+            "type": "shell",
+            "args": [
+                "-c",
+                "port=SWD",
+                "-W",
+                "${workspaceFolder}/build/Debug/ShopClockV3_VSC.elf",
+                "-v"
+            ],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "FLASH STM32 Device (Release)",
+            "command": "STM32_Programmer_CLI",
+            "type": "shell",
+            "args": [
+                "-c",
+                "port=SWD",
+                "-W",
+                "${workspaceFolder}/build/Release/ShopClockV3_VSC.elf",
+                "-v"
+            ],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "RESET STM32 Device",
+            "command": "STM32_Programmer_CLI",
+            "type": "shell",
+            "args": [
+                "-c",
+                "port=SWD",
+                "-hardRst"
+            ],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "LOCK STM32 Device",
+            "command": "STM32_Programmer_CLI",
+            "type": "shell",
+            "args": [
+                "-c",
+                "port=SWD",
+                "mode=UR",
+                "--optionbytes RDP=0xBB"
+            ],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "FLASH Release and RESET STM32 Device",
+            "command": "STM32_Programmer_CLI",
+            "type": "shell",
+            "args": [
+                "-c",
+                "port=SWD",
+                "-hardRst"
+            ],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "group": "build",
+            "problemMatcher": [],
+            "dependsOn": "FLASH STM32 Device (Release)"
+        },
+        {
+            "label": "ERASE STM32 Device",
+            "command": "STM32_Programmer_CLI",
+            "type": "shell",
+            "args": [
+                "-c",
+                "port=SWD",
+                "-e",
+                "all"
+            ],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "type": "cmake",
+            "label": "CMake: clean rebuild",
+            "command": "cleanRebuild",
+            "targets": [
+                "all"
+            ],
+            "preset": "Release",
+            "group": "build",
+            "problemMatcher": [],
+            "detail": "CMake template clean rebuild task"
+        },
+        {
+            "type": "cmake",
+            "label": "CMake: clean",
+            "command": "clean",
+            "preset": "Release",
+            "problemMatcher": [],
+            "detail": "CMake template clean task"
+        }
+    ]
+}
