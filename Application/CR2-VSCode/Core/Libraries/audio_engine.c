@@ -40,63 +40,69 @@ FilterConfig_TypeDef filter_cfg = {
 };
 
 /* Playback state variables */
-volatile uint8_t  *pb_p8;
-volatile uint8_t  *pb_end8;
-volatile uint16_t *pb_p16;
-volatile uint16_t *pb_end16;
+volatile  uint8_t         *pb_p8;
+volatile  uint8_t         *pb_end8;
+volatile  uint16_t        *pb_p16;
+volatile  uint16_t        *pb_end16;
 
-volatile uint8_t pb_state = PB_Idle;
-volatile uint8_t half_to_fill;
-uint8_t pb_mode;
-uint16_t I2S_PlaybackSpeed = 22000;  // Default
+volatile  uint8_t         pb_state                    = PB_Idle;
+volatile  uint8_t         half_to_fill;
+          uint8_t         pb_mode;
+          uint16_t        I2S_PlaybackSpeed           = 22000;  // Default
 
 /* Playback engine control variables */
-uint16_t p_advance;
-PB_ModeTypeDef channels = Mode_mono;
-volatile uint32_t fadeout_samples_remaining = 0;
-volatile uint32_t fadein_samples_remaining = 0;
-
+          uint16_t        p_advance;
+          PB_ModeTypeDef  channels                    = Mode_mono;
+volatile  uint32_t        fadeout_samples_remaining   = 0;
+volatile  uint32_t        fadein_samples_remaining    = 0;
 /* DC filter state */
-volatile int32_t dc_filter_prev_input_left = 0;
-volatile int32_t dc_filter_prev_input_right = 0;
-volatile int32_t dc_filter_prev_output_left = 0;
-volatile int32_t dc_filter_prev_output_right = 0;
+volatile  int32_t         dc_filter_prev_input_left   = 0;
+volatile  int32_t         dc_filter_prev_input_right  = 0;
+volatile  int32_t         dc_filter_prev_output_left  = 0;
+volatile  int32_t         dc_filter_prev_output_right = 0;
 
 /* Dither state */
-volatile uint32_t dither_state = 12345;
+volatile  uint32_t        dither_state                = 12345;
 
 /* Biquad filter state for 8-bit samples */
-volatile int32_t lpf_8bit_x1_left = 0;
-volatile int32_t lpf_8bit_x2_left = 0;
-volatile int32_t lpf_8bit_y1_left = 0;
-volatile int32_t lpf_8bit_y2_left = 0;
+volatile  int32_t         lpf_8bit_x1_left            = 0;
+volatile  int32_t         lpf_8bit_x2_left            = 0;
+volatile  int32_t         lpf_8bit_y1_left            = 0;
+volatile  int32_t         lpf_8bit_y2_left            = 0;
 
-volatile int32_t lpf_8bit_x1_right = 0;
-volatile int32_t lpf_8bit_x2_right = 0;
-volatile int32_t lpf_8bit_y1_right = 0;
-volatile int32_t lpf_8bit_y2_right = 0;
+volatile  int32_t         lpf_8bit_x1_right           = 0;
+volatile  int32_t         lpf_8bit_x2_right           = 0;
+volatile  int32_t         lpf_8bit_y1_right           = 0;
+volatile  int32_t         lpf_8bit_y2_right           = 0;
 
-uint16_t lpf_8bit_alpha = LPF_MEDIUM;
+          uint16_t        lpf_8bit_alpha              = LPF_MEDIUM;
 
 /* Biquad filter state for 16-bit samples */
-volatile int32_t lpf_16bit_x1_left = 0;
-volatile int32_t lpf_16bit_x2_left = 0;
-volatile int32_t lpf_16bit_y1_left = 0;
-volatile int32_t lpf_16bit_y2_left = 0;
+volatile  int32_t         lpf_16bit_x1_left           = 0;
+volatile  int32_t         lpf_16bit_x2_left           = 0;
+volatile  int32_t         lpf_16bit_y1_left           = 0;
+volatile  int32_t         lpf_16bit_y2_left           = 0;
 
-volatile int32_t lpf_16bit_x1_right = 0;
-volatile int32_t lpf_16bit_x2_right = 0;
-volatile int32_t lpf_16bit_y1_right = 0;
-volatile int32_t lpf_16bit_y2_right = 0;
+volatile  int32_t         lpf_16bit_x1_right          = 0;
+volatile  int32_t         lpf_16bit_x2_right          = 0;
+volatile  int32_t         lpf_16bit_y1_right          = 0;
+volatile  int32_t         lpf_16bit_y2_right          = 0;
 
 /* Pause/resume state tracking */
-volatile PB_StatusTypeDef pb_paused_state = PB_Idle;
-volatile uint32_t paused_sample_index = 0;
-volatile const void *paused_sample_ptr = NULL;
-volatile uint32_t paused_total_samples = 0;
+volatile  PB_StatusTypeDef pb_paused_state            = PB_Idle;
+volatile  uint32_t        paused_sample_index         = 0;
+volatile  const void      *paused_sample_ptr          = NULL;
+volatile  uint32_t        paused_total_samples        = 0;
 
 /* ===== Filter Configuration Functions ===== */
 
+
+/** Setup filter configuration 
+  * 
+  * @brief Sets the filter configuration parameters.
+  * @param: cfg - Pointer to FilterConfig_TypeDef structure with desired settings.
+  * @retval: none
+  */
 void SetFilterConfig( const FilterConfig_TypeDef *cfg )
 {
   if( cfg != NULL ) {
@@ -108,6 +114,13 @@ void SetFilterConfig( const FilterConfig_TypeDef *cfg )
   }
 }
 
+
+/** Get current filter configuration 
+  * 
+  * @brief Retrieves the current filter configuration parameters.
+  * @param: cfg - Pointer to FilterConfig_TypeDef structure to populate.
+  * @retval: none
+  */
 void GetFilterConfig( FilterConfig_TypeDef *cfg )
 {
   if( cfg != NULL ) {
@@ -115,6 +128,13 @@ void GetFilterConfig( FilterConfig_TypeDef *cfg )
   }
 }
 
+
+/** Set LPF makeup gain 
+  * 
+  * @brief Sets the makeup gain applied after the low-pass filter.
+  * @param: gain - Floating-point gain value (0.1 to 2.0).
+  * @retval: none
+  */
 void SetLpfMakeupGain( float gain )
 {
   if( gain < 0.1f ) {
@@ -128,6 +148,14 @@ void SetLpfMakeupGain( float gain )
 
 /* ===== DSP Filter Functions ===== */
 
+
+/** Apply TPDF dithering during 8-bit to 16-bit conversion with cubic interpolation
+  * 
+  * Uses a fast Linear Congruential Generator for random noise generation.
+  * 
+  * @param: sample8 - Unsigned 8-bit audio sample
+  * @retval: int16_t - Signed 16-bit dithered audio sample
+  */
 int16_t Apply8BitDithering( uint8_t sample8 )
 {
   // Convert unsigned 8-bit (0..255) to signed 16-bit
@@ -145,6 +173,14 @@ int16_t Apply8BitDithering( uint8_t sample8 )
   return sample16 + dither;
 }
 
+
+/** Apply low-pass biquad filter to 8-bit sample
+  * 
+  * @param: sample - Signed 16-bit audio sample (from 8-bit input)
+  * @param: x1, x2 - Pointers to previous input samples
+  * @param: y1, y2 - Pointers to previous output samples
+  * @retval: int16_t - Filtered signed 16-bit audio sample
+  */
 int16_t ApplyLowPassFilter8Bit( int16_t sample, 
                                 volatile int32_t *x1, volatile int32_t *x2,
                                 volatile int32_t *y1, volatile int32_t *y2 )
@@ -166,6 +202,12 @@ int16_t ApplyLowPassFilter8Bit( int16_t sample,
   return (int16_t) output;
 }
 
+
+/** Apply fade-in effect to audio sample
+  * 
+  * @param: sample - Signed 16-bit audio sample
+  * @retval: int16_t - Faded-in signed 16-bit audio sample
+  */
 int16_t ApplyFadeIn( int16_t sample ) 
 {
   if( fadein_samples_remaining > 0 ) {
@@ -176,6 +218,12 @@ int16_t ApplyFadeIn( int16_t sample )
   return sample;
 }
 
+
+/** Apply fade-out effect to audio sample
+  * 
+  * @param: sample - Signed 16-bit audio sample
+  * @retval: int16_t - Faded-out signed 16-bit audio sample
+  */
 int16_t ApplyFadeOut( int16_t sample )
 {
   if( fadeout_samples_remaining > 0 && fadeout_samples_remaining <= FADEOUT_SAMPLES ) {
@@ -185,6 +233,12 @@ int16_t ApplyFadeOut( int16_t sample )
   return sample;
 }
 
+
+/** Apply noise gate to audio sample
+  * 
+  * @param: sample - Signed 16-bit audio sample
+  * @retval: int16_t - Noise-gated signed 16-bit audio sample
+  */
 int16_t ApplyNoiseGate( int16_t sample )
 {
   int16_t abs_sample = (sample < 0) ? -sample : sample;
@@ -194,6 +248,12 @@ int16_t ApplyNoiseGate( int16_t sample )
   return sample;
 }
 
+
+/** Apply soft clipping to audio sample
+  * 
+  * @param: sample - Signed 16-bit audio sample
+  * @retval: int16_t - Soft-clipped signed 16-bit audio sample
+  */
 int16_t ApplySoftClipping( int16_t sample )
 {
   const int32_t threshold = 28000;
@@ -228,6 +288,14 @@ int16_t ApplySoftClipping( int16_t sample )
   return (int16_t) s;
 }
 
+
+/** Apply DC blocking filter to audio sample
+  * 
+  * @param: input - Signed 16-bit audio sample
+  * @param: prev_input - Pointer to previous input sample
+  * @param: prev_output - Pointer to previous output sample
+  * @retval: int16_t - DC-blocked signed 16-bit audio sample
+  */
 int16_t ApplyDCBlockingFilter( volatile int16_t input, volatile int32_t *prev_input, volatile int32_t *prev_output )
 {
   int32_t output = input - *prev_input + 
@@ -242,6 +310,14 @@ int16_t ApplyDCBlockingFilter( volatile int16_t input, volatile int32_t *prev_in
   return ( int16_t ) output;
 }
 
+
+/** Apply soft DC filter to audio sample
+  * 
+  * @param: input - Signed 16-bit audio sample
+  * @param: prev_input - Pointer to previous input sample
+  * @param: prev_output - Pointer to previous output sample
+  * @retval: int16_t - Soft DC-filtered signed 16-bit audio sample
+  */
 int16_t ApplySoftDCFilter16Bit( volatile int16_t input, volatile int32_t *prev_input, volatile int32_t *prev_output )
 {
   int32_t output = input - *prev_input + 
@@ -256,6 +332,14 @@ int16_t ApplySoftDCFilter16Bit( volatile int16_t input, volatile int32_t *prev_i
   return ( int16_t ) output;
 }
 
+
+/** Apply low-pass biquad filter to 16-bit sample
+  * 
+  * @param: input - Signed 16-bit audio sample
+  * @param: x1, x2 - Pointers to previous input samples
+  * @param: y1, y2 - Pointers to previous output samples
+  * @retval: int16_t - Filtered signed 16-bit audio sample
+  */
 int16_t ApplyLowPassFilter16Bit( int16_t input, volatile int32_t *x1, volatile int32_t *x2, 
                                  volatile int32_t *y1, volatile int32_t *y2 )
 {
@@ -281,6 +365,13 @@ int16_t ApplyLowPassFilter16Bit( int16_t input, volatile int32_t *x1, volatile i
   return (int16_t)output;
 }
 
+
+/** Apply full filter chain to 16-bit sample
+  * 
+  * @param: sample - Signed 16-bit audio sample
+  * @param: is_left_channel - 1 if left channel, 0 if right channel
+  * @retval: int16_t - Processed signed 16-bit audio sample
+  */
 int16_t ApplyFilterChain16Bit( int16_t sample, uint8_t is_left_channel )
 {
   if( filter_cfg.enable_16bit_biquad_lpf ) {
@@ -321,6 +412,13 @@ int16_t ApplyFilterChain16Bit( int16_t sample, uint8_t is_left_channel )
   return sample;
 }
 
+
+/** Apply full filter chain to 8-bit sample
+  * 
+  * @param: sample - Signed 16-bit audio sample
+  * @param: is_left_channel - 1 if left channel, 0 if right channel
+  * @retval: int16_t - Processed signed 16-bit audio sample
+  */
 int16_t ApplyFilterChain8Bit( int16_t sample, uint8_t is_left_channel )
 {
   if( filter_cfg.enable_8bit_lpf ) {
@@ -365,31 +463,67 @@ int16_t ApplyFilterChain8Bit( int16_t sample, uint8_t is_left_channel )
 
 /* ===== State Accessors ===== */
 
+
+/** Get current playback state
+  * 
+  * @param: none
+  * @retval: uint8_t - Current playback state (PB_Idle, PB_Playing, PB_Paused)
+  */
 uint8_t GetPlaybackState( void )
 {
   return pb_state;
 }
 
+
+/** Set current playback state
+  * 
+  * @param: state - Desired playback state (PB_Idle, PB_Playing, PB_Paused)
+  * @retval: none
+  */
 void SetPlaybackState( uint8_t state )
 {
   pb_state = state;
 }
 
+
+/** Get which half of the buffer to fill
+  * 
+  * @param: none
+  * @retval: uint8_t - FIRST or SECOND half indicator
+  */
 uint8_t GetHalfToFill( void )
 {
   return half_to_fill;
 }
 
+
+/** Set which half of the buffer to fill
+  * 
+  * @param: half - FIRST or SECOND half indicator
+  * @retval: none
+  */
 void SetHalfToFill( uint8_t half )
 {
   half_to_fill = half;
 }
 
+
+/** Get current playback speed
+  * 
+  * @param: none
+  * @retval: uint16_t - Current playback speed in Hz
+  */
 uint16_t GetPlaybackSpeed( void )
 {
   return I2S_PlaybackSpeed;
 }
 
+
+/** Set current playback speed
+  * 
+  * @param: speed - Desired playback speed in Hz
+  * @retval: none
+  */
 void SetPlaybackSpeed( uint16_t speed )
 {
   I2S_PlaybackSpeed = speed;
@@ -495,6 +629,13 @@ void HAL_I2S_TxCpltCallback( I2S_HandleTypeDef *hi2s2_p )
   AdvanceSamplePointer();
 }
 
+
+/** Advance the sample pointer based on playback mode and advance value
+  *
+  * params: none.
+  * retval: none.
+  *
+  */
 void AdvanceSamplePointer( void )
 {
   if( pb_mode == 16 ) {  // Advance the 16-bit sample pointer
@@ -673,7 +814,8 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
   * @retval: none
   *
   */
-PB_StatusTypeDef PlaySample(  const void *sample_to_play,
+PB_StatusTypeDef PlaySample (  
+                              const void *sample_to_play,
                               uint32_t sample_set_sz,
                               uint16_t playback_speed,
                               uint8_t sample_depth,

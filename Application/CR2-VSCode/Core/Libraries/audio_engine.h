@@ -23,15 +23,15 @@ extern "C" {
 #include "stm32g4xx_hal.h"
 
 /* DAC control values */
-#define DAC_OFF           0
-#define DAC_ON            1
+#define DAC_OFF               0
+#define DAC_ON                1
 
 /* Playback engine buffer configuration */
-#define PB_BUFF_SZ        2048U
-#define CHUNK_SZ          ( PB_BUFF_SZ / 2 )
-#define HALFCHUNK_SZ      ( CHUNK_SZ / 2 )
-#define FIRST             0U
-#define SECOND            1U
+#define PB_BUFF_SZ            2048U
+#define CHUNK_SZ              ( PB_BUFF_SZ / 2 )
+#define HALFCHUNK_SZ          ( CHUNK_SZ / 2 )
+#define FIRST                 0U
+#define SECOND                1U
 
 /* Volume configuration */
 #define VOL_MULT              3         // Volume multiplication factor for integer math
@@ -116,7 +116,7 @@ void                SetLpfMakeupGain            ( float gain );
 
 /* Playback control functions */
 PB_StatusTypeDef    AudioEngine_Init            ( AudioEngine_HandleTypeDef *haudio );
-PB_StatusTypeDef    PlaySample                  (
+PB_StatusTypeDef  PlaySample                    (
                                                   const void *sample_to_play,
                                                   uint32_t sample_set_sz,
                                                   uint16_t playback_speed,
@@ -165,17 +165,22 @@ int16_t             ApplySoftDCFilter16Bit      (
                                                   volatile int32_t *prev_input,
                                                   volatile int32_t *prev_output
                                                 );
+int16_t             ApplySoftDCFilter16Bit      (
+                                                  volatile int16_t input,
+                                                  volatile int32_t *prev_input,
+                                                  volatile int32_t *prev_output
+                                                );
 int16_t             ApplyFilterChain16Bit       ( int16_t sample, uint8_t is_left_channel );
 int16_t             ApplyFilterChain8Bit        ( int16_t sample, uint8_t is_left_channel );
 
 /* Hardware callbacks (to be called from I2S DMA callbacks) */
-void HAL_I2S_TxHalfCpltCallback( I2S_HandleTypeDef *hi2s );
-void HAL_I2S_TxCpltCallback( I2S_HandleTypeDef *hi2s );
+void                HAL_I2S_TxHalfCpltCallback  ( I2S_HandleTypeDef *hi2s );
+void                HAL_I2S_TxCpltCallback      ( I2S_HandleTypeDef *hi2s );
 
 /* Hardware interface functions (implemented by application) */
-typedef void    ( *DAC_SwitchFunc ) ( GPIO_PinState setting );
-typedef uint8_t ( *ReadVolumeFunc ) ( void );
-typedef void    ( *I2S_InitFunc )   ( void );
+typedef void        ( *DAC_SwitchFunc )         ( GPIO_PinState setting );
+typedef uint8_t     ( *ReadVolumeFunc )         ( void );
+typedef void        ( *I2S_InitFunc )           ( void );
 
 extern DAC_SwitchFunc AudioEngine_DACSwitch;
 extern ReadVolumeFunc AudioEngine_ReadVolume;
@@ -187,25 +192,25 @@ PB_StatusTypeDef    ProcessNextWaveChunk        ( int16_t * chunk_p );
 PB_StatusTypeDef    ProcessNextWaveChunk_8_bit  ( uint8_t * chunk_p );
 
 /* Playback control functions */
-PB_StatusTypeDef PlaySample (
-                                const void *sample_to_play,
-                                uint32_t sample_set_sz,
-                                uint16_t playback_speed,
-                                uint8_t sample_depth,
-                                PB_ModeTypeDef mode,
-                                LPF_Level lpf_level
-                            );
-PB_StatusTypeDef WaitForSampleEnd   ( void );
-PB_StatusTypeDef PausePlayback      ( void );
-PB_StatusTypeDef ResumePlayback     ( void );
+PB_StatusTypeDef    PlaySample                  (
+                                                  const void *sample_to_play,
+                                                  uint32_t sample_set_sz,
+                                                  uint16_t playback_speed,
+                                                  uint8_t sample_depth,
+                                                  PB_ModeTypeDef mode,
+                                                  LPF_Level lpf_level
+                                                );
+PB_StatusTypeDef    WaitForSampleEnd            ( void );
+PB_StatusTypeDef    PausePlayback               ( void );
+PB_StatusTypeDef    ResumePlayback              ( void );
 
 /* Accessors for global state (needed by application) */
-uint8_t     GetPlaybackState   ( void );
-void        SetPlaybackState   ( uint8_t state );
-uint8_t     GetHalfToFill      ( void );
-void        SetHalfToFill      ( uint8_t half );
-uint16_t    GetPlaybackSpeed   ( void );
-void        SetPlaybackSpeed   ( uint16_t speed );
+uint8_t             GetPlaybackState            ( void );
+void                SetPlaybackState            ( uint8_t state );
+uint8_t             GetHalfToFill               ( void );
+void                SetHalfToFill               ( uint8_t half );
+uint16_t            GetPlaybackSpeed            ( void );
+void                SetPlaybackSpeed            ( uint16_t speed );
 
 #ifdef __cplusplus
 }
