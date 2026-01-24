@@ -129,6 +129,10 @@
         {
           "name": "programmer",
           "version": "2.21.0"
+        },
+        {
+          "name": "programmer",
+          "version": "^2.20.0"
         }
       ]
     },
@@ -140,6 +144,10 @@
         {
           "name": "programmer",
           "version": "2.21.0"
+        },
+        {
+          "name": "programmer",
+          "version": "^2.20.0"
         }
       ]
     },
@@ -151,6 +159,10 @@
         {
           "name": "programmer",
           "version": "2.21.0"
+        },
+        {
+          "name": "programmer",
+          "version": "^2.20.0"
         }
       ]
     },
@@ -244,34 +256,34 @@
     },
     {
       "name": "stlink-gdbserver",
-      "version": "7.12.0+st.2",
+      "version": "7.11.0+st.1",
       "platform": "darwin",
       "selected_by": [
         {
           "name": "stlink-gdbserver",
-          "version": "7.12.0+st.2"
+          "version": "7.11.0+st.1"
         }
       ]
     },
     {
       "name": "stlink-gdbserver",
-      "version": "7.12.0+st.2",
+      "version": "7.11.0+st.1",
       "platform": "x86_64-linux",
       "selected_by": [
         {
           "name": "stlink-gdbserver",
-          "version": "7.12.0+st.2"
+          "version": "7.11.0+st.1"
         }
       ]
     },
     {
       "name": "stlink-gdbserver",
-      "version": "7.12.0+st.2",
+      "version": "7.11.0+st.1",
       "platform": "x86_64-windows",
       "selected_by": [
         {
           "name": "stlink-gdbserver",
-          "version": "7.12.0+st.2"
+          "version": "7.11.0+st.1"
         }
       ]
     }

@@ -146,6 +146,21 @@ void Error_Handler(void);
 #define ENABLE_SOFT_DC_FILTER_16BIT
 #define SOFT_DC_FILTER_ALPHA  65216    // 0.995 in fixed-point (65216/65536)
 
+// Biquad low-pass filter for 16-bit samples
+// Second-order IIR filter for superior frequency response
+// Uncomment to enable biquad LPF on 16-bit samples
+//
+#define ENABLE_16BIT_BIQUAD_LPF
+#define LPF_16BIT_ALPHA       57344    // 0.875 - gentle filtering (same as LPF_SOFT)
+
+// High-frequency air enhancement
+// Subtle high-shelf boost to add clarity and "air" to the sound
+// Uncomment to enable air enhancement on 16-bit samples
+//
+//#define ENABLE_AIR_ENHANCEMENT
+#define AIR_BOOST_GAIN        2458     // +0.75dB boost (~0.0375 linear gain in fixed-point)
+#define AIR_CUTOFF_ALPHA      52429    // 0.80 - cutoff around 9-10kHz at 44.1kHz
+
 // Soft clipping configuration
 // Prevents harsh digital distortion on loud samples
 // Uncomment to enable soft clipping on output
