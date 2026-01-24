@@ -541,7 +541,7 @@ void ShutDownAudio( void )
     HAL_Delay( 150 );
     
     // Stop I2S DMA transmission
-    HAL_I2S_DMAStop( &hi2s2 );
+    HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );
     
     // Shutdown the DAC and either loop back of shutdown to save power.
     //
@@ -581,7 +581,7 @@ void Error_Handler(void)
   /* USER CODE BEGIN Error_Handler_Debug */
   /* Shutdown playback, disable interrupts amd switch off DAC */
   __disable_irq();
-  HAL_I2S_DMAStop( &hi2s2 );
+  HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );
   DAC_MasterSwitch( DAC_OFF );
   while (1)
   {

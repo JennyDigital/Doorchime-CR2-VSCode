@@ -22,6 +22,11 @@ extern "C" {
 #include <stdint.h>
 #include "stm32g4xx_hal.h"
 
+/* I2S handle selection (default: hi2s2). Override in application if needed. */
+#ifndef AUDIO_ENGINE_I2S_HANDLE
+#define AUDIO_ENGINE_I2S_HANDLE hi2s2
+#endif
+
 /* DAC control values */
 #define DAC_OFF               0
 #define DAC_ON                1

@@ -16,7 +16,7 @@
 #include <stddef.h>
 
 /* External variables that need to be defined by the application */
-extern I2S_HandleTypeDef hi2s2;
+extern I2S_HandleTypeDef AUDIO_ENGINE_I2S_HANDLE;
 
 /* Hardware interface function pointers (set by application) */
 DAC_SwitchFunc  AudioEngine_DACSwitch   = NULL;
@@ -584,15 +584,15 @@ void SetPlaybackSpeed( uint16_t speed )
 
 /** Handle refilling the first half of the buffer whilst the second half is playing
   *
-  * params: hi2s2_p I2S port 2 handle.
+  * params: hi2s_p I2S port handle.
   * retval: none.
   *
   * NOTE: Also shuts down the playback when the recording is done.
   *
   */
-void HAL_I2S_TxHalfCpltCallback( I2S_HandleTypeDef *hi2s2_p )
+void HAL_I2S_TxHalfCpltCallback( I2S_HandleTypeDef *hi2s_p )
 {
-  UNUSED( hi2s2_p );
+  UNUSED( hi2s_p );
 
   /* If paused, stop processing samples and continue outputting silence */
   if( pb_state == PB_Paused ) {
@@ -632,15 +632,15 @@ void HAL_I2S_TxHalfCpltCallback( I2S_HandleTypeDef *hi2s2_p )
 
 /** Handle refilling the second half of the buffer whilst the first half is playing
   *
-  * params: hi2s2_p I2S port 2 handle.
+  * params: hi2s_p I2S port handle.
   * retval: none.
   *
   * NOTE: Also shuts down the playback when the recording is done.
   *
   */
-void HAL_I2S_TxCpltCallback( I2S_HandleTypeDef *hi2s2_p )
+void HAL_I2S_TxCpltCallback( I2S_HandleTypeDef *hi2s_p )
 {
-  UNUSED( hi2s2_p );
+  UNUSED( hi2s_p );
 
   /* If paused, stop processing samples and continue outputting silence */
   if( pb_state == PB_Paused ) {
@@ -913,7 +913,7 @@ PB_StatusTypeDef PlaySample (
     AudioEngine_I2SInit();
   }
 
-  HAL_I2S_DMAStop( &hi2s2 );       // Ensure there is no currently playing sound before starting the current one and turn on the DAC  
+  HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );       // Ensure there is no currently playing sound before starting the current one and turn on the DAC  
   if( AudioEngine_DACSwitch ) {
     AudioEngine_DACSwitch( DAC_ON );   // starting the current one and turn on the DAC
   }
@@ -980,7 +980,7 @@ PB_StatusTypeDef PlaySample (
   // Start playback of the recording
   //
   pb_state = PB_Playing;
-  HAL_I2S_Transmit_DMA( &hi2s2, (uint16_t *) pb_buffer, PB_BUFF_SZ );
+  HAL_I2S_Transmit_DMA( &AUDIO_ENGINE_I2S_HANDLE, (uint16_t *) pb_buffer, PB_BUFF_SZ );
   return PB_Playing;
 }
 
@@ -1001,7 +1001,7 @@ PB_StatusTypeDef WaitForSampleEnd( void )
   // This prevents the I2S_WaitFlagStateUntilTimeout hang that occurs when
   // stopping from within the DMA callback
   if( pb_state == PB_Idle ) {
-    HAL_I2S_DMAStop( &hi2s2 );
+    HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );
   }
   
   return pb_state;
