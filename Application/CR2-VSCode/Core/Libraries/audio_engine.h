@@ -124,7 +124,6 @@ void                SetLpfMakeupGain8Bit        ( float gain );
 void                SetLpf16BitLevel            ( LPF_Level level );
 
 /* Playback control functions */
-PB_StatusTypeDef    AudioEngine_Init            ( AudioEngine_HandleTypeDef *haudio );
 PB_StatusTypeDef    PlaySample                  (
                                                   const void *sample_to_play,
                                                   uint32_t sample_set_sz,

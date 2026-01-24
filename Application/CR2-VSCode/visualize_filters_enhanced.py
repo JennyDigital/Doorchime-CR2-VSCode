@@ -12,11 +12,11 @@ from matplotlib.gridspec import GridSpec
 DC_FILTER_ALPHA = 64225 / 65536  # 0.98
 SOFT_DC_FILTER_ALPHA = 65216 / 65536  # 0.995
 
-# 16-bit Biquad LPF levels
-LPF_16BIT_VERY_SOFT = 49152 / 65536  # 0.75
-LPF_16BIT_SOFT = 32768 / 65536  # 0.5
-LPF_16BIT_MEDIUM = 19660 / 65536  # 0.3
-LPF_16BIT_AGGRESSIVE = 6554 / 65536  # 0.1
+# 16-bit Biquad LPF levels (wider range, aggressive end unchanged at 0.625)
+LPF_16BIT_VERY_SOFT = 63488 / 65536  # ~0.97 - very gentle filtering
+LPF_16BIT_SOFT = 57344 / 65536  # 0.875 - gentle filtering
+LPF_16BIT_MEDIUM = 52429 / 65536  # ~0.80 - balanced filtering
+LPF_16BIT_AGGRESSIVE = 40960 / 65536  # 0.625 - strong filtering (unchanged)
 
 # 8-bit LPF levels
 LPF_VERY_SOFT = 61440 / 65536  # 0.9375
