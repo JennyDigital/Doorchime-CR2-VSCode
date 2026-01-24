@@ -169,9 +169,10 @@ int main(void)
 
   // FilterConfig_TypeDef filter_cfg;
 
-  filter_cfg.enable_16bit_biquad_lpf      = 0;
+  filter_cfg.enable_16bit_biquad_lpf      = 1;
 
-  SetLpfMakeupGain(1.85f);
+  SetLpfMakeupGain8Bit(0.5f);
+  SetLpf16BitLevel(LPF_Aggressive);
   SetFilterConfig( &filter_cfg );
   /* USER CODE END 2 */
 
@@ -188,19 +189,15 @@ int main(void)
     }
 #endif
     // Start playback of your chosen sample here
-    PlaySample( guitar_harmony2_16bm_11k, GUITAR_HARMONY2_16BM_11K_SZ,
-        I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_VerySoft );
-        WaitForSampleEnd();
+    // PlaySample( guitar_harmony2_16bm_11k, GUITAR_HARMONY2_16BM_11K_SZ,
+    //     I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_VerySoft );
+    //     WaitForSampleEnd();
     // PlaySample( handpan16bm, HANDPAN16BM_SZ,
     //     I2S_AUDIOFREQ_44K, 16, Mode_mono, LPF_Medium );
     // WaitForSampleEnd();
-    // PlaySample( magic_gong44k, MAGIC_GONG44K_SZ,
-    //     I2S_AUDIOFREQ_44K, 16, Mode_mono, LPF_Medium );
-    //     HAL_Delay( 1000 );
-    //     PausePlayback();
-    //     HAL_Delay( 1000 );
-    //     ResumePlayback();
-    // WaitForSampleEnd();
+    PlaySample( magic_gong44k, MAGIC_GONG44K_SZ,
+        I2S_AUDIOFREQ_44K, 16, Mode_mono, LPF_Medium );
+    WaitForSampleEnd();
     // PlaySample( custom_tritone16k, CUSTOM_TRITONE16K_SZ,
     //   I2S_AUDIOFREQ_16K, 16, Mode_mono, LPF_Medium );
     // WaitForSampleEnd();

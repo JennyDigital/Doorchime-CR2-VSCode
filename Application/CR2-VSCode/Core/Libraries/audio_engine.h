@@ -47,13 +47,14 @@ extern "C" {
 #define SOFT_DC_FILTER_ALPHA  65216    // 0.995 in fixed-point (65216/65536)
 
 /* Biquad low-pass filter for 16-bit samples */
-#define LPF_16BIT_ALPHA       32768    // 0.5 - gentle filtering (default)
+#define LPF_16BIT_ALPHA       57344    // 0.875 - gentle filtering (default)
 
 /* 16-bit biquad low-pass filter aggressiveness levels (alpha coefficients) */
-#define LPF_16BIT_VERY_SOFT   49152    // 0.75 - very gentle filtering (~6 kHz cutoff)
-#define LPF_16BIT_SOFT        32768    // 0.5 - gentle filtering (~10 kHz cutoff)
-#define LPF_16BIT_MEDIUM      19660    // 0.3 - balanced filtering (~15 kHz cutoff)
-#define LPF_16BIT_AGGRESSIVE  6554     // 0.1 - minimal filtering (~20 kHz cutoff)
+/* Wider range while keeping aggressive end aligned with 8-bit (0.625) */
+#define LPF_16BIT_VERY_SOFT   63488    // ~0.97 - very gentle filtering
+#define LPF_16BIT_SOFT        57344    // 0.875 - gentle filtering
+#define LPF_16BIT_MEDIUM      52429    // ~0.80 - balanced filtering
+#define LPF_16BIT_AGGRESSIVE  40960    // 0.625 - strong filtering (unchanged)
 
 /* Low-pass filter for 8-bit samples */
 #define LPF_8BIT_SHIFT        16       // Right shift for fixed-point division
@@ -119,7 +120,7 @@ typedef struct {
 /* Filter configuration functions */
 void                SetFilterConfig             ( const FilterConfig_TypeDef *cfg );
 void                GetFilterConfig             ( FilterConfig_TypeDef *cfg );
-void                SetLpfMakeupGain            ( float gain );
+void                SetLpfMakeupGain8Bit        ( float gain );
 void                SetLpf16BitLevel            ( LPF_Level level );
 
 /* Playback control functions */

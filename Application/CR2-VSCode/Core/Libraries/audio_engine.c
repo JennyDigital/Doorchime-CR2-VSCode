@@ -138,7 +138,7 @@ void GetFilterConfig( FilterConfig_TypeDef *cfg )
   * @param: gain - Floating-point gain value (0.1 to 2.0).
   * @retval: none
   */
-void SetLpfMakeupGain( float gain )
+void SetLpfMakeupGain8Bit( float gain )
 {
   if( gain < 0.1f ) {
     gain = 0.1f;
@@ -377,7 +377,22 @@ int16_t ApplySoftDCFilter16Bit( volatile int16_t input, volatile int32_t *prev_i
 int16_t ApplyLowPassFilter16Bit( int16_t input, volatile int32_t *x1, volatile int32_t *x2, 
                                  volatile int32_t *y1, volatile int32_t *y2 )
 {
-  uint32_t alpha = LPF_16BIT_ALPHA;
+  uint32_t alpha;
+  switch( filter_cfg.lpf_16bit_level ) {
+    case LPF_VerySoft:
+      alpha = LPF_16BIT_VERY_SOFT;
+      break;
+    case LPF_Soft:
+      alpha = LPF_16BIT_SOFT;
+      break;
+    case LPF_Medium:
+      alpha = LPF_16BIT_MEDIUM;
+      break;
+    case LPF_Aggressive:
+    default:
+      alpha = LPF_16BIT_AGGRESSIVE; // Keep aggressive end unchanged
+      break;
+  }
   
   int32_t b0 = ((65536 - alpha) * (65536 - alpha)) >> 17;
   int32_t b1 = b0 << 1;
@@ -920,6 +935,17 @@ PB_StatusTypeDef PlaySample (
   lpf_16bit_y1_left   = 0;  lpf_16bit_y1_right  = 0;
   lpf_16bit_y2_left   = 0;  lpf_16bit_y2_right  = 0;
   
+  // Warm up 16-bit biquad filter state from first sample to avoid startup transient
+  if( sample_depth == 16 && filter_cfg.enable_16bit_biquad_lpf ) {
+    int16_t first_sample = *((int16_t *)sample_to_play);
+    // Run multiple passes to let aggressive filters settle smoothly
+    for( uint8_t i = 0; i < 8; i++ ) {
+      ApplyLowPassFilter16Bit( first_sample, &lpf_16bit_x1_left, &lpf_16bit_x2_left,
+                               &lpf_16bit_y1_left, &lpf_16bit_y2_left );
+      ApplyLowPassFilter16Bit( first_sample, &lpf_16bit_x1_right, &lpf_16bit_x2_right,
+                               &lpf_16bit_y1_right, &lpf_16bit_y2_right );
+    }
+  }
   
   if( sample_depth == 16 ) {            // Initialize 16-bit sample playback pointers
     pb_p16 = (uint16_t *) sample_to_play;
