@@ -8,6 +8,7 @@
             "binaryDir": "${sourceDir}/build/${presetName}",
 		    "toolchainFile": "${sourceDir}/cmake/gcc-arm-none-eabi.cmake",
             "cacheVariables": {
+                "CMAKE_BUILD_PARALLEL_LEVEL": "8"
             }
         },
         {
