@@ -30,6 +30,7 @@
 #include "newchallenger11k.h"
 #include "guitar.h"
 #include "mind_the_door.h"
+#include "stm32g4xx_hal.h"
 #include "three_tone_arrival_c.h"
 #include "tunnelbarra.h"
 #include "tunnelbarra16.h"
@@ -95,8 +96,14 @@ volatile  uint16_t *      pb_end16;
 
 // Playback control variables
           uint8_t         pb_mode;
-volatile  uint8_t         pb_state                      = PB_IDLE;
+volatile  uint8_t         pb_state                      = PB_Idle;
 volatile  uint8_t         half_to_fill;
+
+// Pause/resume state tracking
+volatile  PB_StatusTypeDef pb_paused_state              = PB_Idle;
+volatile  uint32_t        paused_sample_index           = 0;
+volatile  const void *    paused_sample_ptr             = NULL;
+volatile  uint32_t        paused_total_samples          = 0;
 
 // volume and trigger control variables
 volatile  uint8_t         vol_div;
@@ -205,6 +212,8 @@ static  void    MX_I2S2_Init            ( void );
                                                           LPF_Level       lpf_level
                                                         );
         PB_StatusTypeDef    WaitForSampleEnd            ( void );
+        PB_StatusTypeDef    PausePlayback               ( void );
+        PB_StatusTypeDef    ResumePlayback              ( void );
         void                LPSystemClock_Config        ( void );
 
         void                ShutDownAudio               ( void );
@@ -276,6 +285,10 @@ int main(void)
     // WaitForSampleEnd();
     PlaySample( magic_gong44k, MAGIC_GONG44K_SZ,
         I2S_AUDIOFREQ_44K, 16, Mode_mono, LPF_Medium );
+        HAL_Delay( 1000 );
+        PausePlayback();
+        HAL_Delay( 1000 );
+        ResumePlayback();
     WaitForSampleEnd();
     // PlaySample( custom_tritone16k, CUSTOM_TRITONE16K_SZ,
     //   I2S_AUDIOFREQ_16K, 16, Mode_mono, LPF_Medium );
@@ -287,6 +300,10 @@ int main(void)
     // WaitForSampleEnd();
     PlaySample( rooster8b2c, ROOSTER8B2C_SZ,
        I2S_AUDIOFREQ_22K, 8, Mode_stereo, LPF_Medium );
+    HAL_Delay( 1000 );
+    PausePlayback();
+    HAL_Delay( 1000 );
+    ResumePlayback();
     WaitForSampleEnd();
 
     // PlaySample( harmony8b, HARMONY8B_SZ,
@@ -491,15 +508,20 @@ void HAL_I2S_TxHalfCpltCallback( I2S_HandleTypeDef *hi2s2_p )
 {
   UNUSED( hi2s2_p );
 
+  /* If paused, stop processing samples and continue outputting silence */
+  if( pb_state == PB_Paused ) {
+    return;
+  }
+
   if( pb_mode == 16 ) {             // 16-bit samples exhausted check.
     if( pb_p16 >= pb_end16 ) {
       // Set state to idle - cleanup will happen in main loop
-      pb_state = PB_IDLE;
+      pb_state = PB_Idle;
       return;
     }
     else {                          // Refill the first half of the buffer with 16-bit samples.
       half_to_fill = FIRST;
-      if( ProcessNextWaveChunk( (int16_t *) pb_p16 ) != PLAYING ) {
+      if( ProcessNextWaveChunk( (int16_t *) pb_p16 ) != PB_Playing ) {
         return;
       }
     }
@@ -508,12 +530,12 @@ void HAL_I2S_TxHalfCpltCallback( I2S_HandleTypeDef *hi2s2_p )
 
     if( pb_p8 >= pb_end8 ) {
       // Set state to idle - cleanup will happen in main loop
-      pb_state = PB_IDLE;
+      pb_state = PB_Idle;
       return;
     }
     else {                              // Refill the first half of the buffer with 8-bit samples.
       half_to_fill = FIRST;
-      if( ProcessNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PLAYING ) {
+      if( ProcessNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PB_Playing ) {
         return;
       } 
     }
@@ -534,16 +556,21 @@ void HAL_I2S_TxCpltCallback( I2S_HandleTypeDef *hi2s2_p )
 {
   UNUSED( hi2s2_p );
 
+  /* If paused, stop processing samples and continue outputting silence */
+  if( pb_state == PB_Paused ) {
+    return;
+  }
+
   if( pb_mode == 16 ) {
 
     if( pb_p16 >= pb_end16 ) {
       // Set state to idle - cleanup will happen in main loop
-      pb_state = PB_IDLE;
+      pb_state = PB_Idle;
       return;
     }
     else {
       half_to_fill = SECOND;
-      if( ProcessNextWaveChunk( (int16_t *) pb_p16 ) != PLAYING ) {
+      if( ProcessNextWaveChunk( (int16_t *) pb_p16 ) != PB_Playing ) {
        return;  
       }
     }
@@ -552,12 +579,12 @@ void HAL_I2S_TxCpltCallback( I2S_HandleTypeDef *hi2s2_p )
 
     if( pb_p8 >= pb_end8 ) {
       // Set state to idle - cleanup will happen in main loop
-      pb_state = PB_IDLE;
+      pb_state = PB_Idle;
       return;
     }
     else {
       half_to_fill = SECOND;
-      if( ProcessNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PLAYING ) {  
+      if( ProcessNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PB_Playing ) {  
           return;  
       }
     }
@@ -570,14 +597,14 @@ void AdvanceSamplePointer( void )
   if( pb_mode == 16 ) {  // Advance the 16-bit sample pointer
     pb_p16 += p_advance;
     if( pb_p16 >= pb_end16 ) {
-      pb_state = PB_IDLE;
+      pb_state = PB_Idle;
       return;
     }
   }
   else if( pb_mode == 8 ) {  // Or advance the 8-bit sample pointer
     pb_p8 += p_advance;
     if( pb_p8 >= pb_end8 ) {
-      pb_state = PB_IDLE;
+      pb_state = PB_Idle;
       return;
     }
   } 
@@ -597,7 +624,7 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
   int16_t leftsample, rightsample;
 
   if( chunk_p == NULL ) {   // Sanity check
-    return PB_ERROR;
+    return PB_Error;
   }
 
   vol_div = ReadVolume();
@@ -647,7 +674,7 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
       fadeout_samples_remaining--;
     }
   }
-  return PLAYING;
+  return PB_Playing;;
 }
 
 
@@ -666,7 +693,7 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
   int16_t leftsample, rightsample;
 
   if( chunk_p == NULL ) {   // Sanity check
-    return PB_ERROR;
+    return PB_Error;
   }
   vol_div = ReadVolume();
   input = chunk_p;                                               /* Source sample pointer */
@@ -721,7 +748,7 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
       fadeout_samples_remaining--;
     }
   }
-  return PLAYING;
+  return PB_Playing;
 }
 
 
@@ -750,7 +777,7 @@ PB_StatusTypeDef PlaySample(  const void *sample_to_play,
       ( mode != Mode_mono && mode != Mode_stereo) ||
       sample_set_sz   == 0                        ||
       sample_to_play  == NULL
-    ) { return PB_ERROR; }
+    ) { return PB_Error; }
 
   // Set low-pass filter alpha coefficient based on requested level
 #ifdef ENABLE_8BIT_LPF
@@ -822,23 +849,23 @@ PB_StatusTypeDef PlaySample(  const void *sample_to_play,
   // This ensures the fade-in is applied from the very first sample that plays
   half_to_fill = FIRST;
   if( pb_mode == 16 ) {
-    if( ProcessNextWaveChunk( (int16_t *) pb_p16 ) != PLAYING ) {
-      return PB_ERROR;
+    if( ProcessNextWaveChunk( (int16_t *) pb_p16 ) != PB_Playing ) {
+      return PB_Error;
     }
     pb_p16 += p_advance;
   }
   else if( pb_mode == 8 ) {
-    if( ProcessNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PLAYING ) {
-      return PB_ERROR;
+    if( ProcessNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PB_Playing ) {
+      return PB_Error;
     }
     pb_p8 += p_advance;
   }
   
   // Start playback of the recording
   //
-  pb_state = PLAYING;
+  pb_state = PB_Playing;
   HAL_I2S_Transmit_DMA( &hi2s2, (uint16_t *) pb_buffer, PB_BUFF_SZ );
-  return PLAYING;
+  return PB_Playing;
 }
 
 
@@ -850,18 +877,82 @@ PB_StatusTypeDef PlaySample(  const void *sample_to_play,
   */
 PB_StatusTypeDef WaitForSampleEnd( void )
 {
-  while( pb_state == PLAYING ) {
+  while( pb_state == PB_Playing ) {
     __NOP();  // Prevent optimizer from removing loop
   }
   
   // Cleanup: Stop DMA transmission now that we're out of the callback context
   // This prevents the I2S_WaitFlagStateUntilTimeout hang that occurs when
   // stopping from within the DMA callback
-  if( pb_state == PB_IDLE ) {
+  if( pb_state == PB_Idle ) {
     HAL_I2S_DMAStop( &hi2s2 );
   }
   
   return pb_state;
+}
+
+
+/**
+  * @brief Pause playback with a smooth fade-out
+  * 
+  * Saves the current playback position and initiates a fade-out over PAUSE_FADEOUT_SAMPLES.
+  * After fade-out completes, playback halts without stopping DMA (ready for resume).
+  * Call ResumePlayback() to continue from where it paused.
+  * 
+  * @retval PB_StatusTypeDef - Current playback state (PB_Playing while fading, PB_Paused when done)
+  */
+PB_StatusTypeDef PausePlayback( void )
+{
+  if( pb_state != PB_Playing ) {
+    return pb_state;  // Can only pause while actively playing
+  }
+  
+  /* Save current playback state for resuming */
+  pb_paused_state = PB_Paused;
+  paused_sample_index = (const uint8_t *)pb_p8 - (const uint8_t *)pb_p8;  // Will be restored via pb_p8
+  
+  /* Initiate smooth fade-out */
+  fadeout_samples_remaining = PAUSE_FADEOUT_SAMPLES;
+  
+  /* Wait for fade-out to complete */
+  while( fadeout_samples_remaining > 0 ) {
+    __NOP();
+  }
+  
+  /* Turn off DAC after fade-out completes */
+  DAC_MasterSwitch( DAC_OFF );
+  
+  /* Pause is complete - DMA still running but fade silence being output */
+  pb_state = PB_Paused;
+  
+  return PB_Paused;
+}
+
+
+/**
+  * @brief Resume playback from pause with a smooth fade-in
+  * 
+  * Resumes playback from where it was paused and fades in over FADEIN_SAMPLES.
+  * The audio will smoothly ramp up from silence to full volume.
+  * 
+  * @retval PB_StatusTypeDef - PLAYING if successfully resumed, error state otherwise
+  */
+PB_StatusTypeDef ResumePlayback( void )
+{
+  if( pb_state != PB_Paused ) {
+    return pb_state;  // Can only resume from paused state
+  }
+  
+  /* Turn on DAC before resuming playback */
+  DAC_MasterSwitch( DAC_ON );
+  
+  /* Resume playback from where it was paused */
+  pb_state = PB_Playing;
+  
+  /* Initiate smooth fade-in */
+  fadein_samples_remaining = FADEIN_SAMPLES;
+  
+  return PB_Playing;
 }
 
 

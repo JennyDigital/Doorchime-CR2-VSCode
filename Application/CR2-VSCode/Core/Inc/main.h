@@ -128,6 +128,11 @@ void Error_Handler(void);
 //
 #define FADEOUT_SAMPLES       2048U    // About 100ms at 22kHz
 
+// Pause fade-out configuration
+// Fade duration when pausing playback (for smooth transition)
+//
+#define PAUSE_FADEOUT_SAMPLES 1024U    // About 50ms at 22kHz
+
 // Fade-in configuration
 // Number of samples to fade in at the start (prevents click)
 //
@@ -194,10 +199,11 @@ void Error_Handler(void);
 // Playback status type
 //
 typedef enum {
-  PB_IDLE,
-  PB_ERROR,
-  PLAYING,
-  PLAYING_FAILED
+  PB_Idle,
+  PB_Error,
+  PB_Playing,
+  PB_Paused,
+  PB_PlayingFailed
 } PB_StatusTypeDef;
 
 // Playback mode type
