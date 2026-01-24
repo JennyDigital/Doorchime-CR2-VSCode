@@ -1,0 +1,872 @@
+/**
+  ******************************************************************************
+  * @file           : audio_engine.c
+  * @brief          : Audio playback engine and DSP filter chain implementation
+  ******************************************************************************
+  * @attention
+  *
+  * Reusable audio playback engine with runtime-configurable DSP filters.
+  * Supports 8-bit and 16-bit samples, mono/stereo playback, and various
+  * audio processing effects (LPF, DC blocking, fade in/out, soft clipping).
+  *
+  ******************************************************************************
+  */
+
+#include "audio_engine.h"
+#include <stddef.h>
+
+/* External variables that need to be defined by the application */
+extern I2S_HandleTypeDef hi2s2;
+
+/* Hardware interface function pointers (set by application) */
+DAC_SwitchFunc  AudioEngine_DACSwitch   = NULL;
+ReadVolumeFunc  AudioEngine_ReadVolume  = NULL;
+I2S_InitFunc    AudioEngine_I2SInit     = NULL;
+
+/* Volume divisor (populated by hardware GPIO reading) */
+volatile uint8_t vol_div;
+
+/* Playback buffer */
+int16_t pb_buffer[PB_BUFF_SZ] = {0};
+
+/* Filter configuration (runtime-tunable) */
+FilterConfig_TypeDef filter_cfg = {
+  .enable_16bit_biquad_lpf      = 1,
+  .enable_soft_dc_filter_16bit  = 1,
+  .enable_8bit_lpf              = 1,
+  .enable_noise_gate            = 0,
+  .enable_soft_clipping         = 1,
+  .lpf_makeup_gain_q16          = LPF_MAKEUP_GAIN_Q16,
+};
+
+/* Playback state variables */
+volatile uint8_t  *pb_p8;
+volatile uint8_t  *pb_end8;
+volatile uint16_t *pb_p16;
+volatile uint16_t *pb_end16;
+
+volatile uint8_t pb_state = PB_Idle;
+volatile uint8_t half_to_fill;
+uint8_t pb_mode;
+uint16_t I2S_PlaybackSpeed = 22000;  // Default
+
+/* Playback engine control variables */
+uint16_t p_advance;
+PB_ModeTypeDef channels = Mode_mono;
+volatile uint32_t fadeout_samples_remaining = 0;
+volatile uint32_t fadein_samples_remaining = 0;
+
+/* DC filter state */
+volatile int32_t dc_filter_prev_input_left = 0;
+volatile int32_t dc_filter_prev_input_right = 0;
+volatile int32_t dc_filter_prev_output_left = 0;
+volatile int32_t dc_filter_prev_output_right = 0;
+
+/* Dither state */
+volatile uint32_t dither_state = 12345;
+
+/* Biquad filter state for 8-bit samples */
+volatile int32_t lpf_8bit_x1_left = 0;
+volatile int32_t lpf_8bit_x2_left = 0;
+volatile int32_t lpf_8bit_y1_left = 0;
+volatile int32_t lpf_8bit_y2_left = 0;
+
+volatile int32_t lpf_8bit_x1_right = 0;
+volatile int32_t lpf_8bit_x2_right = 0;
+volatile int32_t lpf_8bit_y1_right = 0;
+volatile int32_t lpf_8bit_y2_right = 0;
+
+uint16_t lpf_8bit_alpha = LPF_MEDIUM;
+
+/* Biquad filter state for 16-bit samples */
+volatile int32_t lpf_16bit_x1_left = 0;
+volatile int32_t lpf_16bit_x2_left = 0;
+volatile int32_t lpf_16bit_y1_left = 0;
+volatile int32_t lpf_16bit_y2_left = 0;
+
+volatile int32_t lpf_16bit_x1_right = 0;
+volatile int32_t lpf_16bit_x2_right = 0;
+volatile int32_t lpf_16bit_y1_right = 0;
+volatile int32_t lpf_16bit_y2_right = 0;
+
+/* Pause/resume state tracking */
+volatile PB_StatusTypeDef pb_paused_state = PB_Idle;
+volatile uint32_t paused_sample_index = 0;
+volatile const void *paused_sample_ptr = NULL;
+volatile uint32_t paused_total_samples = 0;
+
+/* ===== Filter Configuration Functions ===== */
+
+void SetFilterConfig( const FilterConfig_TypeDef *cfg )
+{
+  if( cfg != NULL ) {
+    filter_cfg = *cfg;
+    // Ensure a sane makeup gain (default if zero)
+    if( filter_cfg.lpf_makeup_gain_q16 == 0 ) {
+      filter_cfg.lpf_makeup_gain_q16 = LPF_MAKEUP_GAIN_Q16;
+    }
+  }
+}
+
+void GetFilterConfig( FilterConfig_TypeDef *cfg )
+{
+  if( cfg != NULL ) {
+    *cfg = filter_cfg;
+  }
+}
+
+void SetLpfMakeupGain( float gain )
+{
+  if( gain < 0.1f ) {
+    gain = 0.1f;
+  } else if( gain > 2.0f ) {
+    gain = 2.0f;
+  }
+  uint32_t q16 = (uint32_t)( gain * 65536.0f + 0.5f );
+  filter_cfg.lpf_makeup_gain_q16 = q16;
+}
+
+/* ===== DSP Filter Functions ===== */
+
+int16_t Apply8BitDithering( uint8_t sample8 )
+{
+  // Convert unsigned 8-bit (0..255) to signed 16-bit
+  int16_t sample16 = (int16_t)( sample8 - 128 ) << 8;
+  
+  // Generate TPDF (Triangular Probability Density Function) dither
+  dither_state = dither_state * 1103515245U + 12345U;
+  int32_t rand1 = (dither_state >> 16) & 0xFF;
+  
+  dither_state = dither_state * 1103515245U + 12345U;
+  int32_t rand2 = (dither_state >> 16) & 0xFF;
+  
+  int16_t dither = (int16_t)((rand1 - rand2) >> 6);
+  
+  return sample16 + dither;
+}
+
+int16_t ApplyLowPassFilter8Bit( int16_t sample, 
+                                volatile int32_t *x1, volatile int32_t *x2,
+                                volatile int32_t *y1, volatile int32_t *y2 )
+{
+  int32_t alpha = lpf_8bit_alpha;
+  int32_t one_minus_alpha = 65536 - alpha;
+  
+  int32_t output = ((alpha * sample) >> 16) + 
+                   ((one_minus_alpha * (*y1)) >> 16);
+
+  // Apply makeup gain
+  output = (output * (int32_t)filter_cfg.lpf_makeup_gain_q16) >> 16;
+  
+  *y1 = output;
+  
+  if( output > 32767 )  output = 32767;
+  if( output < -32768 ) output = -32768;
+  
+  return (int16_t) output;
+}
+
+int16_t ApplyFadeIn( int16_t sample ) 
+{
+  if( fadein_samples_remaining > 0 ) {
+    int32_t progress = FADEIN_SAMPLES - fadein_samples_remaining;
+    int32_t fade_mult = (progress * progress) / FADEIN_SAMPLES;
+    return (int32_t) sample * fade_mult / FADEIN_SAMPLES;
+  }
+  return sample;
+}
+
+int16_t ApplyFadeOut( int16_t sample )
+{
+  if( fadeout_samples_remaining > 0 && fadeout_samples_remaining <= FADEOUT_SAMPLES ) {
+    int32_t fade_mult = (fadeout_samples_remaining * fadeout_samples_remaining) / FADEOUT_SAMPLES;
+    return (int32_t) sample * fade_mult / FADEOUT_SAMPLES;
+  }
+  return sample;
+}
+
+int16_t ApplyNoiseGate( int16_t sample )
+{
+  int16_t abs_sample = (sample < 0) ? -sample : sample;
+  if( abs_sample < NOISE_GATE_THRESHOLD ) {
+    return 0;
+  }
+  return sample;
+}
+
+int16_t ApplySoftClipping( int16_t sample )
+{
+  const int32_t threshold = 28000;
+  const int32_t max_val = 32767;
+  
+  int32_t s = sample;
+  
+  if( s > threshold ) {
+    int32_t excess = s - threshold;
+    int32_t range = max_val - threshold;
+    int32_t x = excess * 65536 / range;
+    if( x > 65536 ) x = 65536;
+    int32_t x2 = (x * x) >> 16;
+    int32_t x3 = (x2 * x) >> 16;
+    int32_t curve = ((3 * x2) >> 1) - ((2 * x3) >> 0);
+    s = threshold + ((range * curve) >> 16);
+  }
+  else if( s < -threshold ) {
+    int32_t excess = -threshold - s;
+    int32_t range = max_val - threshold;
+    int32_t x = excess * 65536 / range;
+    if( x > 65536 ) x = 65536;
+    int32_t x2 = (x * x) >> 16;
+    int32_t x3 = (x2 * x) >> 16;
+    int32_t curve = ((3 * x2) >> 1) - ((2 * x3) >> 0);
+    s = -threshold - ((range * curve) >> 16);
+  }
+  
+  if( s > max_val ) s = max_val;
+  if( s < -max_val ) s = -max_val;
+  
+  return (int16_t) s;
+}
+
+int16_t ApplyDCBlockingFilter( volatile int16_t input, volatile int32_t *prev_input, volatile int32_t *prev_output )
+{
+  int32_t output = input - *prev_input + 
+                   ( ( *prev_output * DC_FILTER_ALPHA ) >> DC_FILTER_SHIFT );
+  
+  *prev_input   = input;
+  *prev_output  = output;
+  
+  if ( output > 32767 )   output = 32767;
+  if ( output < -32768 )  output = -32768;
+  
+  return ( int16_t ) output;
+}
+
+int16_t ApplySoftDCFilter16Bit( volatile int16_t input, volatile int32_t *prev_input, volatile int32_t *prev_output )
+{
+  int32_t output = input - *prev_input + 
+                   ( ( *prev_output * SOFT_DC_FILTER_ALPHA ) >> DC_FILTER_SHIFT );
+  
+  *prev_input   = input;
+  *prev_output  = output;
+  
+  if ( output > 32767 )   output = 32767;
+  if ( output < -32768 )  output = -32768;
+  
+  return ( int16_t ) output;
+}
+
+int16_t ApplyLowPassFilter16Bit( int16_t input, volatile int32_t *x1, volatile int32_t *x2, 
+                                 volatile int32_t *y1, volatile int32_t *y2 )
+{
+  uint32_t alpha = LPF_16BIT_ALPHA;
+  
+  int32_t b0 = ((65536 - alpha) * (65536 - alpha)) >> 17;
+  int32_t b1 = b0 << 1;
+  int32_t b2 = b0;
+  int32_t a1 = -(alpha << 1);
+  int32_t a2 = (alpha * alpha) >> 16;
+  
+  int32_t output = (b0 * input) + (b1 * (*x1)) + (b2 * (*x2)) - (a1 * (*y1)) - (a2 * (*y2));
+  output >>= 16;
+  
+  *x2 = *x1;
+  *x1 = input;
+  *y2 = *y1;
+  *y1 = output;
+  
+  if ( output > 32767 )   output = 32767;
+  if ( output < -32768 )  output = -32768;
+  
+  return (int16_t)output;
+}
+
+int16_t ApplyFilterChain16Bit( int16_t sample, uint8_t is_left_channel )
+{
+  if( filter_cfg.enable_16bit_biquad_lpf ) {
+    if( is_left_channel ) {
+      sample = ApplyLowPassFilter16Bit( sample, &lpf_16bit_x1_left, &lpf_16bit_x2_left, 
+                                        &lpf_16bit_y1_left, &lpf_16bit_y2_left );
+    } else {
+      sample = ApplyLowPassFilter16Bit( sample, &lpf_16bit_x1_right, &lpf_16bit_x2_right, 
+                                        &lpf_16bit_y1_right, &lpf_16bit_y2_right );
+    }
+  }
+  
+  if( filter_cfg.enable_soft_dc_filter_16bit ) {
+    if( is_left_channel ) {
+      sample = ApplySoftDCFilter16Bit( sample, &dc_filter_prev_input_left, &dc_filter_prev_output_left );
+    } else {
+      sample = ApplySoftDCFilter16Bit( sample, &dc_filter_prev_input_right, &dc_filter_prev_output_right );
+    }
+  } else {
+    if( is_left_channel ) {
+      sample = ApplyDCBlockingFilter( sample, &dc_filter_prev_input_left, &dc_filter_prev_output_left );
+    } else {
+      sample = ApplyDCBlockingFilter( sample, &dc_filter_prev_input_right, &dc_filter_prev_output_right );
+    }
+  }
+  
+  sample = ApplyFadeIn( sample );
+  sample = ApplyFadeOut( sample );
+  
+  if( filter_cfg.enable_noise_gate ) {
+    sample = ApplyNoiseGate( sample );
+  }
+  
+  if( filter_cfg.enable_soft_clipping ) {
+    sample = ApplySoftClipping( sample );
+  }
+  
+  return sample;
+}
+
+int16_t ApplyFilterChain8Bit( int16_t sample, uint8_t is_left_channel )
+{
+  if( filter_cfg.enable_8bit_lpf ) {
+    if( is_left_channel ) {
+      sample = ApplyLowPassFilter8Bit( sample, 
+                                       &lpf_8bit_x1_left, &lpf_8bit_x2_left,
+                                       &lpf_8bit_y1_left, &lpf_8bit_y2_left );
+    } else {
+      sample = ApplyLowPassFilter8Bit( sample,
+                                       &lpf_8bit_x1_right, &lpf_8bit_x2_right,
+                                       &lpf_8bit_y1_right, &lpf_8bit_y2_right );
+    }
+  }
+  
+  if( filter_cfg.enable_soft_dc_filter_16bit ) {
+    if( is_left_channel ) {
+      sample = ApplySoftDCFilter16Bit( sample, &dc_filter_prev_input_left, &dc_filter_prev_output_left );
+    } else {
+      sample = ApplySoftDCFilter16Bit( sample, &dc_filter_prev_input_right, &dc_filter_prev_output_right );
+    }
+  } else {
+    if( is_left_channel ) {
+      sample = ApplyDCBlockingFilter( sample, &dc_filter_prev_input_left, &dc_filter_prev_output_left );
+    } else {
+      sample = ApplyDCBlockingFilter( sample, &dc_filter_prev_input_right, &dc_filter_prev_output_right );
+    }
+  }
+  
+  sample = ApplyFadeIn( sample );
+  sample = ApplyFadeOut( sample );
+  
+  if( filter_cfg.enable_noise_gate ) {
+    sample = ApplyNoiseGate( sample );
+  }
+  
+  if( filter_cfg.enable_soft_clipping ) {
+    sample = ApplySoftClipping( sample );
+  }
+  
+  return sample;
+}
+
+/* ===== State Accessors ===== */
+
+uint8_t GetPlaybackState( void )
+{
+  return pb_state;
+}
+
+void SetPlaybackState( uint8_t state )
+{
+  pb_state = state;
+}
+
+uint8_t GetHalfToFill( void )
+{
+  return half_to_fill;
+}
+
+void SetHalfToFill( uint8_t half )
+{
+  half_to_fill = half;
+}
+
+uint16_t GetPlaybackSpeed( void )
+{
+  return I2S_PlaybackSpeed;
+}
+
+void SetPlaybackSpeed( uint16_t speed )
+{
+  I2S_PlaybackSpeed = speed;
+}
+
+/* ============================================================================
+ * DMA Callbacks
+ * ============================================================================ */
+
+/** Handle refilling the first half of the buffer whilst the second half is playing
+  *
+  * params: hi2s2_p I2S port 2 handle.
+  * retval: none.
+  *
+  * NOTE: Also shuts down the playback when the recording is done.
+  *
+  */
+void HAL_I2S_TxHalfCpltCallback( I2S_HandleTypeDef *hi2s2_p )
+{
+  UNUSED( hi2s2_p );
+
+  /* If paused, stop processing samples and continue outputting silence */
+  if( pb_state == PB_Paused ) {
+    return;
+  }
+
+  if( pb_mode == 16 ) {             // 16-bit samples exhausted check.
+    if( pb_p16 >= pb_end16 ) {
+      // Set state to idle - cleanup will happen in main loop
+      pb_state = PB_Idle;
+      return;
+    }
+    else {                          // Refill the first half of the buffer with 16-bit samples.
+      half_to_fill = FIRST;
+      if( ProcessNextWaveChunk( (int16_t *) pb_p16 ) != PB_Playing ) {
+        return;
+      }
+    }
+  } 
+  else if( pb_mode == 8 ) {             // 8-bit samples exhausted check.
+
+    if( pb_p8 >= pb_end8 ) {
+      // Set state to idle - cleanup will happen in main loop
+      pb_state = PB_Idle;
+      return;
+    }
+    else {                              // Refill the first half of the buffer with 8-bit samples.
+      half_to_fill = FIRST;
+      if( ProcessNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PB_Playing ) {
+        return;
+      } 
+    }
+  }
+  AdvanceSamplePointer();
+}
+
+
+/** Handle refilling the second half of the buffer whilst the first half is playing
+  *
+  * params: hi2s2_p I2S port 2 handle.
+  * retval: none.
+  *
+  * NOTE: Also shuts down the playback when the recording is done.
+  *
+  */
+void HAL_I2S_TxCpltCallback( I2S_HandleTypeDef *hi2s2_p )
+{
+  UNUSED( hi2s2_p );
+
+  /* If paused, stop processing samples and continue outputting silence */
+  if( pb_state == PB_Paused ) {
+    return;
+  }
+
+  if( pb_mode == 16 ) {
+
+    if( pb_p16 >= pb_end16 ) {
+      // Set state to idle - cleanup will happen in main loop
+      pb_state = PB_Idle;
+      return;
+    }
+    else {
+      half_to_fill = SECOND;
+      if( ProcessNextWaveChunk( (int16_t *) pb_p16 ) != PB_Playing ) {
+       return;  
+      }
+    }
+  }
+  else if( pb_mode == 8 ) {
+
+    if( pb_p8 >= pb_end8 ) {
+      // Set state to idle - cleanup will happen in main loop
+      pb_state = PB_Idle;
+      return;
+    }
+    else {
+      half_to_fill = SECOND;
+      if( ProcessNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PB_Playing ) {  
+          return;  
+      }
+    }
+  }
+  AdvanceSamplePointer();
+}
+
+void AdvanceSamplePointer( void )
+{
+  if( pb_mode == 16 ) {  // Advance the 16-bit sample pointer
+    pb_p16 += p_advance;
+    if( pb_p16 >= pb_end16 ) {
+      pb_state = PB_Idle;
+      return;
+    }
+  }
+  else if( pb_mode == 8 ) {  // Or advance the 8-bit sample pointer
+    pb_p8 += p_advance;
+    if( pb_p8 >= pb_end8 ) {
+      pb_state = PB_Idle;
+      return;
+    }
+  } 
+}
+
+/* ============================================================================
+ * Chunk Processing
+ * ============================================================================ */
+
+/** Transfers a chunk of 16-bit samples to the DMA playback buffer and processes them
+  *
+  * It also processes for stereo mode
+  *
+  * @param: int16_t* chunk_p.  The start of the chunk to transfer.
+  * @retval: none.
+  *
+  */
+PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
+{
+  int16_t *input, *output;
+  int16_t leftsample, rightsample;
+
+  if( chunk_p == NULL ) {   // Sanity check
+    return PB_Error;
+  }
+
+  vol_div = AudioEngine_ReadVolume ? AudioEngine_ReadVolume() : 1;
+  input = chunk_p;      // Source sample pointer
+  output = ( half_to_fill == SECOND ) ? (pb_buffer + CHUNK_SZ ) : pb_buffer;
+
+  // Transfer mono audio (scaled for volume) into the stereo buffer.
+  // This is done both to eliminate the need for a second resistor
+  // and also because the MAX983567A expects stereo audio data, but we only
+  // have one speaker.
+  //
+  // NOTE: Soldered pads set a value to DIVIDE the audio down by with OPT1
+  // being the LSB and OPT3 the MSB.
+  //
+  for( uint16_t i = 0; i < HALFCHUNK_SZ; i++ )
+  {
+    if( (uint16_t *) input >=  pb_end16 ) {                     /* Check for end of sample data */
+      leftsample = MIDPOINT_S16;                                /* Pad with silence if at end */
+    }
+    else {
+      leftsample = ( (int16_t) (*input) / vol_div ) * VOL_MULT; // Left channel
+      leftsample = ApplyFilterChain16Bit( leftsample, 1 );      // Apply complete filter chain
+    }
+    input++;
+
+    if( channels == Mode_mono ) { rightsample = leftsample; }   // Right channel is the same as left.
+    else {
+      if( (uint16_t *) input >=  pb_end16 ) {                   // Check for end of sample data
+        rightsample = MIDPOINT_S16;                             // Pad with silence if at end
+      }
+      else { 
+        rightsample = ( (int16_t) (*input) / vol_div ) * VOL_MULT; // Right channel
+        rightsample = ApplyFilterChain16Bit( rightsample, 0 );     // Apply complete filter chain
+      }   // End of right channel processing
+      input++;
+    }
+    *output = leftsample;  output++;                            // Write samples to output buffer
+    *output = rightsample; output++;
+    
+    // Decrement fade counters based on samples processed
+    uint8_t samples_processed = (channels == Mode_stereo) ? 2 : 1;
+    if( fadein_samples_remaining > 0 ) {
+      fadein_samples_remaining = (fadein_samples_remaining > samples_processed) ? 
+                                 fadein_samples_remaining - samples_processed : 0;
+    }
+    if( fadeout_samples_remaining > 0 ) {
+      fadeout_samples_remaining--;
+    }
+  }
+  return PB_Playing;;
+}
+
+
+/** Transfers a chunk of 8-bit samples to the DMA playback buffer
+  *
+  * It also processes for stereo mode
+  *
+  * @param: uint8_t* chunk_p.  The start of the chunk to transfer.
+  * @retval: none.
+  *
+  */
+PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
+{
+  uint8_t *input;
+  int16_t *output;
+  int16_t leftsample, rightsample;
+
+  if( chunk_p == NULL ) {   // Sanity check
+    return PB_Error;
+  }
+  vol_div = AudioEngine_ReadVolume ? AudioEngine_ReadVolume() : 1;
+  input = chunk_p;                                               /* Source sample pointer */
+  output = ( half_to_fill == SECOND ) ? ( pb_buffer + CHUNK_SZ ) : pb_buffer;
+
+  // Transfer mono audio (scaled for volume) into the stereo buffer.
+  // This is done both to eliminate the need for a second resistor
+  // and also because the MAX983567A expects stereo audio data, but we only
+  // have one speaker.
+  //
+  // NOTE: Soldered pads set a value to DIVIDE the audio down by with OPT1
+  // being the LSB and OPT3 the MSB.
+  //
+  for( uint16_t i = 0; i < HALFCHUNK_SZ; i++ )
+  {
+    if( (uint8_t *) input >=  pb_end8 ) {                        /* Check for end of sample data */
+      leftsample = MIDPOINT_S16;                                 /* Pad with silence if at end */
+    }
+    else {
+      /* Convert unsigned 8-bit (0..255) -> signed 16-bit with dithering */
+      uint8_t sample8 = *input;
+      leftsample = Apply8BitDithering( sample8 );                    /* Left channel with dithering */
+      leftsample = ( leftsample * VOL_MULT ) / vol_div;              /* Scale for volume (multiply before divide) */
+      leftsample = ApplyFilterChain8Bit( leftsample, 1 );            /* Apply complete filter chain */
+    }
+    input++;
+
+    if( channels == Mode_mono ) { rightsample = leftsample; }   // Right channel is the same as left.
+    else {    
+      if( (uint8_t *) input >=  pb_end8 ) {                      /* Check for end of sample data */
+        rightsample = MIDPOINT_S16;                              /* Pad with silence if at end */
+      }
+      else {               
+        /* Convert unsigned 8-bit (0..255) -> signed 16-bit with dithering */
+        uint8_t sample8 = *input;
+        rightsample = Apply8BitDithering( sample8 );                 /* Right channel with dithering */
+        rightsample = ( rightsample * VOL_MULT ) / vol_div;          /* Scale for volume (multiply before divide) */
+        rightsample = ApplyFilterChain8Bit( rightsample, 0 );        /* Apply complete filter chain */
+      }
+      input++;
+    }
+    *output = leftsample;  output++;                              /* Transfer samples to output buffer */
+    *output = rightsample; output++;
+    
+    // Decrement fade counters based on samples processed
+    uint8_t samples_processed = (channels == Mode_stereo) ? 2 : 1;
+    if( fadein_samples_remaining > 0 ) {
+      fadein_samples_remaining = (fadein_samples_remaining > samples_processed) ? 
+                                 fadein_samples_remaining - samples_processed : 0;
+    }
+    if( fadeout_samples_remaining > 0 ) {
+      fadeout_samples_remaining--;
+    }
+  }
+  return PB_Playing;
+}
+
+/* ============================================================================
+ * Playback Control Functions
+ * ============================================================================ */
+
+/** Initiates playback of your specified sample
+  *
+  * @param: const void* sample_to_play.  Pointer to audio sample data (8-bit or 16-bit).
+  * @param: uint32_t sample_set_sz.  Many samples to play back.
+  * @param: uint16_t playback_speed.  This is the sample rate.
+  * @param: uint8_t sample depth.  This should be 8 or 16 bits.
+  * @param: PB_ModeTypeDef mode.  Mono or stereo playback.
+  * @param: LPF_Level lpf_level.  Low-pass filter level for 8-bit samples. It must be selected even if playing 16-bit samples.
+  * @retval: none
+  *
+  */
+PB_StatusTypeDef PlaySample(  const void *sample_to_play,
+                              uint32_t sample_set_sz,
+                              uint16_t playback_speed,
+                              uint8_t sample_depth,
+                              PB_ModeTypeDef mode,
+                              LPF_Level lpf_level
+                            )
+{
+  // Parameter sanity checks
+  //
+  if( ( sample_depth != 16 && sample_depth != 8 ) || 
+      ( mode != Mode_mono && mode != Mode_stereo) ||
+      sample_set_sz   == 0                        ||
+      sample_to_play  == NULL
+    ) { return PB_Error; }
+
+  // Set low-pass filter alpha coefficient based on requested level
+  switch( lpf_level ) {
+    case LPF_VerySoft:
+      lpf_8bit_alpha = LPF_VERY_SOFT;
+      break;
+    case LPF_Soft:
+      lpf_8bit_alpha = LPF_SOFT;
+      break;
+    case LPF_Aggressive:
+      lpf_8bit_alpha = LPF_AGGRESSIVE;
+      break;
+    case LPF_Medium:
+    default:
+      lpf_8bit_alpha = LPF_MEDIUM;
+      break;
+  }
+
+  if( mode == Mode_stereo ) {           // Pointer advance amount for stereo/mono mode.
+     p_advance = CHUNK_SZ;              // Two channels worth of samples per chunk
+     channels  = Mode_stereo;
+  }
+  else {                                // One channels worth of samples per chunk
+    p_advance  = HALFCHUNK_SZ;
+    channels   = Mode_mono;     
+  }
+
+  I2S_PlaybackSpeed = playback_speed;   // Turn the DAC on in readyness and initialize I2S with the requested sample rate.
+  if( AudioEngine_I2SInit ) {
+    AudioEngine_I2SInit();
+  }
+
+  HAL_I2S_DMAStop( &hi2s2 );       // Ensure there is no currently playing sound before starting the current one and turn on the DAC  
+  if( AudioEngine_DACSwitch ) {
+    AudioEngine_DACSwitch( DAC_ON );   // starting the current one and turn on the DAC
+  }
+  
+  // Reset DC blocking filter state for new sample
+  //
+  dc_filter_prev_input_left   = 0;    dc_filter_prev_input_right  = 0;
+  dc_filter_prev_output_left  = 0;    dc_filter_prev_output_right = 0;
+  
+  // Reset biquad filter state for 8-bit samples (all 4 state variables per channel)
+  lpf_8bit_x1_left  = 0;    lpf_8bit_x1_right  = 0;
+  lpf_8bit_x2_left  = 0;    lpf_8bit_x2_right  = 0;
+  lpf_8bit_y1_left  = 0;    lpf_8bit_y1_right  = 0;
+  lpf_8bit_y2_left  = 0;    lpf_8bit_y2_right  = 0;
+  
+  // Reset biquad filter state for 16-bit samples
+  lpf_16bit_x1_left  = 0;   lpf_16bit_x1_right  = 0;
+  lpf_16bit_x2_left  = 0;   lpf_16bit_x2_right  = 0;
+  lpf_16bit_y1_left  = 0;   lpf_16bit_y1_right  = 0;
+  lpf_16bit_y2_left  = 0;   lpf_16bit_y2_right  = 0;
+  
+  
+  if( sample_depth == 16 ) {            // Initialize 16-bit sample playback pointers
+    pb_p16 = (uint16_t *) sample_to_play;
+    pb_end16 = pb_p16 + sample_set_sz;
+    pb_mode = 16;
+  }
+  else if( sample_depth == 8 ) {        // Initialize 8-bit sample playback pointers
+    pb_p8 = (uint8_t *) sample_to_play;
+    pb_end8 = pb_p8 + sample_set_sz;
+    pb_mode = 8;
+  }
+  // Initialize fade counters
+  fadeout_samples_remaining = sample_set_sz;
+  fadein_samples_remaining  = FADEIN_SAMPLES;
+  
+  // Pre-fill the first half of the buffer with processed samples before starting DMA
+  // This ensures the fade-in is applied from the very first sample that plays
+  half_to_fill = FIRST;
+  if( pb_mode == 16 ) {
+    if( ProcessNextWaveChunk( (int16_t *) pb_p16 ) != PB_Playing ) {
+      return PB_Error;
+    }
+    pb_p16 += p_advance;
+  }
+  else if( pb_mode == 8 ) {
+    if( ProcessNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PB_Playing ) {
+      return PB_Error;
+    }
+    pb_p8 += p_advance;
+  }
+  
+  // Start playback of the recording
+  //
+  pb_state = PB_Playing;
+  HAL_I2S_Transmit_DMA( &hi2s2, (uint16_t *) pb_buffer, PB_BUFF_SZ );
+  return PB_Playing;
+}
+
+
+/** Simple function that waits for the end of playback.
+  *
+  * @param: none
+  * @retval: PB_StatusTypeDef indicating success or failure.
+  *
+  */
+PB_StatusTypeDef WaitForSampleEnd( void )
+{
+  while( pb_state == PB_Playing ) {
+    __NOP();  // Prevent optimizer from removing loop
+  }
+  
+  // Cleanup: Stop DMA transmission now that we're out of the callback context
+  // This prevents the I2S_WaitFlagStateUntilTimeout hang that occurs when
+  // stopping from within the DMA callback
+  if( pb_state == PB_Idle ) {
+    HAL_I2S_DMAStop( &hi2s2 );
+  }
+  
+  return pb_state;
+}
+
+
+/**
+  * @brief Pause playback with a smooth fade-out
+  * 
+  * Saves the current playback position and initiates a fade-out over PAUSE_FADEOUT_SAMPLES.
+  * After fade-out completes, playback halts without stopping DMA (ready for resume).
+  * Call ResumePlayback() to continue from where it paused.
+  * 
+  * @retval PB_StatusTypeDef - Current playback state (PB_Playing while fading, PB_Paused when done)
+  */
+PB_StatusTypeDef PausePlayback( void )
+{
+  if( pb_state != PB_Playing ) {
+    return pb_state;  // Can only pause while actively playing
+  }
+  
+  /* Save current playback state for resuming */
+  pb_paused_state = PB_Paused;
+  paused_sample_index = (const uint8_t *)pb_p8 - (const uint8_t *)pb_p8;  // Will be restored via pb_p8
+  
+  /* Initiate smooth fade-out */
+  fadeout_samples_remaining = PAUSE_FADEOUT_SAMPLES;
+  
+  /* Wait for fade-out to complete */
+  while( fadeout_samples_remaining > 0 ) {
+    __NOP();
+  }
+  
+  /* Turn off DAC after fade-out completes */
+  if( AudioEngine_DACSwitch ) {
+    AudioEngine_DACSwitch( DAC_OFF );
+  }
+  
+  /* Pause is complete - DMA still running but fade silence being output */
+  pb_state = PB_Paused;
+  
+  return PB_Paused;
+}
+
+
+/**
+  * @brief Resume playback from pause with a smooth fade-in
+  * 
+  * Resumes playback from where it was paused and fades in over FADEIN_SAMPLES.
+  * The audio will smoothly ramp up from silence to full volume.
+  * 
+  * @retval PB_StatusTypeDef - PLAYING if successfully resumed, error state otherwise
+  */
+PB_StatusTypeDef ResumePlayback( void )
+{
+  if( pb_state != PB_Paused ) {
+    return pb_state;  // Can only resume from paused state
+  }
+  
+  /* Turn on DAC before resuming playback */
+  if( AudioEngine_DACSwitch ) {
+    AudioEngine_DACSwitch( DAC_ON );
+  }
+  
+  /* Resume playback from where it was paused */
+  pb_state = PB_Playing;
+  
+  /* Initiate smooth fade-in */
+  fadein_samples_remaining = FADEIN_SAMPLES;
+  
+  return PB_Playing;
+}
