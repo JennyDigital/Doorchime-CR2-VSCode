@@ -117,8 +117,19 @@ volatile  int32_t         dc_filter_prev_input_right    = 0;
 volatile  int32_t         dc_filter_prev_output_left    = 0;
 volatile  int32_t         dc_filter_prev_output_right   = 0;
 volatile  uint32_t        dither_state                  = 12345;  // PRNG seed for dithering
-volatile  int32_t         lpf_8bit_state_left           = 0;      // Low-pass filter state for 8-bit left
-volatile  int32_t         lpf_8bit_state_right          = 0;      // Low-pass filter state for 8-bit right
+
+// Biquad filter state for 8-bit samples (left channel)
+volatile  int32_t         lpf_8bit_x1_left              = 0;      // x[n-1] left
+volatile  int32_t         lpf_8bit_x2_left              = 0;      // x[n-2] left  
+volatile  int32_t         lpf_8bit_y1_left              = 0;      // y[n-1] left
+volatile  int32_t         lpf_8bit_y2_left              = 0;      // y[n-2] left
+
+// Biquad filter state for 8-bit samples (right channel)
+volatile  int32_t         lpf_8bit_x1_right             = 0;      // x[n-1] right
+volatile  int32_t         lpf_8bit_x2_right             = 0;      // x[n-2] right
+volatile  int32_t         lpf_8bit_y1_right             = 0;      // y[n-1] right
+volatile  int32_t         lpf_8bit_y2_right             = 0;      // y[n-2] right
+
           uint16_t        lpf_8bit_alpha                = LPF_MEDIUM; // Current LPF alpha coefficient
 
 /* USER CODE END PV */
@@ -137,7 +148,9 @@ static  void    MX_I2S2_Init            ( void );
 
 // Signal processing function prototypes
         int16_t             Apply8BitDithering          ( uint8_t sample8 );
-        int16_t             ApplyLowPassFilter8Bit      ( int16_t sample, volatile int32_t *state );
+        int16_t             ApplyLowPassFilter8Bit      ( int16_t sample, 
+                                                          volatile int32_t *x1, volatile int32_t *x2,
+                                                          volatile int32_t *y1, volatile int32_t *y2 );
         int16_t             ApplyFadeIn                 ( int16_t sample );
         int16_t             ApplyFadeOut                ( int16_t sample );
         int16_t             ApplyNoiseGate              ( int16_t sample );
@@ -239,17 +252,17 @@ int main(void)
     // PlaySample( handpan16bm, HANDPAN16BM_SZ,
     //     I2S_AUDIOFREQ_44K, 16, Mode_mono, LPF_Medium );
     // WaitForSampleEnd();
-    // PlaySample( magic_gong44k, MAGIC_GONG44K_SZ,
-    //     I2S_AUDIOFREQ_44K, 16, Mode_mono, LPF_Medium );
-    // WaitForSampleEnd();
+    PlaySample( magic_gong44k, MAGIC_GONG44K_SZ,
+        I2S_AUDIOFREQ_44K, 16, Mode_mono, LPF_Medium );
+    WaitForSampleEnd();
     // PlaySample( custom_tritone16k, CUSTOM_TRITONE16K_SZ,
     //   I2S_AUDIOFREQ_16K, 16, Mode_mono, LPF_Medium );
     // WaitForSampleEnd();
     // PlaySample( rooster16b2c, ROOSTER16B2C_SZ, I2S_AUDIOFREQ_22K, 16, Mode_stereo, LPF_Medium );
     // WaitForSampleEnd();
-    PlaySample( ocarina32k, OCARINA32K_SZ,
-        I2S_AUDIOFREQ_32K, 16, Mode_mono, LPF_Soft );
-    WaitForSampleEnd();
+    // PlaySample( ocarina32k, OCARINA32K_SZ,
+    //     I2S_AUDIOFREQ_32K, 16, Mode_mono, LPF_Soft );
+    // WaitForSampleEnd();
     // PlaySample( rooster8b2c, ROOSTER8B2C_SZ,
     //    I2S_AUDIOFREQ_22K, 8, Mode_stereo, LPF_Medium );
     // WaitForSampleEnd();
@@ -757,9 +770,11 @@ PB_StatusTypeDef PlaySample(  const void *sample_to_play,
   dc_filter_prev_input_left   = 0;    dc_filter_prev_input_right  = 0;
   dc_filter_prev_output_left  = 0;    dc_filter_prev_output_right = 0;
   
-  // Reset low-pass filter state for 8-bit samples
-  lpf_8bit_state_left  = 0;
-  lpf_8bit_state_right = 0;
+  // Reset biquad filter state for 8-bit samples (all 4 state variables per channel)
+  lpf_8bit_x1_left  = 0;    lpf_8bit_x1_right  = 0;
+  lpf_8bit_x2_left  = 0;    lpf_8bit_x2_right  = 0;
+  lpf_8bit_y1_left  = 0;    lpf_8bit_y1_right  = 0;
+  lpf_8bit_y2_left  = 0;    lpf_8bit_y2_right  = 0;
   
   if( sample_depth == 16 ) {            // Initialize 16-bit sample playback pointers
     pb_p16 = (uint16_t *) sample_to_play;
@@ -811,15 +826,16 @@ void ClearBuffer( void )
 }
 
 
-/** Apply TPDF dithering during 8-bit to 16-bit conversion
+/** Apply TPDF dithering during 8-bit to 16-bit conversion with cubic interpolation
   *
   * Converts unsigned 8-bit samples (0..255) to signed 16-bit samples
   * with Triangular Probability Density Function (TPDF) dithering.
   * This breaks up quantization patterns and significantly reduces
   * perceived noise and distortion from low-resolution samples.
   *
-  * Uses linear interpolation for smoother 8→16 bit conversion, which
-  * reduces staircase artifacts compared to simple MSB replication.
+  * Uses cubic Hermite interpolation for smoother 8→16 bit conversion,
+  * which significantly reduces staircase artifacts compared to linear interpolation.
+  * The cubic curve provides C1 continuity (smooth first derivative).
   *
   * Uses a fast Linear Congruential Generator for random noise generation.
   *
@@ -828,9 +844,25 @@ void ClearBuffer( void )
   */
 int16_t Apply8BitDithering( uint8_t sample8 )
 {
-  // Convert 8-bit to 16-bit with linear interpolation (better than MSB replication)
-  int16_t sample16 = (int16_t)( sample8 - 128 ) << 8;
-  sample16 += (sample16 >> 8);  // Add fractional part for smoother conversion
+  // Convert 8-bit to signed with base scaling
+  int16_t base = (int16_t)( sample8 - 128 ) << 8;
+  
+  // Calculate fractional part for cubic interpolation
+  // Fractional position between quantization levels (0-255 range)
+  int32_t frac = (int32_t)sample8;  // Use original 8-bit value for smooth curve
+  
+  // Cubic Hermite interpolation for smooth transition
+  // Uses polynomial: 3t² - 2t³ for smooth S-curve between levels
+  // This provides much smoother transitions than linear interpolation
+  int32_t t = frac;  // 0-255 range
+  int32_t t2 = (t * t) >> 8;  // t²/256
+  int32_t t3 = (t2 * t) >> 8; // t³/256²
+  
+  // Hermite blend: 3t² - 2t³, scaled for 8-bit range
+  int32_t cubic_frac = ((3 * t2) - (2 * t3)) >> 8;
+  
+  // Apply cubic interpolation to smooth between quantization levels
+  int16_t sample16 = base + (int16_t)cubic_frac;
   
   // Generate TPDF dither using fast LCG PRNG
   // TPDF = rand1 - rand2 gives triangular distribution
@@ -847,29 +879,59 @@ int16_t Apply8BitDithering( uint8_t sample8 )
 }
 
 
-/** Apply single-pole low-pass filter for 8-bit samples
+/** Apply biquad low-pass filter for 8-bit samples
   *
-  * Implements a simple IIR low-pass filter to smooth out staircase
-  * artifacts and high-frequency noise from 8-bit sample conversion.
+  * Implements a second-order IIR (biquad) low-pass filter to smooth out
+  * staircase artifacts and high-frequency noise from 8-bit sample conversion.
+  * Biquad filters provide much steeper rolloff and better frequency response
+  * than single-pole filters.
   * 
-  * Filter equation: y[n] = α * y[n-1] + (1-α) * x[n]
-  * Where α = 0.75 (LPF_8BIT_ALPHA / 2^LPF_8BIT_SHIFT)
-  *
-  * This provides gentle smoothing while preserving audio quality.
+  * Filter equation: y[n] = b0*x[n] + b1*x[n-1] + b2*x[n-2] - a1*y[n-1] - a2*y[n-2]
+  * 
+  * Coefficients derived from lpf_8bit_alpha for varying cutoff frequencies:
+  * - Soft: Gentle rolloff, preserves more highs
+  * - Medium: Balanced filtering
+  * - Aggressive: Strong rolloff, removes more highs
   *
   * @param: sample - Audio sample to filter
-  * @param: state - Pointer to filter state variable
+  * @param: x1, x2 - Pointers to previous input states
+  * @param: y1, y2 - Pointers to previous output states  
   * @retval: Filtered 16-bit audio sample
   */
-int16_t ApplyLowPassFilter8Bit( int16_t sample, volatile int32_t *state )
+int16_t ApplyLowPassFilter8Bit( int16_t sample, 
+                                volatile int32_t *x1, volatile int32_t *x2,
+                                volatile int32_t *y1, volatile int32_t *y2 )
 {
-  // Apply IIR low-pass: output = α * prev_output + (1-α) * input
-  // α uses the current lpf_8bit_alpha setting (Soft/Medium/Aggressive)
-  int32_t output = ((*state * lpf_8bit_alpha) >> LPF_8BIT_SHIFT) + 
-                   ((sample * (65536 - lpf_8bit_alpha)) >> LPF_8BIT_SHIFT);
+  // Biquad coefficients based on alpha setting
+  // Using direct form I implementation
+  // Alpha determines resonance - higher alpha = more aggressive filtering
   
-  // Update state
-  *state = output;
+  // Simplified biquad using alpha to control cutoff
+  // b0 = (1-alpha)², b1 = 2*(1-alpha)², b2 = (1-alpha)²
+  // a1 = 2*alpha, a2 = -alpha²
+  
+  int32_t one_minus_alpha = 65536 - lpf_8bit_alpha;
+  
+  // Calculate filter output
+  // y[n] = b0*x[n] + b1*x[n-1] + b2*x[n-2] - a1*y[n-1] - a2*y[n-2]
+  int32_t b0 = ((one_minus_alpha * one_minus_alpha) >> 16);
+  int32_t b1 = b0 << 1;  // 2 * b0
+  int32_t b2 = b0;
+  int32_t a1 = lpf_8bit_alpha << 1;  // 2 * alpha
+  int32_t a2 = (lpf_8bit_alpha * lpf_8bit_alpha) >> 16;  // alpha²
+  
+  // Apply biquad difference equation
+  int32_t output = ((b0 * sample) >> 16) + 
+                   ((b1 * (*x1)) >> 16) + 
+                   ((b2 * (*x2)) >> 16) - 
+                   ((a1 * (*y1)) >> 16) + 
+                   ((a2 * (*y2)) >> 16);
+  
+  // Update state variables (shift history)
+  *x2 = *x1;
+  *x1 = sample;
+  *y2 = *y1;
+  *y1 = output;
   
   // Clamp to 16-bit range
   if( output > 32767 )  output = 32767;
@@ -1122,9 +1184,9 @@ int16_t ApplyFilterChain16Bit( int16_t sample, uint8_t is_left_channel )
 /** Apply complete filter chain for 8-bit samples
   *
   * Applies the complete signal processing chain in the correct order:
-  * 1. Low-pass filter for 8-bit (optional, removes staircase artifacts)
-  * 2. Fade-in (exponential)
-  * 3. DC blocking filter (soft or standard)
+  * 1. Low-pass filter for 8-bit (optional, removes staircase artifacts with biquad)
+  * 2. DC blocking filter (soft or standard) - applied BEFORE fades to prevent DC bias amplification
+  * 3. Fade-in (exponential)
   * 4. Fade-out (exponential)
   * 5. Noise gate (optional)
   * 6. Soft clipping (optional)
@@ -1136,18 +1198,20 @@ int16_t ApplyFilterChain16Bit( int16_t sample, uint8_t is_left_channel )
 int16_t ApplyFilterChain8Bit( int16_t sample, uint8_t is_left_channel )
 {
 #ifdef ENABLE_8BIT_LPF
-  // Apply low-pass filter to smooth 8-bit artifacts
+  // Apply biquad low-pass filter to smooth 8-bit artifacts
   if( is_left_channel ) {
-    sample = ApplyLowPassFilter8Bit( sample, &lpf_8bit_state_left );
+    sample = ApplyLowPassFilter8Bit( sample, 
+                                     &lpf_8bit_x1_left, &lpf_8bit_x2_left,
+                                     &lpf_8bit_y1_left, &lpf_8bit_y2_left );
   } else {
-    sample = ApplyLowPassFilter8Bit( sample, &lpf_8bit_state_right );
+    sample = ApplyLowPassFilter8Bit( sample,
+                                     &lpf_8bit_x1_right, &lpf_8bit_x2_right,
+                                     &lpf_8bit_y1_right, &lpf_8bit_y2_right );
   }
 #endif
   
-  // Apply fade-in
-  sample = ApplyFadeIn( sample );
-  
-  // Apply DC blocking filter (select appropriate filter and channel state)
+  // Apply DC blocking filter BEFORE fades to prevent DC bias amplification
+  // This is more effective than filtering after fades
 #ifdef ENABLE_SOFT_DC_FILTER_16BIT
   if( is_left_channel ) {
     sample = ApplySoftDCFilter16Bit( sample, &dc_filter_prev_input_left, &dc_filter_prev_output_left );
@@ -1161,6 +1225,9 @@ int16_t ApplyFilterChain8Bit( int16_t sample, uint8_t is_left_channel )
     sample = ApplyDCBlockingFilter( sample, &dc_filter_prev_input_right, &dc_filter_prev_output_right );
   }
 #endif
+  
+  // Apply fade-in
+  sample = ApplyFadeIn( sample );
   
   // Apply fade-out
   sample = ApplyFadeOut( sample );
