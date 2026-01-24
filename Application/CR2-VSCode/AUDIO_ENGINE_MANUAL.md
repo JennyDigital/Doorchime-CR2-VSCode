@@ -118,7 +118,7 @@ SetLpf16BitLevel(LPF_Aggressive);     // Stronger filtering
 ```
 ┌─────────────────────────────────────────────────┐
 │         Audio Sample (Flash Memory)             │
-│  (8-bit PCM or 16-bit WAV format)              │
+│  (8-bit PCM or 16-bit WAV format)               │
 └────────────────┬────────────────────────────────┘
                  │
                  ▼
@@ -138,16 +138,16 @@ SetLpf16BitLevel(LPF_Aggressive);     // Stronger filtering
     │  → ProcessNextChunk()   │
     └────────────┬────────────┘
                  │
-    ┌────────────▼────────────────────┐
-    │  Per-Sample DSP Filter Chain    │
-    ├─────────────────────────────────┤
-    │ 1. DC Blocking (high-pass)      │
-    │ 2. Low-Pass Filter (configurable)
-    │ 3. Soft Clipping               │
-    │ 4. Fade In/Out                 │
-    │ 5. Noise Gate (optional)        │
-    │ 6. Volume Scaling              │
-    └────────────┬────────────────────┘
+    ┌────────────▼─────────────────────┐
+    │  Per-Sample DSP Filter Chain     │
+    ├──────────────────────────────────┤
+    │ 1. DC Blocking (high-pass)       │
+    │ 2. Low-Pass Filter (configurable)|
+    │ 3. Soft Clipping                 │
+    │ 4. Fade In/Out                   │
+    │ 5. Noise Gate (optional)         │
+    │ 6. Volume Scaling                │
+    └────────────┬─────────────────────┘
                  │
                  ▼
         ┌────────────────────┐
