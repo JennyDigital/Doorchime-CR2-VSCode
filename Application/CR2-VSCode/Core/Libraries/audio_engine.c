@@ -675,7 +675,8 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
     return PB_Error;
   }
 
-  vol_div = AudioEngine_ReadVolume ? AudioEngine_ReadVolume() : 1;
+  vol_div = AudioEngine_ReadVolume();
+  vol_div =  vol_div ? vol_div : 1;
   input = chunk_p;      // Source sample pointer
   output = ( half_to_fill == SECOND ) ? (pb_buffer + CHUNK_SZ ) : pb_buffer;
 
@@ -743,7 +744,8 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
   if( chunk_p == NULL ) {   // Sanity check
     return PB_Error;
   }
-  vol_div = AudioEngine_ReadVolume ? AudioEngine_ReadVolume() : 1;
+  vol_div = AudioEngine_ReadVolume();
+  vol_div =  vol_div ? vol_div : 1;
   input = chunk_p;                                               /* Source sample pointer */
   output = ( half_to_fill == SECOND ) ? ( pb_buffer + CHUNK_SZ ) : pb_buffer;
 
@@ -873,16 +875,16 @@ PB_StatusTypeDef PlaySample (
   dc_filter_prev_output_left  = 0;    dc_filter_prev_output_right = 0;
   
   // Reset biquad filter state for 8-bit samples (all 4 state variables per channel)
-  lpf_8bit_x1_left  = 0;    lpf_8bit_x1_right  = 0;
-  lpf_8bit_x2_left  = 0;    lpf_8bit_x2_right  = 0;
-  lpf_8bit_y1_left  = 0;    lpf_8bit_y1_right  = 0;
-  lpf_8bit_y2_left  = 0;    lpf_8bit_y2_right  = 0;
+  lpf_8bit_x1_left    = 0;  lpf_8bit_x1_right   = 0;
+  lpf_8bit_x2_left    = 0;  lpf_8bit_x2_right   = 0;
+  lpf_8bit_y1_left    = 0;  lpf_8bit_y1_right   = 0;
+  lpf_8bit_y2_left    = 0;  lpf_8bit_y2_right   = 0;
   
   // Reset biquad filter state for 16-bit samples
-  lpf_16bit_x1_left  = 0;   lpf_16bit_x1_right  = 0;
-  lpf_16bit_x2_left  = 0;   lpf_16bit_x2_right  = 0;
-  lpf_16bit_y1_left  = 0;   lpf_16bit_y1_right  = 0;
-  lpf_16bit_y2_left  = 0;   lpf_16bit_y2_right  = 0;
+  lpf_16bit_x1_left   = 0;  lpf_16bit_x1_right  = 0;
+  lpf_16bit_x2_left   = 0;  lpf_16bit_x2_right  = 0;
+  lpf_16bit_y1_left   = 0;  lpf_16bit_y1_right  = 0;
+  lpf_16bit_y2_left   = 0;  lpf_16bit_y2_right  = 0;
   
   
   if( sample_depth == 16 ) {            // Initialize 16-bit sample playback pointers

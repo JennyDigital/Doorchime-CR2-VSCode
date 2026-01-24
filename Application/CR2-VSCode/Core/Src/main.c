@@ -106,12 +106,12 @@ extern FilterConfig_TypeDef filter_cfg;
         void    SystemClock_Config      ( void );
 static  void    MX_GPIO_Init            ( void );
 static  void    MX_DMA_Init             ( void );
-static  void    MX_I2S2_Init            ( void );
+static  void    MX_I2S2_Init            ( void );                                     // Used in audio_engine
 /* USER CODE BEGIN PFP */
 
-// Hardware-specific function prototypes (remain in main.c)
-        void                DAC_MasterSwitch            ( GPIO_PinState setting );
-        uint8_t             ReadVolume                  ( void );
+// Hardware-specific function prototypes
+        void                DAC_MasterSwitch            ( GPIO_PinState setting );    // Used in audio_engine
+        uint8_t             ReadVolume                  ( void );                     // Used in audio_engine
         void                WaitForTrigger              ( uint8_t trig_to_wait_for );
         uint8_t             GetTriggerOption            ( void );
         void                LPSystemClock_Config        ( void );
@@ -169,7 +169,7 @@ int main(void)
 
   // FilterConfig_TypeDef filter_cfg;
 
-  filter_cfg.enable_16bit_biquad_lpf      = 1;
+  filter_cfg.enable_16bit_biquad_lpf      = 0;
 
   SetLpfMakeupGain(1.85f);
   SetFilterConfig( &filter_cfg );
