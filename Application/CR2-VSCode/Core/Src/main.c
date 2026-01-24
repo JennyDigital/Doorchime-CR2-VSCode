@@ -205,7 +205,6 @@ static  void    MX_I2S2_Init            ( void );
                                                           LPF_Level       lpf_level
                                                         );
         PB_StatusTypeDef    WaitForSampleEnd            ( void );
-        void                ClearBuffer                 ( void );
         void                LPSystemClock_Config        ( void );
 
         void                ShutDownAudio               ( void );
@@ -431,6 +430,7 @@ static void MX_DMA_Init( void )
 
 }
 
+
 /**
   * @brief GPIO Initialization Function
   * @param None
@@ -475,6 +475,7 @@ static void MX_GPIO_Init( void )
 
   /* USER CODE END MX_GPIO_Init_2 */
 }
+
 
 
 /* USER CODE BEGIN 4 */
@@ -781,8 +782,6 @@ PB_StatusTypeDef PlaySample(  const void *sample_to_play,
 
   HAL_I2S_DMAStop( &hi2s2 );       // Ensure there is no currently playing sound before starting the current one and turn on the DAC  
   DAC_MasterSwitch( DAC_ON );   // starting the current one and turn on the DAC
-
-  ClearBuffer();                        // Clear the playback buffer to avoid glitches
   
   // Reset DC blocking filter state for new sample
   //
@@ -871,12 +870,6 @@ PB_StatusTypeDef WaitForSampleEnd( void )
   * @retval: none
   *
   * */
-void ClearBuffer( void )
-{
-  for( uint16_t sample_index = 0; sample_index < PB_BUFF_SZ; sample_index++ ) {
-    pb_buffer[ sample_index ] = MIDPOINT_S16;
-  }
-}
 
 
 /** Apply TPDF dithering during 8-bit to 16-bit conversion with cubic interpolation
