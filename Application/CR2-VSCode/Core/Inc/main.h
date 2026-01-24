@@ -146,50 +146,48 @@ void Error_Handler(void);
 
 // Soft DC filter for 16-bit playback
 // Gentler DC removal with lower cutoff frequency (~2Hz vs ~8Hz)
-// Uncomment to enable soft DC filtering instead of standard DC blocking
-//
-#define ENABLE_SOFT_DC_FILTER_16BIT
+// Runtime-configurable via FilterConfig
 #define SOFT_DC_FILTER_ALPHA  65216    // 0.995 in fixed-point (65216/65536)
 
 // Biquad low-pass filter for 16-bit samples
 // Second-order IIR filter for superior frequency response
-// Uncomment to enable biquad LPF on 16-bit samples
-//
-#define ENABLE_16BIT_BIQUAD_LPF
+// Runtime-configurable via FilterConfig
 #define LPF_16BIT_ALPHA       57344    // 0.875 - gentle filtering (same as LPF_SOFT)
-
-// High-frequency air enhancement
-// Subtle high-shelf boost to add clarity and "air" to the sound
-// Uncomment to enable air enhancement on 16-bit samples
-//
-//#define ENABLE_AIR_ENHANCEMENT
-#define AIR_BOOST_GAIN        2458     // +0.75dB boost (~0.0375 linear gain in fixed-point)
-#define AIR_CUTOFF_ALPHA      52429    // 0.80 - cutoff around 9-10kHz at 44.1kHz
 
 // Soft clipping configuration
 // Prevents harsh digital distortion on loud samples
-// Uncomment to enable soft clipping on output
-//
-#define ENABLE_SOFT_CLIPPING
+// Runtime-configurable via FilterConfig
 
 // Low-pass filter for 8-bit samples
 // Smooths out high-frequency artifacts from 8-bit conversion
-// Uncomment to enable low-pass filtering on 8-bit samples
-//
-#define ENABLE_8BIT_LPF
+// Runtime-configurable via FilterConfig
 #define LPF_8BIT_SHIFT        16       // Right shift for fixed-point division
+#define LPF_MAKEUP_GAIN_Q16   70779    // ~1.08x post-LPF makeup to offset gentle attenuation (default)
 
 // Low-pass filter aggressiveness levels (alpha coefficients in fixed-point)
+#define LPF_VERY_SOFT         61440    // 0.9375 - very gentle filtering, minimal loss of highs
 #define LPF_SOFT              57344    // 0.875 - gentle filtering, preserves highs
 #define LPF_MEDIUM            49152    // 0.75 - balanced filtering
 #define LPF_AGGRESSIVE        40960    // 0.625 - strong filtering, removes more highs
 
 // Noise gate configuration
 // Silences samples below threshold to remove background noise
-// Uncomment to enable noise gate
-//
-//#define ENABLE_NOISE_GATE
+// Runtime-configurable via FilterConfig
 #define NOISE_GATE_THRESHOLD  512      // ~1.5% of full scale (adjust 256-2048)
+
+// Filter chain runtime configuration
+typedef struct {
+  uint8_t enable_16bit_biquad_lpf;
+  uint8_t enable_soft_dc_filter_16bit;
+  uint8_t enable_8bit_lpf;
+  uint8_t enable_noise_gate;
+  uint8_t enable_soft_clipping;
+  uint32_t lpf_makeup_gain_q16;  // Q16 gain applied after LPF
+} FilterConfig_TypeDef;
+
+void SetFilterConfig( const FilterConfig_TypeDef *cfg );
+void GetFilterConfig( FilterConfig_TypeDef *cfg );
+void SetLpfMakeupGain( float gain );
 
 // Midpoint for Signed/Unsigned silence.
 //
@@ -216,6 +214,7 @@ typedef enum {
 // Low-pass filter aggressiveness type
 //
 typedef enum {
+  LPF_VerySoft,
   LPF_Soft,
   LPF_Medium,
   LPF_Aggressive

@@ -62,6 +62,7 @@
 #include "rooster16b2c.h"
 #include "dalby_tritone16b16k.h"
 #include "handpan_c16b.h"
+#include "guitar_harmony2.h"
 
 /* USER CODE END Includes */
 
@@ -88,6 +89,16 @@ DMA_HandleTypeDef hdma_spi2_tx;
 
 // Playback buffer size definitions
           int16_t         pb_buffer[ PB_BUFF_SZ ]       = {0};
+
+// Filter configuration (runtime-tunable)
+static FilterConfig_TypeDef filter_cfg = {
+  .enable_16bit_biquad_lpf      = 1,
+  .enable_soft_dc_filter_16bit  = 1,
+  .enable_8bit_lpf              = 1,
+  .enable_noise_gate            = 0,
+  .enable_soft_clipping         = 1,
+  .lpf_makeup_gain_q16          = LPF_MAKEUP_GAIN_Q16,
+};
 
 volatile  uint8_t  *      pb_p8;
 volatile  uint8_t  *      pb_end8;
@@ -151,14 +162,6 @@ volatile  int32_t         lpf_16bit_x2_right            = 0;      // x[n-2] righ
 volatile  int32_t         lpf_16bit_y1_right            = 0;      // y[n-1] right
 volatile  int32_t         lpf_16bit_y2_right            = 0;      // y[n-2] right
 
-// Air enhancement filter state (high-shelf) for left channel
-volatile  int32_t         air_x1_left                   = 0;      // x[n-1] left
-volatile  int32_t         air_y1_left                   = 0;      // y[n-1] left
-
-// Air enhancement filter state (high-shelf) for right channel
-volatile  int32_t         air_x1_right                  = 0;      // x[n-1] right
-volatile  int32_t         air_y1_right                  = 0;      // y[n-1] right
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -177,7 +180,6 @@ static  void    MX_I2S2_Init            ( void );
         int16_t             Apply8BitDithering          ( uint8_t sample8 );
         int16_t             ApplyLowPassFilter16Bit     ( int16_t input, volatile int32_t *x1, volatile int32_t *x2, 
                                                           volatile int32_t *y1, volatile int32_t *y2 );
-        int16_t             ApplyAirEnhancement         ( int16_t input, volatile int32_t *x1, volatile int32_t *y1 );
         int16_t             ApplyLowPassFilter8Bit      ( int16_t sample, 
                                                           volatile int32_t *x1, volatile int32_t *x2,
                                                           volatile int32_t *y1, volatile int32_t *y2 );
@@ -203,6 +205,9 @@ static  void    MX_I2S2_Init            ( void );
         uint8_t             ReadVolume                  ( void );
         void                WaitForTrigger              ( uint8_t trig_to_wait_for );
         uint8_t             GetTriggerOption            ( void );
+        void                SetFilterConfig             ( const FilterConfig_TypeDef *cfg );
+        void                GetFilterConfig             ( FilterConfig_TypeDef *cfg );
+        void                SetLpfMakeupGain            ( float gain );
         PB_StatusTypeDef    PlaySample                  (
                                                           const void *    sample_to_play,
                                                           uint32_t        sample_set_sz,  
@@ -264,6 +269,12 @@ int main(void)
 
   HAL_Delay( 150 );
 
+  // FilterConfig_TypeDef filter_cfg;
+
+  filter_cfg.enable_16bit_biquad_lpf      = 1;
+
+  SetLpfMakeupGain(1.85f);
+  SetFilterConfig( &filter_cfg );
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -278,18 +289,20 @@ int main(void)
       WaitForTrigger( TRIGGER_SET );
     }
 #endif
-
-
+    // Start playback of your chosen sample here
+    PlaySample( guitar_harmony2_16bm_11k, GUITAR_HARMONY2_16BM_11K_SZ,
+        I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_VerySoft );
+        WaitForSampleEnd();
     // PlaySample( handpan16bm, HANDPAN16BM_SZ,
     //     I2S_AUDIOFREQ_44K, 16, Mode_mono, LPF_Medium );
     // WaitForSampleEnd();
-    PlaySample( magic_gong44k, MAGIC_GONG44K_SZ,
-        I2S_AUDIOFREQ_44K, 16, Mode_mono, LPF_Medium );
-        HAL_Delay( 1000 );
-        PausePlayback();
-        HAL_Delay( 1000 );
-        ResumePlayback();
-    WaitForSampleEnd();
+    // PlaySample( magic_gong44k, MAGIC_GONG44K_SZ,
+    //     I2S_AUDIOFREQ_44K, 16, Mode_mono, LPF_Medium );
+    //     HAL_Delay( 1000 );
+    //     PausePlayback();
+    //     HAL_Delay( 1000 );
+    //     ResumePlayback();
+    // WaitForSampleEnd();
     // PlaySample( custom_tritone16k, CUSTOM_TRITONE16K_SZ,
     //   I2S_AUDIOFREQ_16K, 16, Mode_mono, LPF_Medium );
     // WaitForSampleEnd();
@@ -298,13 +311,13 @@ int main(void)
     // PlaySample( ocarina32k, OCARINA32K_SZ,
     //     I2S_AUDIOFREQ_32K, 16, Mode_mono, LPF_Soft );
     // WaitForSampleEnd();
-    PlaySample( rooster8b2c, ROOSTER8B2C_SZ,
-       I2S_AUDIOFREQ_22K, 8, Mode_stereo, LPF_Medium );
-    HAL_Delay( 1000 );
-    PausePlayback();
-    HAL_Delay( 1000 );
-    ResumePlayback();
-    WaitForSampleEnd();
+    // PlaySample( rooster8b2c, ROOSTER8B2C_SZ,
+    //    I2S_AUDIOFREQ_22K, 8, Mode_stereo, LPF_Medium );
+    // HAL_Delay( 1000 );
+    // PausePlayback();
+    // HAL_Delay( 1000 );
+    // ResumePlayback();
+    // WaitForSampleEnd();
 
     // PlaySample( harmony8b, HARMONY8B_SZ,
     //     I2S_AUDIOFREQ_11K, 8, Mode_mono, LPF_Medium );
@@ -780,8 +793,10 @@ PB_StatusTypeDef PlaySample(  const void *sample_to_play,
     ) { return PB_Error; }
 
   // Set low-pass filter alpha coefficient based on requested level
-#ifdef ENABLE_8BIT_LPF
   switch( lpf_level ) {
+    case LPF_VerySoft:
+      lpf_8bit_alpha = LPF_VERY_SOFT;
+      break;
     case LPF_Soft:
       lpf_8bit_alpha = LPF_SOFT;
       break;
@@ -793,7 +808,6 @@ PB_StatusTypeDef PlaySample(  const void *sample_to_play,
       lpf_8bit_alpha = LPF_MEDIUM;
       break;
   }
-#endif
 
   if( mode == Mode_stereo ) {           // Pointer advance amount for stereo/mono mode.
      p_advance = CHUNK_SZ;              // Two channels worth of samples per chunk
@@ -827,9 +841,6 @@ PB_StatusTypeDef PlaySample(  const void *sample_to_play,
   lpf_16bit_y1_left  = 0;   lpf_16bit_y1_right  = 0;
   lpf_16bit_y2_left  = 0;   lpf_16bit_y2_right  = 0;
   
-  // Reset air enhancement filter state
-  air_x1_left  = 0;         air_x1_right  = 0;
-  air_y1_left  = 0;         air_y1_right  = 0;
   
   if( sample_depth == 16 ) {            // Initialize 16-bit sample playback pointers
     pb_p16 = (uint16_t *) sample_to_play;
@@ -1035,6 +1046,9 @@ int16_t ApplyLowPassFilter8Bit( int16_t sample,
   // Apply filter: y[n] = alpha*x[n] + (1-alpha)*y[n-1]
   int32_t output = ((alpha * sample) >> 16) + 
                    ((one_minus_alpha * (*y1)) >> 16);
+
+  // Apply slight makeup gain to offset perceived loudness drop from filtering
+  output = (output * (int32_t)filter_cfg.lpf_makeup_gain_q16) >> 16;
   
   // Update state variable
   *y1 = output;
@@ -1286,42 +1300,6 @@ int16_t ApplyLowPassFilter16Bit( int16_t input, volatile int32_t *x1, volatile i
 }
 
 
-/** High-frequency air enhancement filter
-  *
-  * Implements a first-order high-shelf filter to add subtle high-frequency boost.
-  * Enhances clarity and "air" in the audio, making it sound more open and detailed.
-  * Uses a gentle +1.5dB boost above ~7-8kHz.
-  *
-  * @param: input - Current audio sample
-  * @param: x1 - Pointer to previous input sample x[n-1]
-  * @param: y1 - Pointer to previous output sample y[n-1]
-  * @retval: Enhanced 16-bit audio sample
-  */
-int16_t ApplyAirEnhancement( int16_t input, volatile int32_t *x1, volatile int32_t *y1 )
-{
-  // High-shelf filter: y[n] = x[n] + gain*(x[n] - x[n-1]) + α*y[n-1]
-  // This boosts high frequencies while maintaining low frequencies
-  
-  int32_t diff = input - *x1;  // High-frequency component
-  
-  // Apply gain to high-frequency component
-  int32_t boost = (diff * AIR_BOOST_GAIN) >> 16;
-  
-  // Combine with recursive filter for smooth response
-  int32_t output = input + boost + ((AIR_CUTOFF_ALPHA * (*y1)) >> 16);
-  
-  // Update state
-  *x1 = input;
-  *y1 = output;
-  
-  // Clamp to 16-bit range
-  if ( output > 32767 )   output = 32767;
-  if ( output < -32768 )  output = -32768;
-  
-  return (int16_t)output;
-}
-
-
 /** Apply complete filter chain for 16-bit samples
   *
   * Applies the complete signal processing chain in the correct order:
@@ -1339,31 +1317,31 @@ int16_t ApplyAirEnhancement( int16_t input, volatile int32_t *x1, volatile int32
   */
 int16_t ApplyFilterChain16Bit( int16_t sample, uint8_t is_left_channel )
 {
-#ifdef ENABLE_16BIT_BIQUAD_LPF
-  // Apply biquad low-pass filter first
-  if( is_left_channel ) {
-    sample = ApplyLowPassFilter16Bit( sample, &lpf_16bit_x1_left, &lpf_16bit_x2_left, 
-                                      &lpf_16bit_y1_left, &lpf_16bit_y2_left );
-  } else {
-    sample = ApplyLowPassFilter16Bit( sample, &lpf_16bit_x1_right, &lpf_16bit_x2_right, 
-                                      &lpf_16bit_y1_right, &lpf_16bit_y2_right );
+  if( filter_cfg.enable_16bit_biquad_lpf ) {
+    // Apply biquad low-pass filter first
+    if( is_left_channel ) {
+      sample = ApplyLowPassFilter16Bit( sample, &lpf_16bit_x1_left, &lpf_16bit_x2_left, 
+                                        &lpf_16bit_y1_left, &lpf_16bit_y2_left );
+    } else {
+      sample = ApplyLowPassFilter16Bit( sample, &lpf_16bit_x1_right, &lpf_16bit_x2_right, 
+                                        &lpf_16bit_y1_right, &lpf_16bit_y2_right );
+    }
   }
-#endif
   
   // Apply DC blocking filter before fades (prevents DC bias amplification)
-#ifdef ENABLE_SOFT_DC_FILTER_16BIT
-  if( is_left_channel ) {
-    sample = ApplySoftDCFilter16Bit( sample, &dc_filter_prev_input_left, &dc_filter_prev_output_left );
+  if( filter_cfg.enable_soft_dc_filter_16bit ) {
+    if( is_left_channel ) {
+      sample = ApplySoftDCFilter16Bit( sample, &dc_filter_prev_input_left, &dc_filter_prev_output_left );
+    } else {
+      sample = ApplySoftDCFilter16Bit( sample, &dc_filter_prev_input_right, &dc_filter_prev_output_right );
+    }
   } else {
-    sample = ApplySoftDCFilter16Bit( sample, &dc_filter_prev_input_right, &dc_filter_prev_output_right );
+    if( is_left_channel ) {
+      sample = ApplyDCBlockingFilter( sample, &dc_filter_prev_input_left, &dc_filter_prev_output_left );
+    } else {
+      sample = ApplyDCBlockingFilter( sample, &dc_filter_prev_input_right, &dc_filter_prev_output_right );
+    }
   }
-#else
-  if( is_left_channel ) {
-    sample = ApplyDCBlockingFilter( sample, &dc_filter_prev_input_left, &dc_filter_prev_output_left );
-  } else {
-    sample = ApplyDCBlockingFilter( sample, &dc_filter_prev_input_right, &dc_filter_prev_output_right );
-  }
-#endif
   
   // Apply fade-in
   sample = ApplyFadeIn( sample );
@@ -1371,24 +1349,15 @@ int16_t ApplyFilterChain16Bit( int16_t sample, uint8_t is_left_channel )
   // Apply fade-out
   sample = ApplyFadeOut( sample );
   
-#ifdef ENABLE_AIR_ENHANCEMENT
-  // Apply high-frequency air enhancement for clarity
-  if( is_left_channel ) {
-    sample = ApplyAirEnhancement( sample, &air_x1_left, &air_y1_left );
-  } else {
-    sample = ApplyAirEnhancement( sample, &air_x1_right, &air_y1_right );
+  if( filter_cfg.enable_noise_gate ) {
+    // Apply noise gate to remove quiet background noise
+    sample = ApplyNoiseGate( sample );
   }
-#endif
   
-#ifdef ENABLE_NOISE_GATE
-  // Apply noise gate to remove quiet background noise
-  sample = ApplyNoiseGate( sample );
-#endif
-  
-#ifdef ENABLE_SOFT_CLIPPING
-  // Apply soft clipping as final stage
-  sample = ApplySoftClipping( sample );
-#endif
+  if( filter_cfg.enable_soft_clipping ) {
+    // Apply soft clipping as final stage
+    sample = ApplySoftClipping( sample );
+  }
   
   return sample;
 }
@@ -1410,34 +1379,34 @@ int16_t ApplyFilterChain16Bit( int16_t sample, uint8_t is_left_channel )
   */
 int16_t ApplyFilterChain8Bit( int16_t sample, uint8_t is_left_channel )
 {
-#ifdef ENABLE_8BIT_LPF
-  // Apply biquad low-pass filter to smooth 8-bit artifacts
-  if( is_left_channel ) {
-    sample = ApplyLowPassFilter8Bit( sample, 
-                                     &lpf_8bit_x1_left, &lpf_8bit_x2_left,
-                                     &lpf_8bit_y1_left, &lpf_8bit_y2_left );
-  } else {
-    sample = ApplyLowPassFilter8Bit( sample,
-                                     &lpf_8bit_x1_right, &lpf_8bit_x2_right,
-                                     &lpf_8bit_y1_right, &lpf_8bit_y2_right );
+  if( filter_cfg.enable_8bit_lpf ) {
+    // Apply biquad low-pass filter to smooth 8-bit artifacts
+    if( is_left_channel ) {
+      sample = ApplyLowPassFilter8Bit( sample, 
+                                       &lpf_8bit_x1_left, &lpf_8bit_x2_left,
+                                       &lpf_8bit_y1_left, &lpf_8bit_y2_left );
+    } else {
+      sample = ApplyLowPassFilter8Bit( sample,
+                                       &lpf_8bit_x1_right, &lpf_8bit_x2_right,
+                                       &lpf_8bit_y1_right, &lpf_8bit_y2_right );
+    }
   }
-#endif
   
   // Apply DC blocking filter BEFORE fades to prevent DC bias amplification
   // This is more effective than filtering after fades
-#ifdef ENABLE_SOFT_DC_FILTER_16BIT
-  if( is_left_channel ) {
-    sample = ApplySoftDCFilter16Bit( sample, &dc_filter_prev_input_left, &dc_filter_prev_output_left );
+  if( filter_cfg.enable_soft_dc_filter_16bit ) {
+    if( is_left_channel ) {
+      sample = ApplySoftDCFilter16Bit( sample, &dc_filter_prev_input_left, &dc_filter_prev_output_left );
+    } else {
+      sample = ApplySoftDCFilter16Bit( sample, &dc_filter_prev_input_right, &dc_filter_prev_output_right );
+    }
   } else {
-    sample = ApplySoftDCFilter16Bit( sample, &dc_filter_prev_input_right, &dc_filter_prev_output_right );
+    if( is_left_channel ) {
+      sample = ApplyDCBlockingFilter( sample, &dc_filter_prev_input_left, &dc_filter_prev_output_left );
+    } else {
+      sample = ApplyDCBlockingFilter( sample, &dc_filter_prev_input_right, &dc_filter_prev_output_right );
+    }
   }
-#else
-  if( is_left_channel ) {
-    sample = ApplyDCBlockingFilter( sample, &dc_filter_prev_input_left, &dc_filter_prev_output_left );
-  } else {
-    sample = ApplyDCBlockingFilter( sample, &dc_filter_prev_input_right, &dc_filter_prev_output_right );
-  }
-#endif
   
   // Apply fade-in
   sample = ApplyFadeIn( sample );
@@ -1445,15 +1414,15 @@ int16_t ApplyFilterChain8Bit( int16_t sample, uint8_t is_left_channel )
   // Apply fade-out
   sample = ApplyFadeOut( sample );
   
-#ifdef ENABLE_NOISE_GATE
-  // Apply noise gate to remove quiet background noise
-  sample = ApplyNoiseGate( sample );
-#endif
+  if( filter_cfg.enable_noise_gate ) {
+    // Apply noise gate to remove quiet background noise
+    sample = ApplyNoiseGate( sample );
+  }
   
-#ifdef ENABLE_SOFT_CLIPPING
-  // Apply soft clipping as final stage
-  sample = ApplySoftClipping( sample );
-#endif
+  if( filter_cfg.enable_soft_clipping ) {
+    // Apply soft clipping as final stage
+    sample = ApplySoftClipping( sample );
+  }
   
   return sample;
 }
@@ -1554,6 +1523,38 @@ uint8_t GetTriggerOption( void )
 #else
   return HAL_GPIO_ReadPin( OPT4_GPIO_Port, OPT4_Pin );
 #endif
+}
+
+// Update the runtime filter configuration
+void SetFilterConfig( const FilterConfig_TypeDef *cfg )
+{
+  if( cfg != NULL ) {
+    filter_cfg = *cfg;
+    // Ensure a sane makeup gain (default if zero)
+    if( filter_cfg.lpf_makeup_gain_q16 == 0 ) {
+      filter_cfg.lpf_makeup_gain_q16 = LPF_MAKEUP_GAIN_Q16;
+    }
+  }
+}
+
+// Read back the current filter configuration
+void GetFilterConfig( FilterConfig_TypeDef *cfg )
+{
+  if( cfg != NULL ) {
+    *cfg = filter_cfg;
+  }
+}
+
+// Set LPF makeup gain from floating-point value (clamped to 0.1x..2.0x)
+void SetLpfMakeupGain( float gain )
+{
+  if( gain < 0.1f ) {
+    gain = 0.1f;
+  } else if( gain > 2.0f ) {
+    gain = 2.0f;
+  }
+  uint32_t q16 = (uint32_t)( gain * 65536.0f + 0.5f );
+  filter_cfg.lpf_makeup_gain_q16 = q16;
 }
 
 
