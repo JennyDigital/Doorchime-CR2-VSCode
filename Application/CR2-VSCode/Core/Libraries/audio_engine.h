@@ -47,13 +47,19 @@ extern "C" {
 #define SOFT_DC_FILTER_ALPHA  65216    // 0.995 in fixed-point (65216/65536)
 
 /* Biquad low-pass filter for 16-bit samples */
-#define LPF_16BIT_ALPHA       57344    // 0.875 - gentle filtering
+#define LPF_16BIT_ALPHA       57344    // 0.875 - gentle filtering (default)
+
+/* 16-bit biquad low-pass filter aggressiveness levels (alpha coefficients) */
+#define LPF_16BIT_VERY_SOFT   61440    // 0.9375 - very gentle filtering
+#define LPF_16BIT_SOFT        57344    // 0.875 - gentle filtering
+#define LPF_16BIT_MEDIUM      49152    // 0.75 - balanced filtering
+#define LPF_16BIT_AGGRESSIVE  40960    // 0.625 - strong filtering
 
 /* Low-pass filter for 8-bit samples */
 #define LPF_8BIT_SHIFT        16       // Right shift for fixed-point division
 #define LPF_MAKEUP_GAIN_Q16   70779    // ~1.08x post-LPF makeup (default)
 
-/* Low-pass filter aggressiveness levels (alpha coefficients in fixed-point) */
+/* 8-bit low-pass filter aggressiveness levels (alpha coefficients in fixed-point) */
 #define LPF_VERY_SOFT         61440    // 0.9375 - very gentle filtering
 #define LPF_SOFT              57344    // 0.875 - gentle filtering
 #define LPF_MEDIUM            49152    // 0.75 - balanced filtering
@@ -97,6 +103,7 @@ typedef struct {
   uint8_t enable_noise_gate;
   uint8_t enable_soft_clipping;
   uint32_t lpf_makeup_gain_q16;  // Q16 gain applied after LPF
+  LPF_Level lpf_16bit_level;     // Filter level for 16-bit biquad LPF
 } FilterConfig_TypeDef;
 
 /* Global audio engine state exposed for hardware initialization */
@@ -113,10 +120,11 @@ typedef struct {
 void                SetFilterConfig             ( const FilterConfig_TypeDef *cfg );
 void                GetFilterConfig             ( FilterConfig_TypeDef *cfg );
 void                SetLpfMakeupGain            ( float gain );
+void                SetLpf16BitLevel            ( LPF_Level level );
 
 /* Playback control functions */
 PB_StatusTypeDef    AudioEngine_Init            ( AudioEngine_HandleTypeDef *haudio );
-PB_StatusTypeDef  PlaySample                    (
+PB_StatusTypeDef    PlaySample                  (
                                                   const void *sample_to_play,
                                                   uint32_t sample_set_sz,
                                                   uint16_t playback_speed,

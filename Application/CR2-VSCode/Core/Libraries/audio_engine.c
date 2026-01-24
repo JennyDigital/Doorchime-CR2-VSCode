@@ -37,6 +37,7 @@ FilterConfig_TypeDef filter_cfg = {
   .enable_noise_gate            = 0,
   .enable_soft_clipping         = 1,
   .lpf_makeup_gain_q16          = LPF_MAKEUP_GAIN_Q16,
+  .lpf_16bit_level              = LPF_Soft,
 };
 
 /* Playback state variables */
@@ -78,6 +79,8 @@ volatile  int32_t         lpf_8bit_y2_right           = 0;
           uint16_t        lpf_8bit_alpha              = LPF_MEDIUM;
 
 /* Biquad filter state for 16-bit samples */
+          uint16_t        lpf_16bit_alpha             = LPF_16BIT_SOFT;
+
 volatile  int32_t         lpf_16bit_x1_left           = 0;
 volatile  int32_t         lpf_16bit_x2_left           = 0;
 volatile  int32_t         lpf_16bit_y1_left           = 0;
@@ -145,6 +148,37 @@ void SetLpfMakeupGain( float gain )
   uint32_t q16 = (uint32_t)( gain * 65536.0f + 0.5f );
   filter_cfg.lpf_makeup_gain_q16 = q16;
 }
+
+
+/** Set 16-bit LPF filter level
+  * 
+  * @brief Sets the aggressiveness level for the 16-bit biquad low-pass filter.
+  * @param: level - Filter level (LPF_VerySoft, LPF_Soft, LPF_Medium, LPF_Aggressive).
+  * @retval: none
+  */
+void SetLpf16BitLevel( LPF_Level level )
+{
+  filter_cfg.lpf_16bit_level = level;
+  
+  switch( level ) {
+    case LPF_VerySoft:
+      lpf_16bit_alpha = LPF_16BIT_VERY_SOFT;
+      break;
+    case LPF_Soft:
+      lpf_16bit_alpha = LPF_16BIT_SOFT;
+      break;
+    case LPF_Medium:
+      lpf_16bit_alpha = LPF_16BIT_MEDIUM;
+      break;
+    case LPF_Aggressive:
+      lpf_16bit_alpha = LPF_16BIT_AGGRESSIVE;
+      break;
+    default:
+      lpf_16bit_alpha = LPF_16BIT_SOFT;
+      break;
+  }
+}
+
 
 /* ===== DSP Filter Functions ===== */
 
@@ -313,7 +347,7 @@ int16_t ApplyDCBlockingFilter( volatile int16_t input, volatile int32_t *prev_in
 
 /** Apply soft DC filter to audio sample
   * 
-  * @param: input - Signed 16-bit audio sample
+  * @param: input -lpf_16bit_alpha;  // Use runtime-configurable alphaudio sample
   * @param: prev_input - Pointer to previous input sample
   * @param: prev_output - Pointer to previous output sample
   * @retval: int16_t - Soft DC-filtered signed 16-bit audio sample
