@@ -139,6 +139,38 @@ void Error_Handler(void);
 #define DC_FILTER_ALPHA       64225    // 0.98 in fixed-point (64225/65536)
 #define DC_FILTER_SHIFT       16       // Right shift for fixed-point division
 
+// Soft DC filter for 16-bit playback
+// Gentler DC removal with lower cutoff frequency (~2Hz vs ~8Hz)
+// Uncomment to enable soft DC filtering instead of standard DC blocking
+//
+#define ENABLE_SOFT_DC_FILTER_16BIT
+#define SOFT_DC_FILTER_ALPHA  65216    // 0.995 in fixed-point (65216/65536)
+
+// Soft clipping configuration
+// Prevents harsh digital distortion on loud samples
+// Uncomment to enable soft clipping on output
+//
+#define ENABLE_SOFT_CLIPPING
+
+// Low-pass filter for 8-bit samples
+// Smooths out high-frequency artifacts from 8-bit conversion
+// Uncomment to enable low-pass filtering on 8-bit samples
+//
+#define ENABLE_8BIT_LPF
+#define LPF_8BIT_SHIFT        16       // Right shift for fixed-point division
+
+// Low-pass filter aggressiveness levels (alpha coefficients in fixed-point)
+#define LPF_SOFT              57344    // 0.875 - gentle filtering, preserves highs
+#define LPF_MEDIUM            49152    // 0.75 - balanced filtering
+#define LPF_AGGRESSIVE        40960    // 0.625 - strong filtering, removes more highs
+
+// Noise gate configuration
+// Silences samples below threshold to remove background noise
+// Uncomment to enable noise gate
+//
+//#define ENABLE_NOISE_GATE
+#define NOISE_GATE_THRESHOLD  512      // ~1.5% of full scale (adjust 256-2048)
+
 // Midpoint for Signed/Unsigned silence.
 //
 #define MIDPOINT_U8           127U
@@ -159,6 +191,14 @@ typedef enum {
   Mode_stereo,
   Mode_mono
 } PB_ModeTypeDef;
+
+// Low-pass filter aggressiveness type
+//
+typedef enum {
+  LPF_Soft,
+  LPF_Medium,
+  LPF_Aggressive
+} LPF_Level;
 
 /* USER CODE END Private defines */
 
