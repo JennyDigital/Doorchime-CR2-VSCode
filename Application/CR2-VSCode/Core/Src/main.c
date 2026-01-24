@@ -275,9 +275,9 @@ int main(void)
     // PlaySample( handpan16bm, HANDPAN16BM_SZ,
     //     I2S_AUDIOFREQ_44K, 16, Mode_mono, LPF_Medium );
     // WaitForSampleEnd();
-    // PlaySample( magic_gong44k, MAGIC_GONG44K_SZ,
-    //     I2S_AUDIOFREQ_44K, 16, Mode_mono, LPF_Medium );
-    // WaitForSampleEnd();
+    PlaySample( magic_gong44k, MAGIC_GONG44K_SZ,
+        I2S_AUDIOFREQ_44K, 16, Mode_mono, LPF_Medium );
+    WaitForSampleEnd();
     // PlaySample( custom_tritone16k, CUSTOM_TRITONE16K_SZ,
     //   I2S_AUDIOFREQ_16K, 16, Mode_mono, LPF_Medium );
     // WaitForSampleEnd();
@@ -492,8 +492,7 @@ void HAL_I2S_TxHalfCpltCallback( I2S_HandleTypeDef *hi2s2_p )
 
   if( pb_mode == 16 ) {             // 16-bit samples exhausted check.
     if( pb_p16 >= pb_end16 ) {
-      // Stop DMA transmission to prevent buffer repeat
-      HAL_I2S_DMAStop( &hi2s2 );
+      // Set state to idle - cleanup will happen in main loop
       pb_state = PB_IDLE;
       return;
     }
@@ -507,8 +506,7 @@ void HAL_I2S_TxHalfCpltCallback( I2S_HandleTypeDef *hi2s2_p )
   else if( pb_mode == 8 ) {             // 8-bit samples exhausted check.
 
     if( pb_p8 >= pb_end8 ) {
-      // Stop DMA transmission to prevent buffer repeat
-      HAL_I2S_DMAStop( &hi2s2 );
+      // Set state to idle - cleanup will happen in main loop
       pb_state = PB_IDLE;
       return;
     }
@@ -538,8 +536,7 @@ void HAL_I2S_TxCpltCallback( I2S_HandleTypeDef *hi2s2_p )
   if( pb_mode == 16 ) {
 
     if( pb_p16 >= pb_end16 ) {
-      // Stop DMA transmission to prevent buffer repeat
-      HAL_I2S_DMAStop( &hi2s2 );
+      // Set state to idle - cleanup will happen in main loop
       pb_state = PB_IDLE;
       return;
     }
@@ -553,8 +550,7 @@ void HAL_I2S_TxCpltCallback( I2S_HandleTypeDef *hi2s2_p )
   else if( pb_mode == 8 ) {
 
     if( pb_p8 >= pb_end8 ) {
-      // Stop DMA transmission to prevent buffer repeat
-      HAL_I2S_DMAStop( &hi2s2 );
+      // Set state to idle - cleanup will happen in main loop
       pb_state = PB_IDLE;
       return;
     }
@@ -823,6 +819,22 @@ PB_StatusTypeDef PlaySample(  const void *sample_to_play,
   fadeout_samples_remaining = sample_set_sz;
   fadein_samples_remaining  = FADEIN_SAMPLES;
   
+  // Pre-fill the first half of the buffer with processed samples before starting DMA
+  // This ensures the fade-in is applied from the very first sample that plays
+  half_to_fill = FIRST;
+  if( pb_mode == 16 ) {
+    if( ProcessNextWaveChunk( (int16_t *) pb_p16 ) != PLAYING ) {
+      return PB_ERROR;
+    }
+    pb_p16 += p_advance;
+  }
+  else if( pb_mode == 8 ) {
+    if( ProcessNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PLAYING ) {
+      return PB_ERROR;
+    }
+    pb_p8 += p_advance;
+  }
+  
   // Start playback of the recording
   //
   pb_state = PLAYING;
@@ -842,6 +854,14 @@ PB_StatusTypeDef WaitForSampleEnd( void )
   while( pb_state == PLAYING ) {
     __NOP();  // Prevent optimizer from removing loop
   }
+  
+  // Cleanup: Stop DMA transmission now that we're out of the callback context
+  // This prevents the I2S_WaitFlagStateUntilTimeout hang that occurs when
+  // stopping from within the DMA callback
+  if( pb_state == PB_IDLE ) {
+    HAL_I2S_DMAStop( &hi2s2 );
+  }
+  
   return pb_state;
 }
 
