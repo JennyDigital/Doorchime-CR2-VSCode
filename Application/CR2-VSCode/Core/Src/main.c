@@ -223,6 +223,11 @@ static  void    MX_I2S2_Init            ( void );
 
         void                ShutDownAudio               ( void );
 
+// Filter configuration function prototypes
+        void                SetFilterConfig             ( const FilterConfig_TypeDef *cfg );
+        void                GetFilterConfig             ( FilterConfig_TypeDef *cfg );
+        void                SetLpfMakeupGain            ( float gain );
+
 
 /* USER CODE END PFP */
 

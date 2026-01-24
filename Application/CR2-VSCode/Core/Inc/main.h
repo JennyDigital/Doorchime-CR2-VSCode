@@ -185,10 +185,6 @@ typedef struct {
   uint32_t lpf_makeup_gain_q16;  // Q16 gain applied after LPF
 } FilterConfig_TypeDef;
 
-void SetFilterConfig( const FilterConfig_TypeDef *cfg );
-void GetFilterConfig( FilterConfig_TypeDef *cfg );
-void SetLpfMakeupGain( float gain );
-
 // Midpoint for Signed/Unsigned silence.
 //
 #define MIDPOINT_U8           127U
