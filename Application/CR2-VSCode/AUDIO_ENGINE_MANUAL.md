@@ -716,18 +716,29 @@ Volume Scaling (always active)
 ```c
 #include "audio_engine.h"
 
-// 1. Startup (once during initialization, in main.c)
-void InitializeAudio(void) {
-    AudioEngine_DACSwitch = DAC_MasterSwitch;
+// 1. Startup (once during initialization, e.g., in main.c)
+static void AudioEngine_Init(void) {
+    // Wire hardware hooks
+    AudioEngine_DACSwitch  = DAC_MasterSwitch;
     AudioEngine_ReadVolume = ReadVolume;
-    AudioEngine_I2SInit = MX_I2S2_Init;
-    
+    AudioEngine_I2SInit    = MX_I2S2_Init;
+
+    // Configure filters
+    FilterConfig_TypeDef cfg = filter_cfg; // start from defaults
+    cfg.enable_16bit_biquad_lpf      = 0;
+    cfg.enable_8bit_lpf              = 1;
+    cfg.enable_soft_dc_filter_16bit  = 0;
+    cfg.enable_soft_clipping         = 1;
+    cfg.enable_air_effect            = 1; // enable brightening by default
+    SetFilterConfig(&cfg);
+
+    // Optional tuning
     SetLpf16BitLevel(LPF_Soft);
-    printf("Audio engine ready\n");
+    SetAirEffectPresetDb(2); // +3 dB preset
 }
 
 // 2. Play an audio sample
-void PlayAlert(void) {
+static void PlayAlert(void) {
     extern const uint8_t alert_16bit_mono[];
     extern const uint32_t alert_16bit_mono_size;
     
@@ -741,19 +752,17 @@ void PlayAlert(void) {
     );
     
     if (result == PB_Playing) {
-        printf("Alert playing...\n");
         WaitForSampleEnd();
-        printf("Alert complete\n");
     }
 }
 
 // 3. Non-blocking playback
-void PlayAlertNonBlocking(void) {
+static void PlayAlertNonBlocking(void) {
     PlaySample(alert_16bit_mono, alert_16bit_mono_size, 22000, 16, Mode_mono, LPF_Soft);
     // Returns immediately; playback happens in background
 }
 
-void CheckPlaybackStatus(void) {
+static void CheckPlaybackStatus(void) {
     if (GetPlaybackState() == PB_Playing) {
         printf("Still playing...\n");
     } else {
