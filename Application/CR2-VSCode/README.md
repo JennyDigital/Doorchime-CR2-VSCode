@@ -4,7 +4,7 @@
 [![Platform](https://img.shields.io/badge/platform-STM32%20with%20I2S-orange.svg)](https://www.st.com/en/microcontrollers-microprocessors/stm32-32-bit-arm-cortex-mcus.html)
 [![Audio](https://img.shields.io/badge/audio-8bit%20%7C%2016bit-green.svg)]()
 
-A professional, reusable audio playback engine for STM32 microcontrollers with I2S support (including STM32G4, STM32F4, STM32H7 series and others) with runtime-configurable DSP filter chain, supporting 8-bit and 16-bit audio playback through I2S to digital amplifiers such as the MAX98357A.
+A professional, reusable audio playback engine for STM32 microcontrollers with I2S support (including STM32G4, STM32F4, STM32H7 series and others) with runtime-configurable DSP filter chain, supporting 8-bit and 16-bit audio playback through I2S to digital amplifiers such as the MAX98357A. Includes an Air Effect high-shelf brightening filter with presets (0, +2, +3 dB) and direct dB control.
 
 ## 📋 Table of Contents
 
@@ -26,8 +26,17 @@ A professional, reusable audio playback engine for STM32 microcontrollers with I
 - **No FPU Required**: All DSP operations use fixed-point integer math
 - **DMA-Driven**: Efficient I2S streaming with double-buffering
 - **Professional Filters**: Biquad LPF, DC blocking, soft clipping, fade in/out
+- **Air Effect**: Tunable high-shelf brightening (presets: 0, +2, +3 dB and direct dB control)
 - **Low Latency**: ~93 ms playback latency (2048-sample buffer @ 22 kHz)
 - **Sample Rate Flexible**: Default 22 kHz, configurable up to 48 kHz
+
+## What's New
+
+- **Flash Footprint**: `.text` ≈ 12.9 KB (Release build), reflecting added features and refactoring.
+- **Air Effect**: High-shelf brightening with runtime control. Enable via `filter_cfg.enable_air_effect` and tune with `SetAirEffectPresetDb()` or `SetAirEffectGainDb()`.
+- **Filter Warm-Up & Resets**: Introduced `WarmupBiquadFilter16Bit()` and consolidated resets via `RESET_ALL_FILTER_STATE()` to reduce startup transients and simplify `PlaySample()`.
+- **Documentation**: Updated manual and README, enhanced graphs and A4 report, syntax-highlighted code blocks, and embedded system block diagram.
+- **Examples Alignment**: Usage examples now match the current API and runtime configuration model.
 
 ## 🚀 Quick Start
 
@@ -276,6 +285,22 @@ typedef struct {
 } FilterConfig_TypeDef;
 ```
 
+### Air Effect (High-Shelf Brightening)
+
+Optional treble boost above the cutoff (default α ≈ 0.75). Enable and tune at runtime:
+
+```c
+FilterConfig_TypeDef cfg;
+GetFilterConfig(&cfg);
+cfg.enable_air_effect = 1;            // Enable high-shelf brightening
+SetFilterConfig(&cfg);
+
+// Choose a preset or set dB directly
+SetAirEffectPresetDb(2);              // +3 dB preset (presets: 0, +2, +3 dB)
+// or
+SetAirEffectGainDb(2.0f);             // +2 dB boost at ω=π
+```
+
 ## ⚡ Performance
 
 | Metric | Value |
@@ -283,7 +308,7 @@ typedef struct {
 | **CPU Usage** | ~15% @ 170 MHz (during playback) |
 | **Latency** | 93 ms (2048 samples @ 22 kHz) |
 | **Memory (RAM)** | 4 KB (playback buffer) |
-| **Memory (Flash)** | ~12 KB (code + lookup tables) |
+| **Memory (Flash)** | ≈12.9 KB (.text, Release build) |
 | **Max Sample Rate** | 48 kHz (I2S limit) |
 | **Typical Sample Rate** | 22 kHz (11 kHz Nyquist) |
 
