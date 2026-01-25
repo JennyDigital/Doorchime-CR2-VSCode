@@ -64,6 +64,7 @@
 #include "dalby_tritone16b16k.h"
 #include "handpan_c16b.h"
 #include "guitar_harmony2.h"
+#include "into_suffering22k1c.h"
 
 /* USER CODE END Includes */
 
@@ -169,14 +170,18 @@ int main(void)
 
   // FilterConfig_TypeDef filter_cfg;
 
-  filter_cfg.enable_16bit_biquad_lpf      = 1;
+  filter_cfg.enable_16bit_biquad_lpf      = 0;
   filter_cfg.enable_8bit_lpf              = 1;
-  filter_cfg.enable_soft_dc_filter_16bit  = 1;
+  filter_cfg.enable_soft_dc_filter_16bit  = 0;
   filter_cfg.enable_soft_clipping         = 1;
+  filter_cfg.enable_air_effect            = 0;  // Air effect (high-shelf brightening) disabled by default; enable as needed
 
   SetLpfMakeupGain8Bit( 0.9f );  // Slight attenuation to prevent clipping after LPF
   SetLpf16BitLevel(LPF_VerySoft);
   SetFilterConfig( &filter_cfg );
+
+  // Set initial Air Effect boost in dB (runtime adjustable)
+  SetAirEffectPresetDb( 2 ); // default +3 dB preset
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -191,6 +196,9 @@ int main(void)
       WaitForTrigger( TRIGGER_SET );
     }
 #endif
+    PlaySample( intosuffering22k1c, INTOSUFFERING22K1C_SZ,
+        I2S_AUDIOFREQ_22K, 16, Mode_mono, LPF_Medium ); 
+    WaitForSampleEnd();
     // Start playback of your chosen sample here
     // PlaySample( guitar_harmony2_16bm_11k, GUITAR_HARMONY2_16BM_11K_SZ,
     //     I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_VerySoft );
@@ -216,14 +224,14 @@ int main(void)
     // PlaySample( harmony8b, HARMONY8B_SZ,
     //     I2S_AUDIOFREQ_11K, 8, Mode_mono, LPF_Aggressive );
     // WaitForSampleEnd();
-    PlaySample( custom_tritone16k, CUSTOM_TRITONE16K_SZ,
-      I2S_AUDIOFREQ_16K, 16, Mode_mono, LPF_VerySoft );
-    WaitForSampleEnd();
+    // PlaySample( custom_tritone16k, CUSTOM_TRITONE16K_SZ,
+    //   I2S_AUDIOFREQ_16K, 16, Mode_mono, LPF_VerySoft );
+    // WaitForSampleEnd();
 
-    PlaySample( tt_arrival, TT_ARRIVAL_SZ, I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_VerySoft );
+    // PlaySample( tt_arrival, TT_ARRIVAL_SZ, I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_VerySoft );
     // PlaySample( KillBill11k, KILLBILL11K_SZ,
     //  I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_Medium );
-    WaitForSampleEnd();
+    // WaitForSampleEnd();
 
     // PlaySample( guitar_riff22k, GUITAR_RIFF22K_SZ,
     //      I2S_AUDIOFREQ_22K, 16, Mode_mono, LPF_Medium );
@@ -250,6 +258,8 @@ int main(void)
       WaitForTrigger( TRIGGER_CLR );
 #else
       HAL_Delay( 1000 );
+  // TEST_CYCLING: demonstrate runtime adjustment by cycling Air Effect boost
+  CycleAirEffectPresetDb();
 #endif
     }
 
@@ -449,6 +459,35 @@ void DAC_MasterSwitch( GPIO_PinState setting )
   HAL_Delay( 10 );
 }
 
+/* Master volume scaling factor (default 16) */
+static uint8_t vol_scaling = 16;
+
+/** Set the master volume scaling factor.
+  *
+  * Adjusts the divisor multiplier used for volume calculations.
+  * Valid range: 1-255. Default: 16
+  * Higher values = lower maximum volume
+  *
+  * params: scaling - The scaling factor to apply (1=max, 255=min)
+  * retval: none
+  *
+  */
+void SetVolScaling(uint8_t scaling)
+{
+    /* Safety: ensure scaling is never 0 */
+    vol_scaling = scaling ? scaling : 16;
+}
+
+/** Get the current master volume scaling factor.
+  *
+  * params: none
+  * retval: uint8_t - Current scaling factor
+  *
+  */
+uint8_t GetVolScaling(void)
+{
+    return vol_scaling;
+}
 
 /** Read the master volume level for playback.
   *
@@ -466,9 +505,9 @@ uint8_t ReadVolume( void )
     );
 
     /* volume divisor is 1..8 so add 1 to the 3-bit value to make range 1..8 */
-    v = (uint8_t) ( ( v + 1 ) * VOL_SCALING) ;
+    v = (uint8_t) ( ( v + 1 ) * vol_scaling) ;
 
-    /* never return 0 even if VOL_SCALING is mis-set */
+    /* never return 0 even if vol_scaling is mis-set */
     return v ? v : 1;
 } 
 

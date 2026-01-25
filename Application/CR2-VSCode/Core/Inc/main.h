@@ -101,7 +101,7 @@ void Error_Handler(void);
 //#define LOCK_BUILD
 
 // Volume special config
-#define VOL_SCALING           4
+#define VOL_SCALING           16
 
 /* USER CODE END Private defines */
 

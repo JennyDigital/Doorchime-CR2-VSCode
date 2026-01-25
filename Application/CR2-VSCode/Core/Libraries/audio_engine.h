@@ -104,6 +104,11 @@ typedef enum {
   LPF_Aggressive
 } LPF_Level;
 
+/* Air Effect (High-Shelf Brightening) Filter */
+#define AIR_EFFECT_SHELF_GAIN       98304    // ~1.5 in Q16 (high-frequency shelf ~ +1.6 dB)
+#define AIR_EFFECT_SHELF_GAIN_MAX   131072   // Cap runtime boost at ~2.0x to avoid harsh clipping
+#define AIR_EFFECT_CUTOFF           49152    // ~0.75 alpha (cutoff around 5-6 kHz @ 22kHz)
+
 /* Filter chain runtime configuration */
 typedef struct {
   uint8_t enable_16bit_biquad_lpf;
@@ -111,6 +116,7 @@ typedef struct {
   uint8_t enable_8bit_lpf;
   uint8_t enable_noise_gate;
   uint8_t enable_soft_clipping;
+  uint8_t enable_air_effect;             // High-shelf brightening filter
   uint32_t lpf_makeup_gain_q16;  // Q16 gain applied after LPF
   LPF_Level lpf_16bit_level;     // Filter level for 16-bit biquad LPF
 } FilterConfig_TypeDef;
@@ -176,6 +182,22 @@ int16_t             ApplyDCBlockingFilter       (
                                                   volatile int32_t *prev_input,
                                                   volatile int32_t *prev_output
                                                 );
+int16_t             ApplyAirEffect              (
+                                                  int16_t input,
+                                                  volatile int32_t *x1,
+                                                  volatile int32_t *y1
+                                                );
+
+/* Air Effect runtime control */
+void                 SetAirEffectGainQ16        ( uint32_t gain_q16 );
+uint32_t             GetAirEffectGainQ16        ( void );
+void                 SetAirEffectGainDb         ( float db );
+float                GetAirEffectGainDb         ( void );
+void                 SetAirEffectPresetDb       ( uint8_t preset_index );
+uint8_t              CycleAirEffectPresetDb     ( void );
+uint8_t              GetAirEffectPresetIndex    ( void );
+uint8_t              GetAirEffectPresetCount    ( void );
+float                GetAirEffectPresetDb       ( uint8_t preset_index );
 int16_t             ApplySoftDCFilter16Bit      (
                                                   volatile int16_t input,
                                                   volatile int32_t *prev_input,

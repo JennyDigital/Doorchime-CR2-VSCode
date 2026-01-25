@@ -24,6 +24,28 @@ LPF_SOFT = 57344 / 65536  # 0.875
 LPF_MEDIUM = 49152 / 65536  # 0.75
 LPF_AGGRESSIVE = 40960 / 65536  # 0.625
 
+# Air Effect (High-Shelf Brightening Filter)
+AIR_EFFECT_CUTOFF = 49152 / 65536  # 0.75 - ~5-6 kHz shelving frequency
+AIR_EFFECT_SHELF_GAIN = 98304 / 65536  # ~1.5 - high-frequency shelf (≈ +1.6 dB at Nyquist with alpha=0.75)
+AIR_EFFECT_SHELF_GAIN_MAX = 131072 / 65536  # 2.0x cap (matches code)
+AIR_EFFECT_PRESETS_DB = [0.0, 2.0, 3.0]
+
+
+def db_to_shelf_gain(db, alpha=AIR_EFFECT_CUTOFF, gain_max=AIR_EFFECT_SHELF_GAIN_MAX):
+    """Convert desired HF boost in dB to shelf_gain (linear) using the Air Effect transfer function.
+
+    H(pi) = 10^(db/20)
+    G = (Hpi*(2 - alpha) - alpha) / (2*(1 - alpha))
+    """
+    one_minus_alpha = 1.0 - alpha
+    Hpi = 10 ** (db / 20.0)
+    G = (Hpi * (2.0 - alpha) - alpha) / (2.0 * one_minus_alpha)
+    if G < 0.0:
+        G = 0.0
+    if G > gain_max:
+        G = gain_max
+    return G
+
 # Sampling frequency
 FS = 22000  # Hz (default playback speed)
 
@@ -95,6 +117,39 @@ def find_cutoff_frequency(frequencies, magnitude_db):
     # Find where magnitude crosses -3dB
     idx = np.argmin(np.abs(magnitude_db - (-3.0)))
     return frequencies[idx]
+
+def air_effect_response(alpha=AIR_EFFECT_CUTOFF, shelf_gain=AIR_EFFECT_SHELF_GAIN, fs=FS):
+    """
+    Calculate frequency response of Air Effect (high-shelf brightening filter).
+    Based on C implementation: 
+    output = α*x + (1-α)*y_prev + (1-α)*shelf_gain*(x - x_prev)
+    
+    Transfer function:
+    H(z) = [α + (1-α)*shelf_gain - (1-α)*shelf_gain*z^-1] / [1 - (1-α)*z^-1]
+    """
+    frequencies = np.logspace(0, np.log10(fs/2), 1000)
+    omega = 2 * np.pi * frequencies / fs
+    
+    z = np.exp(1j * omega)
+    one_minus_alpha = 1 - alpha
+    
+    # Numerator: b0 + b1*z^-1
+    # b0 = α + (1-α)*shelf_gain
+    # b1 = -(1-α)*shelf_gain
+    b0 = alpha + one_minus_alpha * shelf_gain
+    b1 = -one_minus_alpha * shelf_gain
+    
+    # Denominator: 1 - (1-α)*z^-1
+    a0 = 1
+    a1 = -one_minus_alpha
+    
+    numerator = b0 + b1 * z**(-1)
+    denominator = a0 + a1 * z**(-1)
+    
+    H = numerator / denominator
+    magnitude_db = 20 * np.log10(np.abs(H) + 1e-10)
+    
+    return frequencies, magnitude_db
 
 def soft_clipping_transfer():
     """
@@ -201,7 +256,7 @@ ax4.legend()
 ax4.set_xlim([-33000, 33000])
 ax4.set_ylim([-33000, 33000])
 
-# Plot 5: Combined Frequency Response (All Filters)
+# Plot 5: Combined Frequency Response (All Filters) - spans full width
 ax5 = fig.add_subplot(gs[2, :])
 freq_dc, mag_dc = dc_blocking_filter_response(SOFT_DC_FILTER_ALPHA)
 freq_16bit, mag_16bit, _ = lpf_16bit_biquad_response(LPF_16BIT_SOFT)
@@ -238,11 +293,42 @@ ax6.set_ylabel('Phase (degrees)')
 ax6.set_title('16-bit Biquad LPF Phase Response')
 ax6.legend(fontsize=8)
 
-# Plot 7: Cutoff Frequency Summary
+# Plot 7: Air Effect High-Shelf Brightening Filter (show presets)
 ax7 = fig.add_subplot(gs[3, 1])
-ax7.axis('off')
+colors = ['darkgreen', 'orange', 'purple']
+linestyles = ['-', '--', ':']
+for idx, db in enumerate(AIR_EFFECT_PRESETS_DB):
+    shelf_gain = db_to_shelf_gain(db, AIR_EFFECT_CUTOFF, AIR_EFFECT_SHELF_GAIN_MAX)
+    freq_air, mag_air = air_effect_response(AIR_EFFECT_CUTOFF, shelf_gain)
+    label = f"{db:+.0f} dB preset (G={shelf_gain:.2f}x)"
+    ax7.semilogx(freq_air, mag_air, color=colors[idx % len(colors)], linestyle=linestyles[idx % len(linestyles)], linewidth=2.2, label=label)
 
-# Calculate cutoff frequencies
+ax7.axhline(0, color='k', linestyle='-', alpha=0.2)
+ax7.axhline(3, color='k', linestyle='--', alpha=0.3, linewidth=1, label='+3 dB guide')
+ax7.grid(True, alpha=0.3, which='both')
+ax7.set_xlabel('Frequency (Hz)')
+ax7.set_ylabel('Magnitude (dB)')
+ax7.set_title('Air Effect Presets (0, +2, +3 dB)\nα=0.75, Shelf Gain max=2.0x')
+ax7.legend(fontsize=8)
+ax7.set_ylim([-10, 10])
+
+# Add overall title for page 1
+fig.suptitle('Audio Engine DSP Filter Characteristics - Page 1: Filter Responses\nSTM32 Audio Engine @ 22 kHz Sample Rate', 
+             fontsize=16, fontweight='bold', y=0.995)
+
+# Save the first figure
+output_file = 'filter_characteristics_enhanced.png'
+plt.savefig(output_file, dpi=300, bbox_inches='tight')
+print(f"Enhanced filter characteristics plot saved to: {output_file}")
+
+# ========== PAGE 2: SUMMARY TABLE ==========
+# Create a second figure for the summary/characteristics table
+fig2 = plt.figure(figsize=(16, 12))
+ax_summary = fig2.add_subplot(111)
+ax_summary.axis('off')
+
+# Create the summary text
+# Calculate cutoff frequencies (reuse from above)
 cutoff_8vs = find_cutoff_frequency(*lpf_8bit_response(LPF_VERY_SOFT))
 cutoff_8s = find_cutoff_frequency(*lpf_8bit_response(LPF_SOFT))
 cutoff_8m = find_cutoff_frequency(*lpf_8bit_response(LPF_MEDIUM))
@@ -257,48 +343,84 @@ cutoff_16m = find_cutoff_frequency(freq_temp, mag_temp)
 freq_temp, mag_temp, _ = lpf_16bit_biquad_response(LPF_16BIT_AGGRESSIVE)
 cutoff_16a = find_cutoff_frequency(freq_temp, mag_temp)
 
-info_text = f"""Filter Characteristics Summary
+info_text = f"""Audio Engine Filter Characteristics - Complete Summary
 Sample Rate: {FS} Hz (Nyquist: {FS/2} Hz)
 
-8-bit LPF -3dB Cutoff Frequencies:
-  • Very Soft:    {cutoff_8vs:>6.0f} Hz ({cutoff_8vs/FS*100:>5.2f}% of Fs)
-  • Soft:         {cutoff_8s:>6.0f} Hz ({cutoff_8s/FS*100:>5.2f}% of Fs)
-  • Medium:       {cutoff_8m:>6.0f} Hz ({cutoff_8m/FS*100:>5.2f}% of Fs)
-  • Aggressive:   {cutoff_8a:>6.0f} Hz ({cutoff_8a/FS*100:>5.2f}% of Fs)
+═══════════════════════════════════════════════════════════════════════════════
 
-16-bit Biquad LPF -3dB Cutoff Frequencies:
-  • Very Soft:    {cutoff_16vs:>6.0f} Hz ({cutoff_16vs/FS*100:>5.2f}% of Fs)
-  • Soft:         {cutoff_16s:>6.0f} Hz ({cutoff_16s/FS*100:>5.2f}% of Fs)
-  • Medium:       {cutoff_16m:>6.0f} Hz ({cutoff_16m/FS*100:>5.2f}% of Fs)
-  • Aggressive:   {cutoff_16a:>6.0f} Hz ({cutoff_16a/FS*100:>5.2f}% of Fs)
+8-bit Low-Pass Filter (One-Pole Architecture)
+──────────────────────────────────────────────
+Level          Alpha    -3dB Cutoff Frequency      % of Sample Rate
+─────────────────────────────────────────────────────────────────────
+Very Soft      0.9375   {cutoff_8vs:6.0f} Hz                   {cutoff_8vs/FS*100:5.2f}%
+Soft           0.8750   {cutoff_8s:6.0f} Hz                   {cutoff_8s/FS*100:5.2f}%
+Medium         0.7500   {cutoff_8m:6.0f} Hz                   {cutoff_8m/FS*100:5.2f}%
+Aggressive     0.6250   {cutoff_8a:6.0f} Hz                   {cutoff_8a/FS*100:5.2f}%
 
-DC Blocking Filter:
-  • Standard (α=0.98):   High-pass, ~44 Hz cutoff
-  • Soft (α=0.995):      High-pass, ~22 Hz cutoff
+═══════════════════════════════════════════════════════════════════════════════
 
-Soft Clipping:
-  • Threshold: ±28000 (±85% of full scale)
-  • Maximum: ±32767 (16-bit signed range)
-  
-Filter Implementation:
-  • All filters use fixed-point integer math
-  • No floating-point operations (efficient for MCU)
-  • Biquad filters provide steeper rolloff
-  • DC blocking prevents output offset drift
+16-bit Biquad Low-Pass Filter (2nd-Order Architecture)
+──────────────────────────────────────────────────────
+Level          Alpha    -3dB Cutoff Frequency      % of Sample Rate
+─────────────────────────────────────────────────────────────────────
+Very Soft      0.6250   {cutoff_16vs:6.0f} Hz                   {cutoff_16vs/FS*100:5.2f}%
+Soft           0.8000   {cutoff_16s:6.0f} Hz                   {cutoff_16s/FS*100:5.2f}%
+Medium         0.8750   {cutoff_16m:6.0f} Hz                   {cutoff_16m/FS*100:5.2f}%
+Aggressive     0.9700   {cutoff_16a:6.0f} Hz                   {cutoff_16a/FS*100:5.2f}%
+
+═══════════════════════════════════════════════════════════════════════════════
+
+DC Blocking Filters (High-Pass)
+────────────────────────────────
+Standard DC Filter      α = 0.98     ~44 Hz cutoff frequency
+Soft DC Filter          α = 0.995    ~22 Hz cutoff frequency
+
+═══════════════════════════════════════════════════════════════════════════════
+
+Air Effect Filter (High-Shelf Brightening)
+───────────────────────────────────────────
+Type:                One-pole high-shelf filter
+Cutoff Alpha:        {AIR_EFFECT_CUTOFF:.4f} (≈ 5–6 kHz shelving frequency @ {FS} Hz)
+Shelf Gain:          {AIR_EFFECT_SHELF_GAIN:.4f} (≈ +1.6 dB HF boost @ α=0.75)
+Presets Shown:       0 dB, +2 dB, +3 dB (clamped to 2.0x max)
+Purpose:             Adds presence and brightness to audio
+
+═══════════════════════════════════════════════════════════════════════════════
+
+Soft Clipping Curve
+───────────────────
+Threshold:           ±28,000 (±85% of full scale ±32,767)
+Curve Function:      Cubic smoothstep (s(x) = 1.5x² - x³)
+Purpose:             Prevents harsh digital distortion
+
+═══════════════════════════════════════════════════════════════════════════════
+
+Implementation Notes
+────────────────────
+✓ All filters use fixed-point integer math (Q16 format)
+✓ No floating-point operations required (MCU efficient)
+✓ Biquad filters provide steeper rolloff and better control
+✓ DC blocking prevents output offset drift over time
+✓ Air effect works with both 8-bit and 16-bit audio paths
+✓ Soft clipping is optional but recommended for safety
+✓ Filter state is reset at the start of each sample playback
+✓ Warm-up cycles (16 passes) suppress biquad startup transients
+
+═══════════════════════════════════════════════════════════════════════════════
+Generated: 2026-01-25 | STM32G474 Audio Engine Documentation
 """
 
-ax7.text(0.05, 0.95, info_text, transform=ax7.transAxes, 
-         fontsize=9, verticalalignment='top', family='monospace',
-         bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3))
+ax_summary.text(0.05, 0.98, info_text, transform=ax_summary.transAxes, 
+                fontsize=8, verticalalignment='top', family='monospace',
+                bbox=dict(boxstyle='round', facecolor='#f0f0f0', alpha=0.5, pad=1))
 
-# Add overall title
-fig.suptitle('Audio Engine DSP Filter Characteristics - Complete Analysis\nSTM32 Audio Engine @ 22 kHz Sample Rate', 
-             fontsize=16, fontweight='bold', y=0.995)
+fig2.suptitle('Audio Engine Filter Characteristics - Page 2: Complete Summary\nAll Cutoff Frequencies and Filter Parameters', 
+              fontsize=16, fontweight='bold', y=0.985)
 
-# Save the figure
-output_file = 'filter_characteristics_enhanced.png'
-plt.savefig(output_file, dpi=300, bbox_inches='tight')
-print(f"Enhanced filter characteristics plot saved to: {output_file}")
+# Save the second figure
+output_file2 = 'filter_characteristics_summary_page2.png'
+plt.savefig(output_file2, dpi=300, bbox_inches='tight')
+print(f"Summary characteristics page saved to: {output_file2}")
 
-# Also display
+# Display both figures
 plt.show()

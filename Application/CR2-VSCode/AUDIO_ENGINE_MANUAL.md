@@ -617,6 +617,86 @@ Soft clipping prevents harsh digital distortion when audio peaks exceed a thresh
 - Always recommended (prevents clipping artifacts)
 - Disable only if maximum undistorted headroom needed
 
+### Air Effect (High-Shelf Brightening Filter)
+
+The Air Effect is an optional high-shelf filter that adds presence and brightness to audio by boosting high-frequency content. It uses a simple one-pole shelving architecture for CPU efficiency.
+
+**Configuration (defaults):**
+- **Type**: High-shelf one-pole filter
+- **Shelf Gain (Q16)**: 98304 (~1.5×, ≈ +1.6 dB at Nyquist for α=0.75)
+- **Shelf Gain Max (Q16)**: 131072 (2.0× cap to avoid harshness)
+- **Cutoff Alpha**: 0.75 (~5–6 kHz shelving frequency @ 22 kHz)
+- **Default State**: Disabled (`enable_air_effect = 0`)
+
+**Runtime Control (dB or Q16):**
+- `SetAirEffectGainDb(float db)`: set target HF boost in dB (computes Q16 internally, clamped to max)
+- `GetAirEffectGainDb(void)`: read current boost in dB
+- `SetAirEffectGainQ16(uint32_t gain_q16)`: set raw Q16 shelf gain (clamped)
+- `GetAirEffectGainQ16(void)`: read raw Q16 shelf gain
+- Presets (built-in): `{0 dB, +2 dB, +3 dB}` with helpers:
+  - `SetAirEffectPresetDb(uint8_t preset_index)`
+  - `CycleAirEffectPresetDb(void)`
+  - `GetAirEffectPresetIndex/Count/GetAirEffectPresetDb`
+
+**Filter Characteristics:**
+The Air Effect works by separating high-frequency content and amplifying it:
+
+1. Extract high-frequency component: `high_freq = input - prev_input`
+2. Amplify high frequencies: `boost = high_freq × (1 − α) × shelf_gain`
+3. Blend with smoothed output: `output = (α × input) + ((1 − α) × prev_output) + boost`
+
+**When to Enable:**
+- Muffled or dark-sounding samples → adds clarity and presence
+- Quiet samples → adds energy and perceived loudness
+- Archived audio → brightens aged or compressed recordings
+- **Do not enable** if audio already sounds bright or harsh (risk of harshness)
+
+**Typical Use Case:**
+
+```c
+// Enable Air Effect and choose +2 dB preset
+filter_cfg.enable_air_effect = 1;
+SetFilterConfig(&filter_cfg);
+SetAirEffectPresetDb(1); // presets: 0 dB, +2 dB, +3 dB
+
+PlaySample(
+    muffled_doorbell,
+    sample_size,
+    22000,
+    16,
+    Mode_mono,
+    LPF_Soft
+);
+
+// Adjust live (e.g., button/UART):
+CycleAirEffectPresetDb();
+```
+
+**Filter Chain Order:**
+
+The Air Effect is positioned after the DC blocking filter but before fade/clipping effects:
+
+```
+16/8-bit LPF
+    ↓
+DC Blocking Filter
+    ↓
+AIR EFFECT ← inserted here (if enabled)
+    ↓
+Fade In/Out
+    ↓
+Noise Gate
+    ↓
+Soft Clipping
+```
+
+**Tuning the Effect:**
+
+- For more sparkle: use `SetAirEffectGainDb(2.0f)` or `SetAirEffectPresetDb(1)` (+2 dB).
+- For stronger presence: `SetAirEffectGainDb(3.0f)` or preset 2 (+3 dB).
+- For a subtle lift: `SetAirEffectGainDb(0.0f)` (flat) or reduce gain below 0 dB if adding presence elsewhere.
+- For different sample rates (e.g., 48 kHz), raise `AIR_EFFECT_CUTOFF` (higher α) to keep the shelf in the upper band.
+
 ---
 
 ## Playing Audio

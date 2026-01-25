@@ -13,6 +13,7 @@
   */
 
 #include "audio_engine.h"
+#include <math.h>
 #include <stddef.h>
 
 /* Forward declarations for internal helper functions */
@@ -39,6 +40,7 @@ FilterConfig_TypeDef filter_cfg = {
   .enable_8bit_lpf              = 1,
   .enable_noise_gate            = 0,
   .enable_soft_clipping         = 1,
+  .enable_air_effect            = 0,
   .lpf_makeup_gain_q16          = LPF_MAKEUP_GAIN_Q16,
   .lpf_16bit_level              = LPF_Soft,
 };
@@ -94,6 +96,21 @@ volatile  int32_t         lpf_16bit_x2_right          = 0;
 volatile  int32_t         lpf_16bit_y1_right          = 0;
 volatile  int32_t         lpf_16bit_y2_right          = 0;
 
+/* Air Effect (High-Shelf) filter state for 16-bit samples */
+volatile  int32_t         air_effect_x1_left          = 0;
+volatile  int32_t         air_effect_y1_left          = 0;
+
+volatile  int32_t         air_effect_x1_right         = 0;
+volatile  int32_t         air_effect_y1_right         = 0;
+
+/* Air Effect runtime shelf gain (Q16). Defaults to AIR_EFFECT_SHELF_GAIN */
+volatile  int32_t         air_effect_shelf_gain_q16   = AIR_EFFECT_SHELF_GAIN;
+
+/* Air Effect preset table (dB) */
+static const float        air_effect_presets_db[]      = { 0.0f, 2.0f, 3.0f };
+#define AIR_EFFECT_PRESET_COUNT ( (uint8_t)( sizeof(air_effect_presets_db) / sizeof(air_effect_presets_db[0]) ) )
+static volatile uint8_t   air_effect_preset_idx        = 1; // default +2 dB
+
 /* Pause/resume state tracking */
 volatile  PB_StatusTypeDef pb_paused_state            = PB_Idle;
 volatile  uint32_t        paused_sample_index         = 0;
@@ -132,6 +149,91 @@ void GetFilterConfig( FilterConfig_TypeDef *cfg )
   if( cfg != NULL ) {
     *cfg = filter_cfg;
   }
+}
+
+/** Air Effect runtime control: set shelf boost gain (Q16)
+  * Clamps to AIR_EFFECT_SHELF_GAIN_MAX to avoid extreme boosts.
+  */
+void SetAirEffectGainQ16( uint32_t gain_q16 )
+{
+  if( gain_q16 > AIR_EFFECT_SHELF_GAIN_MAX ) {
+    gain_q16 = AIR_EFFECT_SHELF_GAIN_MAX;
+  }
+  air_effect_shelf_gain_q16 = (int32_t)gain_q16;
+}
+
+/** Air Effect runtime control: get current shelf boost gain (Q16) */
+uint32_t GetAirEffectGainQ16( void )
+{
+  return (uint32_t)air_effect_shelf_gain_q16;
+}
+
+/** Air Effect runtime control: set shelf boost using dB
+  * Converts desired high-frequency boost (at ω=π) to internal G (Q16).
+  * Formula: Hπ = 10^(db/20), G = (Hπ*(2-α) - α) / (2*(1-α))
+  */
+void SetAirEffectGainDb( float db )
+{
+  const float alpha = (float)AIR_EFFECT_CUTOFF / 65536.0f;
+  const float one_minus_alpha = 1.0f - alpha;
+  const float Hpi = powf(10.0f, db / 20.0f);
+  float G = (Hpi * (2.0f - alpha) - alpha) / (2.0f * one_minus_alpha);
+  if( G < 0.0f ) G = 0.0f;
+  uint32_t gain_q16 = (uint32_t)(G * 65536.0f + 0.5f);
+  if( gain_q16 > AIR_EFFECT_SHELF_GAIN_MAX ) gain_q16 = AIR_EFFECT_SHELF_GAIN_MAX;
+  SetAirEffectGainQ16( gain_q16 );
+}
+
+/** Air Effect runtime control: get current shelf boost in dB (at ω=π) */
+float GetAirEffectGainDb( void )
+{
+  const float alpha = (float)AIR_EFFECT_CUTOFF / 65536.0f;
+  const float one_minus_alpha = 1.0f - alpha;
+  const float G = (float)air_effect_shelf_gain_q16 / 65536.0f;
+  const float Hpi = (alpha + 2.0f * one_minus_alpha * G) / (2.0f - alpha);
+  return 20.0f * log10f( Hpi );
+}
+
+/** Air Effect preset selection by index */
+void SetAirEffectPresetDb( uint8_t preset_index )
+{
+  if( preset_index >= AIR_EFFECT_PRESET_COUNT ) {
+    preset_index = 0;
+  }
+  air_effect_preset_idx = preset_index;
+  SetAirEffectGainDb( air_effect_presets_db[preset_index] );
+}
+
+/** Cycle to the next Air Effect preset. Returns the new preset index. */
+uint8_t CycleAirEffectPresetDb( void )
+{
+  uint8_t next = (uint8_t)( air_effect_preset_idx + 1 );
+  if( next >= AIR_EFFECT_PRESET_COUNT ) {
+    next = 0;
+  }
+  SetAirEffectPresetDb( next );
+  return air_effect_preset_idx;
+}
+
+/** Get the current Air Effect preset index */
+uint8_t GetAirEffectPresetIndex( void )
+{
+  return air_effect_preset_idx;
+}
+
+/** Get the number of available Air Effect presets */
+uint8_t GetAirEffectPresetCount( void )
+{
+  return AIR_EFFECT_PRESET_COUNT;
+}
+
+/** Get the dB value of a preset (clamps to current if OOB) */
+float GetAirEffectPresetDb( uint8_t preset_index )
+{
+  if( preset_index >= AIR_EFFECT_PRESET_COUNT ) {
+    preset_index = air_effect_preset_idx;
+  }
+  return air_effect_presets_db[preset_index];
 }
 
 
@@ -434,6 +536,46 @@ int16_t ApplyLowPassFilter16Bit( int16_t input, volatile int32_t *x1, volatile i
 }
 
 
+/** Apply Air Effect (High-Shelf Brightening) to 16-bit sample
+  * 
+  * One-pole high-shelf filter to add brightness/presence to audio.
+  * Boosts frequencies above cutoff (~5-6 kHz @ 22 kHz sample rate).
+  * 
+  * @param: input - Signed 16-bit audio sample
+  * @param: x1 - Pointer to previous input sample
+  * @param: y1 - Pointer to previous output sample
+  * @retval: int16_t - Filtered signed 16-bit audio sample
+  */
+int16_t ApplyAirEffect( int16_t input, volatile int32_t *x1, volatile int32_t *y1 )
+{
+  // Air effect uses high-shelf filter to brighten treble
+  int32_t alpha = AIR_EFFECT_CUTOFF;       // ~0.75
+  int32_t one_minus_alpha = 65536 - alpha; // ~0.25
+  int32_t shelf_gain = air_effect_shelf_gain_q16; // runtime-adjustable boost
+  
+  // High-pass portion: amplify high frequencies
+  // Use 64-bit intermediates to prevent overflow when multiplying Q16 terms
+  int32_t high_freq = (int32_t)input - *x1;
+  int64_t air_boost64 = (((int64_t)high_freq * (int64_t)one_minus_alpha) >> 16);
+  air_boost64 = ((air_boost64 * (int64_t)shelf_gain) >> 16);
+  int32_t air_boost = (int32_t)air_boost64;
+  
+  // Output = low-pass + high-pass boost
+  int64_t out64 = (((int64_t)alpha * (int64_t)input) >> 16) +
+                  ((((int64_t)(65536 - alpha) * (int64_t)(*y1)) >> 16)) +
+                  (int64_t)air_boost;
+  int32_t output = (int32_t)out64;
+  
+  *x1 = input;
+  *y1 = output;
+  
+  if ( output > 32767 )  output = 32767;
+  if ( output < -32768 ) output = -32768;
+  
+  return (int16_t)output;
+}
+
+
 /** Apply full filter chain to 16-bit sample
   * 
   * @param: sample - Signed 16-bit audio sample
@@ -463,6 +605,14 @@ int16_t ApplyFilterChain16Bit( int16_t sample, uint8_t is_left_channel )
       sample = ApplyDCBlockingFilter( sample, &dc_filter_prev_input_left, &dc_filter_prev_output_left );
     } else {
       sample = ApplyDCBlockingFilter( sample, &dc_filter_prev_input_right, &dc_filter_prev_output_right );
+    }
+  }
+  
+  if( filter_cfg.enable_air_effect ) {
+    if( is_left_channel ) {
+      sample = ApplyAirEffect( sample, &air_effect_x1_left, &air_effect_y1_left );
+    } else {
+      sample = ApplyAirEffect( sample, &air_effect_x1_right, &air_effect_y1_right );
     }
   }
   
@@ -512,6 +662,14 @@ int16_t ApplyFilterChain8Bit( int16_t sample, uint8_t is_left_channel )
       sample = ApplyDCBlockingFilter( sample, &dc_filter_prev_input_left, &dc_filter_prev_output_left );
     } else {
       sample = ApplyDCBlockingFilter( sample, &dc_filter_prev_input_right, &dc_filter_prev_output_right );
+    }
+  }
+  
+  if( filter_cfg.enable_air_effect ) {
+    if( is_left_channel ) {
+      sample = ApplyAirEffect( sample, &air_effect_x1_left, &air_effect_y1_left );
+    } else {
+      sample = ApplyAirEffect( sample, &air_effect_x1_right, &air_effect_y1_right );
     }
   }
   
@@ -941,6 +1099,10 @@ PB_StatusTypeDef PlaySample (
   lpf_16bit_x2_left   = 0;  lpf_16bit_x2_right  = 0;
   lpf_16bit_y1_left   = 0;  lpf_16bit_y1_right  = 0;
   lpf_16bit_y2_left   = 0;  lpf_16bit_y2_right  = 0;
+  
+  // Reset air effect state for both channels
+  air_effect_x1_left  = 0;  air_effect_x1_right = 0;
+  air_effect_y1_left  = 0;  air_effect_y1_right = 0;
   
   // Warm up 16-bit biquad filter state from first sample to avoid startup transient
   if( sample_depth == 16 && filter_cfg.enable_16bit_biquad_lpf ) {

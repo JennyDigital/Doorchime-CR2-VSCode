@@ -183,11 +183,57 @@ def create_styles():
 
 
 def syntax_highlight_code(code, language='c'):
-    """Apply GitHub-style syntax highlighting to code."""
-    """Apply simple syntax highlighting - just escape HTML."""
-    # Just escape HTML - reportlab will use monospace with background color
-    code = code.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-    return code
+    """Apply GitHub-style syntax highlighting to code with proper indentation."""
+    from pygments import highlight
+    from pygments.lexers import get_lexer_by_name
+    from pygments.token import Token
+    
+    try:
+        lexer = get_lexer_by_name(language, stripall=False)
+    except:
+        lexer = get_lexer_by_name('c', stripall=False)
+    
+    # Token color mapping (GitHub style)
+    token_colors = {
+        Token.Keyword: '#d73a49',
+        Token.Keyword.Type: '#d73a49',
+        Token.Keyword.Namespace: '#d73a49',
+        Token.String: '#032f62',
+        Token.String.Char: '#032f62',
+        Token.Comment: '#6a737d',
+        Token.Comment.Single: '#6a737d',
+        Token.Comment.Multiline: '#6a737d',
+        Token.Name.Function: '#6f42c1',
+        Token.Name.Class: '#6f42c1',
+        Token.Number: '#005cc5',
+        Token.Operator: '#d73a49',
+        Token.Punctuation: '#24292e',
+        Token.Name.Builtin: '#005cc5',
+        Token.Name: '#24292e',
+    }
+    
+    # Tokenize and colorize
+    tokens = lexer.get_tokens(code)
+    result = []
+    
+    for token_type, token_value in tokens:
+        # Preserve whitespace and indentation
+        token_value = token_value.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+        token_value = token_value.replace(' ', '&nbsp;')  # Preserve spaces
+        token_value = token_value.replace('\n', '<br/>')
+        token_value = token_value.replace('\t', '&nbsp;&nbsp;&nbsp;&nbsp;')  # Tab to 4 spaces
+        
+        # Find matching color
+        color = '#24292e'  # Default text color
+        for ttype, tcolor in token_colors.items():
+            if token_type in ttype:
+                color = tcolor
+                break
+        
+        if token_value:
+            result.append(f'<font color="{color}">{token_value}</font>')
+    
+    return ''.join(result)
 
 
 def parse_markdown_manual(md_file):
@@ -385,6 +431,8 @@ def build_pdf_content(sections, styles):
                 story.append(Paragraph(text, styles['CustomBody']))
             
             elif item['type'] == 'code':
+                # Add spacer before code block to prevent overlap
+                story.append(Spacer(1, 0.3*cm))
                 code = item['content']
                 highlighted = syntax_highlight_code(code, item.get('language', 'c'))
                 # Wrap in pre tags to preserve formatting
@@ -393,6 +441,8 @@ def build_pdf_content(sections, styles):
                     styles['CodeBlock']
                 )
                 story.append(code_para)
+                # Add spacer after code block
+                story.append(Spacer(1, 0.2*cm))
             
             elif item['type'] == 'table':
                 headers, rows = parse_table(item['content'])
