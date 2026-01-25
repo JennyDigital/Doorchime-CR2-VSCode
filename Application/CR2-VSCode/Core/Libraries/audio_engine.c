@@ -939,7 +939,7 @@ PB_StatusTypeDef PlaySample (
   if( sample_depth == 16 && filter_cfg.enable_16bit_biquad_lpf ) {
     int16_t first_sample = *((int16_t *)sample_to_play);
     // Run multiple passes to let aggressive filters settle smoothly
-    for( uint8_t i = 0; i < 8; i++ ) {
+    for( uint8_t i = 0; i < BIQUAD_WARMUP_CYCLES; i++ ) {
       ApplyLowPassFilter16Bit( first_sample, &lpf_16bit_x1_left, &lpf_16bit_x2_left,
                                &lpf_16bit_y1_left, &lpf_16bit_y2_left );
       ApplyLowPassFilter16Bit( first_sample, &lpf_16bit_x1_right, &lpf_16bit_x2_right,

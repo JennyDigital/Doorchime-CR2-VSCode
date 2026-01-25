@@ -166,7 +166,7 @@ SetLpf16BitLevel(LPF_Aggressive);     // Stronger filtering
 2. **Biquad Low-Pass Filter**
    - Second-order IIR filter
    - Runtime-configurable aggressiveness: Very Soft → Aggressive
-   - Warm-up: 8 passes of first sample to prevent startup artifacts
+   - Warm-up: 16 passes of first sample to prevent startup artifacts
    - Cutoff range: ~8700 Hz (Very Soft) to ~4100 Hz (Aggressive)
 
 3. **Soft Clipping**
@@ -593,7 +593,21 @@ The 16-bit biquad uses higher α for heavier filtering (opposite direction from 
 | **Medium** | 0.875 | Balanced filtering |
 | **Aggressive** | ~0.97 | Strongest filtering / darkest tone |
 
-- Warm-up (8 passes) still runs to suppress startup artifacts at the most aggressive setting.
+- Warm-up (16 passes) still runs to suppress startup artifacts at the most aggressive setting.
+
+**Recommended Input Range for Best Quality:**
+
+The 16-bit biquad has feedback that can cause overshoot and ringing, especially at aggressive filter levels. To avoid clipping while preserving dynamic range:
+
+| Level | Recommended Range | Notes |
+|-------|-------------------|-------|
+| **LPF_VerySoft** | 75–85% of full scale (±24,500 to ±27,750) | Minimal overshoot risk |
+| **LPF_Soft** | 70–80% of full scale (±22,937 to ±26,214) | Good balance (recommended) |
+| **LPF_Medium** | 70–75% of full scale (±22,937 to ±24,500) | Increasing feedback |
+| **LPF_Aggressive** | 60–70% of full scale (±19,660 to ±22,937) | Strong feedback; conservative headroom essential |
+
+**General Guideline:**  
+Use **70–80% of full scale (±23,000)** as a safe starting point. If using LPF_Aggressive, stay closer to 70%; if using LPF_VerySoft, you can push toward 80–85%.
 
 ### 8-bit LPF Aggressiveness Levels
 

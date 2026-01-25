@@ -172,8 +172,10 @@ int main(void)
   filter_cfg.enable_16bit_biquad_lpf      = 1;
   filter_cfg.enable_8bit_lpf  = 1;
   filter_cfg.enable_soft_dc_filter_16bit  = 1;
+  filter_cfg.enable_16bit_biquad_lpf      = 1;
+  filter_cfg.enable_soft_clipping         = 1;
 
-  SetLpfMakeupGain8Bit(1.0f);
+  SetLpfMakeupGain8Bit(0.85f);
   SetLpf16BitLevel(LPF_VerySoft);
   SetFilterConfig( &filter_cfg );
   /* USER CODE END 2 */
@@ -205,16 +207,16 @@ int main(void)
     // WaitForSampleEnd();
     // PlaySample( rooster16b2c, ROOSTER16B2C_SZ, I2S_AUDIOFREQ_22K, 16, Mode_stereo, LPF_Medium );
     // WaitForSampleEnd();
-    // PlaySample( ocarina32k, OCARINA32K_SZ,
-    //     I2S_AUDIOFREQ_32K, 16, Mode_mono, LPF_Soft );
-    // WaitForSampleEnd();
+    PlaySample( ocarina32k, OCARINA32K_SZ,
+        I2S_AUDIOFREQ_32K, 16, Mode_mono, LPF_Aggressive );
+    WaitForSampleEnd();
     // PlaySample( rooster8b2c, ROOSTER8B2C_SZ,
     // I2S_AUDIOFREQ_22K, 8, Mode_stereo, LPF_VerySoft );
     // WaitForSampleEnd();
 
-    PlaySample( harmony8b, HARMONY8B_SZ,
-        I2S_AUDIOFREQ_11K, 8, Mode_mono, LPF_Aggressive );
-    WaitForSampleEnd();
+    // PlaySample( harmony8b, HARMONY8B_SZ,
+    //     I2S_AUDIOFREQ_11K, 8, Mode_mono, LPF_Aggressive );
+    // WaitForSampleEnd();
 
     // PlaySample( tt_arrival, TT_ARRIVAL_SZ, I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_Medium );
     // PlaySample( KillBill11k, KILLBILL11K_SZ,

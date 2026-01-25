@@ -61,6 +61,9 @@ extern "C" {
 #define LPF_16BIT_MEDIUM      57344    // 0.875 - balanced filtering
 #define LPF_16BIT_AGGRESSIVE  63488    // ~0.97 - strong filtering / lowest cutoff
 
+/* Number of cycles to warm up biquad filter state */
+#define BIQUAD_WARMUP_CYCLES  16
+
 /* Low-pass filter for 8-bit samples */
 #define LPF_8BIT_SHIFT        16       // Right shift for fixed-point division
 #define LPF_MAKEUP_GAIN_Q16   70779    // ~1.08x post-LPF makeup (default)
