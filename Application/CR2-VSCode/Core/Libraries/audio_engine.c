@@ -15,6 +15,9 @@
 #include "audio_engine.h"
 #include <stddef.h>
 
+/* Forward declarations for internal helper functions */
+static inline void UpdateFadeCounters( uint32_t samples_processed );
+
 /* External variables that need to be defined by the application */
 extern I2S_HandleTypeDef AUDIO_ENGINE_I2S_HANDLE;
 
@@ -52,7 +55,7 @@ volatile  uint8_t         half_to_fill;
           uint16_t        I2S_PlaybackSpeed           = 22000;  // Default
 
 /* Playback engine control variables */
-          uint16_t        p_advance;
+          uint32_t        p_advance;
           PB_ModeTypeDef  channels                    = Mode_mono;
 volatile  uint32_t        fadeout_samples_remaining   = 0;
 volatile  uint32_t        fadein_samples_remaining    = 0;
@@ -283,6 +286,22 @@ int16_t ApplyNoiseGate( int16_t sample )
 }
 
 
+/** Update fade in/out counters
+  * 
+  * @param: samples_processed - Number of samples processed (1 for mono, 2 for stereo)
+  */
+static inline void UpdateFadeCounters( uint32_t samples_processed )
+{
+  if( fadein_samples_remaining > 0 ) {
+    fadein_samples_remaining = (fadein_samples_remaining > samples_processed) ? 
+                               fadein_samples_remaining - samples_processed : 0;
+  }
+  if( fadeout_samples_remaining > 0 ) {
+    fadeout_samples_remaining--;
+  }
+}
+
+
 /** Apply soft clipping to audio sample
   * 
   * @param: sample - Signed 16-bit audio sample
@@ -510,8 +529,8 @@ int16_t ApplyFilterChain8Bit( int16_t sample, uint8_t is_left_channel )
   return sample;
 }
 
-/* ===== State Accessors ===== */
 
+/* ===== State Accessors ===== */
 
 /** Get current playback state
   * 
@@ -739,38 +758,32 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
   //
   for( uint16_t i = 0; i < HALFCHUNK_SZ; i++ )
   {
-    if( (uint16_t *) input >=  pb_end16 ) {                     /* Check for end of sample data */
-      leftsample = MIDPOINT_S16;                                /* Pad with silence if at end */
+    if( (uint16_t *) input >=  pb_end16 ) {                                             // Check for end of sample data
+      leftsample = MIDPOINT_S16;                                                        // Pad with silence if at end 
     }
     else {
-      leftsample = ( (int16_t) (*input) / vol_div ) * VOL_MULT; // Left channel
+      leftsample = ( (int16_t) (*input) / vol_div ) * VOL_MULT;                         // Left channel
       leftsample = ApplyFilterChain16Bit( leftsample, 1 );      // Apply complete filter chain
     }
     input++;
 
-    if( channels == Mode_mono ) { rightsample = leftsample; }   // Right channel is the same as left.
+    if( channels == Mode_mono ) { rightsample = leftsample; }                           // Right channel is the same as left.
     else {
-      if( (uint16_t *) input >=  pb_end16 ) {                   // Check for end of sample data
-        rightsample = MIDPOINT_S16;                             // Pad with silence if at end
+      if( (uint16_t *) input >=  pb_end16 ) {                                             // Check for end of sample data
+        rightsample = MIDPOINT_S16;                                                        // Pad with silence if at end
       }
       else { 
-        rightsample = ( (int16_t) (*input) / vol_div ) * VOL_MULT; // Right channel
-        rightsample = ApplyFilterChain16Bit( rightsample, 0 );     // Apply complete filter chain
+        rightsample = ( (int16_t) (*input) / vol_div ) * VOL_MULT;                         // Right channel
+        rightsample = ApplyFilterChain16Bit( rightsample, 0 );                            // Apply complete filter chain
       }   // End of right channel processing
       input++;
     }
-    *output = leftsample;  output++;                            // Write samples to output buffer
+    *output = leftsample;  output++;                                                      // Write samples to output buffer
     *output = rightsample; output++;
     
-    // Decrement fade counters based on samples processed
-    uint8_t samples_processed = (channels == Mode_stereo) ? 2 : 1;
-    if( fadein_samples_remaining > 0 ) {
-      fadein_samples_remaining = (fadein_samples_remaining > samples_processed) ? 
-                                 fadein_samples_remaining - samples_processed : 0;
-    }
-    if( fadeout_samples_remaining > 0 ) {
-      fadeout_samples_remaining--;
-    }
+    // Update fade counters based on samples processed
+    uint32_t samples_processed = (channels == Mode_stereo) ? 2 : 1;
+    UpdateFadeCounters(samples_processed);
   }
   return PB_Playing;;
 }
@@ -837,15 +850,9 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
     *output = leftsample;  output++;                              /* Transfer samples to output buffer */
     *output = rightsample; output++;
     
-    // Decrement fade counters based on samples processed
-    uint8_t samples_processed = (channels == Mode_stereo) ? 2 : 1;
-    if( fadein_samples_remaining > 0 ) {
-      fadein_samples_remaining = (fadein_samples_remaining > samples_processed) ? 
-                                 fadein_samples_remaining - samples_processed : 0;
-    }
-    if( fadeout_samples_remaining > 0 ) {
-      fadeout_samples_remaining--;
-    }
+    // Update fade counters based on samples processed
+    uint32_t samples_processed = ( channels == Mode_stereo ) ? 2 : 1;
+    UpdateFadeCounters( samples_processed );
   }
   return PB_Playing;
 }
