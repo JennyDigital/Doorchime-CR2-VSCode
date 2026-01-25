@@ -315,6 +315,11 @@ def parse_markdown_manual(md_file):
             })
             continue
         
+        # Skip markdown image references (they'll be inserted programmatically)
+        if re.match(r'^\s*!\[.*\]\(.*\)\s*$', line):
+            i += 1
+            continue
+        
         # Regular paragraphs
         if line.strip():
             current_section['content'].append({
@@ -456,6 +461,54 @@ def build_pdf_content(sections, styles):
                     text = process_inline_code(list_item)
                     bullet_items.append(Paragraph(text, styles['BulletList']))
                 story.append(ListFlowable(bullet_items, bulletType='bullet'))
+        
+        # Add system block diagram after Architecture section
+        if 'System Block Diagram' in title and level == 3:
+            import os
+            svg_path = 'system_block_diagram.svg'
+            if os.path.exists(svg_path):
+                try:
+                    from svglib.svglib import svg2rlg
+                    from reportlab.graphics import renderPDF
+                    
+                    # Convert SVG to ReportLab drawing
+                    drawing = svg2rlg(svg_path)
+                    if drawing:
+                        # Get original dimensions
+                        orig_width = drawing.width
+                        orig_height = drawing.height
+                        
+                        # Scale to fit page width (with margins)
+                        target_width = 14*cm
+                        scale_factor = target_width / orig_width
+                        
+                        drawing.width = target_width
+                        drawing.height = orig_height * scale_factor
+                        drawing.scale(scale_factor, scale_factor)
+                        
+                        story.append(Spacer(1, 0.5*cm))
+                        story.append(drawing)
+                        story.append(Spacer(1, 0.5*cm))
+                    else:
+                        story.append(Paragraph(
+                            "<i>[System block diagram could not be rendered]</i>",
+                            styles['CustomBody']
+                        ))
+                except ImportError:
+                    story.append(Paragraph(
+                        "<i>[svglib not installed - install with: pip install svglib]</i>",
+                        styles['CustomBody']
+                    ))
+                except Exception as e:
+                    story.append(Paragraph(
+                        f"<i>[Error loading diagram: {str(e)}]</i>",
+                        styles['CustomBody']
+                    ))
+            else:
+                story.append(Paragraph(
+                    f"<i>[System block diagram file not found: {svg_path}]</i>",
+                    styles['CustomBody']
+                ))
         
         # Add filter graph after filter configuration section
         if 'Filter Configuration' in title and level == 2:

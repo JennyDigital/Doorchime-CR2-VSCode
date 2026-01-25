@@ -117,6 +117,44 @@ volatile  uint32_t        paused_sample_index         = 0;
 volatile  const void      *paused_sample_ptr          = NULL;
 volatile  uint32_t        paused_total_samples        = 0;
 
+/* ===== Filter State Reset Macros ===== */
+
+#define RESET_DC_FILTER_STATE() \
+  do { \
+    dc_filter_prev_input_left   = 0;  dc_filter_prev_input_right  = 0; \
+    dc_filter_prev_output_left  = 0;  dc_filter_prev_output_right = 0; \
+  } while(0)
+
+#define RESET_8BIT_BIQUAD_STATE() \
+  do { \
+    lpf_8bit_x1_left  = 0;  lpf_8bit_x1_right = 0; \
+    lpf_8bit_x2_left  = 0;  lpf_8bit_x2_right = 0; \
+    lpf_8bit_y1_left  = 0;  lpf_8bit_y1_right = 0; \
+    lpf_8bit_y2_left  = 0;  lpf_8bit_y2_right = 0; \
+  } while(0)
+
+#define RESET_16BIT_BIQUAD_STATE() \
+  do { \
+    lpf_16bit_x1_left  = 0;  lpf_16bit_x1_right = 0; \
+    lpf_16bit_x2_left  = 0;  lpf_16bit_x2_right = 0; \
+    lpf_16bit_y1_left  = 0;  lpf_16bit_y1_right = 0; \
+    lpf_16bit_y2_left  = 0;  lpf_16bit_y2_right = 0; \
+  } while(0)
+
+#define RESET_AIR_EFFECT_STATE() \
+  do { \
+    air_effect_x1_left  = 0;  air_effect_x1_right = 0; \
+    air_effect_y1_left  = 0;  air_effect_y1_right = 0; \
+  } while(0)
+
+#define RESET_ALL_FILTER_STATE() \
+  do { \
+    RESET_DC_FILTER_STATE(); \
+    RESET_8BIT_BIQUAD_STATE(); \
+    RESET_16BIT_BIQUAD_STATE(); \
+    RESET_AIR_EFFECT_STATE(); \
+  } while(0)
+
 /* ===== Filter Configuration Functions ===== */
 
 
@@ -400,6 +438,22 @@ static inline void UpdateFadeCounters( uint32_t samples_processed )
   }
   if( fadeout_samples_remaining > 0 ) {
     fadeout_samples_remaining--;
+  }
+}
+
+
+/** Warm up 16-bit biquad filter state to avoid startup transient
+  * 
+  * @param: sample - Initial sample value to use for warmup iterations
+  */
+static inline void WarmupBiquadFilter16Bit( int16_t sample )
+{
+  // Run multiple passes to let aggressive filters settle smoothly
+  for( uint8_t i = 0; i < BIQUAD_WARMUP_CYCLES; i++ ) {
+    ApplyLowPassFilter16Bit( sample, &lpf_16bit_x1_left, &lpf_16bit_x2_left,
+                             &lpf_16bit_y1_left, &lpf_16bit_y2_left );
+    ApplyLowPassFilter16Bit( sample, &lpf_16bit_x1_right, &lpf_16bit_x2_right,
+                             &lpf_16bit_y1_right, &lpf_16bit_y2_right );
   }
 }
 
@@ -1064,56 +1118,32 @@ PB_StatusTypeDef PlaySample (
       break;
   }
 
-  if( mode == Mode_stereo ) {           // Pointer advance amount for stereo/mono mode.
-     p_advance = CHUNK_SZ;              // Two channels worth of samples per chunk
+  if( mode == Mode_stereo ) {                             // Pointer advance amount for stereo/mono mode.
+     p_advance = CHUNK_SZ;                                // Two channels worth of samples per chunk
      channels  = Mode_stereo;
   }
-  else {                                // One channels worth of samples per chunk
+  else {                                                  // Or one channels worth of samples per chunk... One lump or two vicar?
     p_advance  = HALFCHUNK_SZ;
     channels   = Mode_mono;     
   }
 
-  I2S_PlaybackSpeed = playback_speed;   // Turn the DAC on in readyness and initialize I2S with the requested sample rate.
+  I2S_PlaybackSpeed = playback_speed;                     // Turn the DAC on in readyness and initialize I2S with the requested sample rate.
   if( AudioEngine_I2SInit ) {
     AudioEngine_I2SInit();
   }
 
   HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );       // Ensure there is no currently playing sound before starting the current one and turn on the DAC  
   if( AudioEngine_DACSwitch ) {
-    AudioEngine_DACSwitch( DAC_ON );   // starting the current one and turn on the DAC
+    AudioEngine_DACSwitch( DAC_ON );              // starting the current one and turn on the DAC
   }
   
-  // Reset DC blocking filter state for new sample
-  //
-  dc_filter_prev_input_left   = 0;    dc_filter_prev_input_right  = 0;
-  dc_filter_prev_output_left  = 0;    dc_filter_prev_output_right = 0;
-  
-  // Reset biquad filter state for 8-bit samples (all 4 state variables per channel)
-  lpf_8bit_x1_left    = 0;  lpf_8bit_x1_right   = 0;
-  lpf_8bit_x2_left    = 0;  lpf_8bit_x2_right   = 0;
-  lpf_8bit_y1_left    = 0;  lpf_8bit_y1_right   = 0;
-  lpf_8bit_y2_left    = 0;  lpf_8bit_y2_right   = 0;
-  
-  // Reset biquad filter state for 16-bit samples
-  lpf_16bit_x1_left   = 0;  lpf_16bit_x1_right  = 0;
-  lpf_16bit_x2_left   = 0;  lpf_16bit_x2_right  = 0;
-  lpf_16bit_y1_left   = 0;  lpf_16bit_y1_right  = 0;
-  lpf_16bit_y2_left   = 0;  lpf_16bit_y2_right  = 0;
-  
-  // Reset air effect state for both channels
-  air_effect_x1_left  = 0;  air_effect_x1_right = 0;
-  air_effect_y1_left  = 0;  air_effect_y1_right = 0;
+  // Reset all filter state for new sample
+  RESET_ALL_FILTER_STATE();
   
   // Warm up 16-bit biquad filter state from first sample to avoid startup transient
   if( sample_depth == 16 && filter_cfg.enable_16bit_biquad_lpf ) {
     int16_t first_sample = *((int16_t *)sample_to_play);
-    // Run multiple passes to let aggressive filters settle smoothly
-    for( uint8_t i = 0; i < BIQUAD_WARMUP_CYCLES; i++ ) {
-      ApplyLowPassFilter16Bit( first_sample, &lpf_16bit_x1_left, &lpf_16bit_x2_left,
-                               &lpf_16bit_y1_left, &lpf_16bit_y2_left );
-      ApplyLowPassFilter16Bit( first_sample, &lpf_16bit_x1_right, &lpf_16bit_x2_right,
-                               &lpf_16bit_y1_right, &lpf_16bit_y2_right );
-    }
+    WarmupBiquadFilter16Bit( first_sample );
   }
   
   if( sample_depth == 16 ) {            // Initialize 16-bit sample playback pointers

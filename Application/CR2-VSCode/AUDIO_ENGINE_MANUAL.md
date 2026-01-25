@@ -121,54 +121,62 @@ The audio playback system follows a clear data flow from flash memory through DS
 
 ### Filter Chain Stages (16-bit Audio)
 
-1. **DC Blocking Filter** (High-Pass)
-   - Removes DC offset and very low frequencies (< 44 Hz)
-   - Prevents output drift
-   - Two variants: standard (44 Hz) and soft (22 Hz)
-
-2. **Biquad Low-Pass Filter**
+1. **Biquad Low-Pass Filter** *(Optional - enable_16bit_biquad_lpf)*
    - Second-order IIR filter
    - Runtime-configurable aggressiveness: Very Soft → Aggressive
    - Warm-up: 16 passes of first sample to prevent startup artifacts
    - Cutoff range: ~8700 Hz (Very Soft) to ~4100 Hz (Aggressive)
 
-3. **Soft Clipping**
-   - Smooth cubic curve limiting above ±28,000
-   - Prevents harsh digital clipping
-   - Musical, natural-sounding compression
+2. **DC Blocking Filter** *(Selectable - enable_soft_dc_filter_16bit)*
+   - Removes DC offset and very low frequencies
+   - Two variants: standard (44 Hz) or soft (22 Hz)
+   - Prevents output drift
+   - Always active in one of the two modes
 
-4. **Fade In/Out**
+3. **Air Effect (High-Shelf)** *(Optional - enable_air_effect)*
+   - Adds presence and brightness to audio
+   - Runtime-adjustable boost (0 dB, +2 dB, +3 dB presets)
+   - Disabled by default
+
+4. **Fade In/Out** *(Always Active)*
    - Quadratic power curve ramp
    - Default: 2048 samples (~93 ms @ 22 kHz)
    - Smooth entry/exit for audio transitions
 
-5. **Noise Gate** (Optional)
+5. **Noise Gate** *(Optional - enable_noise_gate)*
    - Mutes samples below ±512 amplitude
    - Suppresses quantization noise during silence
    - Disabled by default
 
-6. **Volume Scaling**
+6. **Soft Clipping** *(Optional - enable_soft_clipping)*
+   - Smooth cubic curve limiting above ±28,000
+   - Prevents harsh digital clipping
+   - Musical, natural-sounding compression
+   - Recommended: keep enabled
+
+7. **Volume Scaling** *(Always Active)*
    - Integer multiplication (0–3x gain)
    - Read from hardware GPIO (3-level selector)
    - Applied per-sample
 
 ### Filter Chain Stages (8-bit Audio)
 
-1. **8-bit to 16-bit Conversion with Dithering**
+1. **8-bit to 16-bit Conversion with Dithering** *(Always Active)*
    - TPDF (Triangular PDF) dithering reduces quantization noise
    - Upsamples to internal 16-bit working format
 
-2. **Biquad Low-Pass Filter**
+2. **Biquad Low-Pass Filter** *(Optional - enable_8bit_lpf)*
    - Same architecture as 16-bit path
    - Separate aggressiveness levels for 8-bit audio
    - Cutoff range: ~3200 Hz (Very Soft) to ~1800 Hz (Aggressive)
 
-3. **Makeup Gain**
+3. **Makeup Gain** *(Always Active when LPF enabled)*
    - Post-LPF amplitude compensation (~1.08x default)
    - Configurable via `SetLpfMakeupGain8Bit()`
 
 4. **DC Blocking & Remaining Stages**
-   - Same as 16-bit path (steps 1, 3–6)
+   - Same as 16-bit path (steps 2–7)
+   - Air Effect, Fade, Noise Gate, Soft Clipping, Volume Scaling
 
 ---
 
@@ -677,17 +685,19 @@ CycleAirEffectPresetDb();
 The Air Effect is positioned after the DC blocking filter but before fade/clipping effects:
 
 ```
-16/8-bit LPF
+16/8-bit LPF (optional: enable_16bit_biquad_lpf / enable_8bit_lpf)
     ↓
-DC Blocking Filter
+DC Blocking Filter (always on: standard or soft mode)
     ↓
-AIR EFFECT ← inserted here (if enabled)
+AIR EFFECT (optional: enable_air_effect)
     ↓
-Fade In/Out
+Fade In/Out (always active)
     ↓
-Noise Gate
+Noise Gate (optional: enable_noise_gate)
     ↓
-Soft Clipping
+Soft Clipping (optional: enable_soft_clipping, recommended)
+    ↓
+Volume Scaling (always active)
 ```
 
 **Tuning the Effect:**
@@ -1301,9 +1311,13 @@ RAM:   ~2.5 KB (state variables + playback buffer)
 
 ### Power Consumption
 
-- **I2S + DMA Active:** ~50 mA
-- **Amplifier (MAX98357A):** ~100 mA @ 0.5W output
-- **Total System @ 1W output:** ~200 mA @ 5V
+- **STM32G474 (typical):** ≤40 mA (core + peripherals)
+- **I2S + DMA Active:** ~10 mA additional
+- **Amplifier (MAX98357A):** ~100 mA @ 0.5W output, >500 mW capable
+- **Total System @ 0.5W audio:** ~150 mA @ 5V
+- **Total System @ 1W audio:** ~200 mA @ 5V
+
+**Note:** The MAX98357A amplifier can deliver over 500 mW to an 8Ω speaker, significantly exceeding the STM32's typical current draw.
 
 ---
 
