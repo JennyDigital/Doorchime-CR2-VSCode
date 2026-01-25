@@ -1297,7 +1297,7 @@ if ((uint32_t)audio_ptr < 0x08000000 && (uint32_t)audio_ptr >= 0x0A000000) {
 ### Memory Usage
 
 ```
-Code:  ~6 KB (audio engine + filter implementations)
+Flash (.text/.rodata, Release): ~12.9 KB (audio engine + filters + Air Effect presets)
 RAM:   ~2.5 KB (state variables + playback buffer)
 ```
 
