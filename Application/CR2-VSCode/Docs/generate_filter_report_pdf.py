@@ -4,11 +4,15 @@ Generate comprehensive filter report as A4 PDF.
 Creates a professional technical report with plots, tables, and analysis.
 """
 
+from pathlib import Path
+
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.gridspec import GridSpec
 from datetime import datetime
+
+BASE_DIR = Path(__file__).resolve().parent
 
 # Filter coefficients from audio_engine.h
 DC_FILTER_ALPHA = 64225 / 65536  # 0.98
@@ -152,7 +156,7 @@ def air_effect_response(alpha=AIR_EFFECT_CUTOFF, shelf_gain=AIR_EFFECT_SHELF_GAI
     return frequencies, magnitude_db
 
 # Create PDF with multiple pages
-pdf_path = 'Filter_Report_Enhanced.pdf'
+pdf_path = BASE_DIR / 'Filter_Report_Enhanced.pdf'
 pdf = PdfPages(pdf_path)
 
 # ============================================================================

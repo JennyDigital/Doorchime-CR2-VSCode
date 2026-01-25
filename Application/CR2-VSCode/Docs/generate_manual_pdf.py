@@ -5,6 +5,7 @@ Includes syntax-highlighted code snippets, embedded graphs, and full formatting.
 """
 
 import re
+from pathlib import Path
 from datetime import datetime
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm, inch
@@ -22,6 +23,8 @@ from pygments.lexers import CLexer, get_lexer_by_name
 from pygments.formatters import HtmlFormatter
 from pygments.styles import get_style_by_name
 import markdown
+
+BASE_DIR = Path(__file__).resolve().parent
 
 # GitHub-style color scheme for code
 GITHUB_COLORS = {
@@ -465,7 +468,7 @@ def build_pdf_content(sections, styles):
         # Add system block diagram after Architecture section
         if 'System Block Diagram' in title and level == 3:
             import os
-            svg_path = 'system_block_diagram.svg'
+            svg_path = str(BASE_DIR / 'system_block_diagram.svg')
             if os.path.exists(svg_path):
                 try:
                     from svglib.svglib import svg2rlg
@@ -520,7 +523,7 @@ def build_pdf_content(sections, styles):
                                  fontSize=10, alignment=TA_CENTER, 
                                  textColor=HexColor('#586069'))
                 ))
-                img = Image('filter_characteristics_enhanced.png', width=16*cm, height=12*cm)
+                img = Image(str(BASE_DIR / 'filter_characteristics_enhanced.png'), width=16*cm, height=12*cm)
                 story.append(img)
                 story.append(Spacer(1, 0.5*cm))
             except:
@@ -536,7 +539,7 @@ def main():
     print("=" * 70)
     
     # Create PDF
-    pdf_file = "Audio_Engine_Manual.pdf"
+    pdf_file = str(BASE_DIR / "Audio_Engine_Manual.pdf")
     doc = SimpleDocTemplate(
         pdf_file,
         pagesize=A4,
@@ -551,7 +554,7 @@ def main():
     
     # Parse markdown
     print("Parsing AUDIO_ENGINE_MANUAL.md...")
-    sections = parse_markdown_manual('AUDIO_ENGINE_MANUAL.md')
+    sections = parse_markdown_manual(str(BASE_DIR / 'AUDIO_ENGINE_MANUAL.md'))
     print(f"  Found {len(sections)} sections")
     
     # Build content

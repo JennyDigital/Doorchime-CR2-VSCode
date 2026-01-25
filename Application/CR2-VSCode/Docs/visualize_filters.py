@@ -4,9 +4,14 @@ Filter Characteristics Visualization for Audio Engine
 Generates frequency response and transfer function plots for the DSP filters.
 """
 
+from pathlib import Path
+
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
+
+
+BASE_DIR = Path(__file__).resolve().parent
 
 # Filter coefficients from audio_engine.h
 DC_FILTER_ALPHA = 64225 / 65536  # 0.98
@@ -211,7 +216,7 @@ fig.suptitle('Audio Engine DSP Filter Characteristics\nSample Rate: 22 kHz',
              fontsize=16, fontweight='bold')
 
 # Save the figure
-output_file = 'filter_characteristics.png'
+output_file = BASE_DIR / 'filter_characteristics.png'
 plt.savefig(output_file, dpi=300, bbox_inches='tight')
 print(f"Filter characteristics plot saved to: {output_file}")
 

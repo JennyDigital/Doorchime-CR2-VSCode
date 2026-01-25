@@ -5,6 +5,7 @@ Enhanced version with proper GitHub-style syntax highlighting using Pygments.
 """
 
 import re
+from pathlib import Path
 from datetime import datetime
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
@@ -26,6 +27,8 @@ from pygments.token import Token
 import html
 import os
 import subprocess
+
+BASE_DIR = Path(__file__).resolve().parent
 
 # GitHub-style colors
 COLOR_KEYWORD = HexColor('#d73a49')
@@ -573,7 +576,7 @@ def build_pdf_content(sections, styles):
                 # Full-page image (maximizes label readability)
                 # A4 with 2cm margins leaves 17cm width and 25.7cm height
                 # Reserve 2cm for caption/spacing = 23.7cm available for image
-                img = Image('filter_characteristics_enhanced.png', 
+                img = Image(str(BASE_DIR / 'filter_characteristics_enhanced.png'), 
                           width=18*cm, height=23*cm)
                 story.append(img)
                 
@@ -591,7 +594,7 @@ def main():
     print("Generating Enhanced Audio Engine Manual PDF")
     print("=" * 70)
     
-    pdf_file = "Audio_Engine_Manual.pdf"
+    pdf_file = str(BASE_DIR / "Audio_Engine_Manual.pdf")
     doc = SimpleDocTemplate(
         pdf_file,
         pagesize=A4,
@@ -604,7 +607,7 @@ def main():
     styles = create_styles()
     
     print("Parsing AUDIO_ENGINE_MANUAL.md...")
-    sections = parse_markdown_manual('AUDIO_ENGINE_MANUAL.md')
+    sections = parse_markdown_manual(str(BASE_DIR / 'AUDIO_ENGINE_MANUAL.md'))
     print(f"  Found {len(sections)} sections")
     
     print("Building PDF content...")
