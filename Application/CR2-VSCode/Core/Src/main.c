@@ -161,21 +161,20 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   /* Setup hardware function pointers for audio engine */
-  AudioEngine_DACSwitch = DAC_MasterSwitch;
-  AudioEngine_ReadVolume = ReadVolume;
-  AudioEngine_I2SInit = MX_I2S2_Init;
+  AudioEngine_DACSwitch   = DAC_MasterSwitch;
+  AudioEngine_ReadVolume  = ReadVolume;
+  AudioEngine_I2SInit     = MX_I2S2_Init;
 
   HAL_Delay( 150 );
 
   // FilterConfig_TypeDef filter_cfg;
 
   filter_cfg.enable_16bit_biquad_lpf      = 1;
-  filter_cfg.enable_8bit_lpf  = 1;
+  filter_cfg.enable_8bit_lpf              = 1;
   filter_cfg.enable_soft_dc_filter_16bit  = 1;
-  filter_cfg.enable_16bit_biquad_lpf      = 1;
   filter_cfg.enable_soft_clipping         = 1;
 
-  SetLpfMakeupGain8Bit(0.85f);
+  SetLpfMakeupGain8Bit( 0.9f );  // Slight attenuation to prevent clipping after LPF
   SetLpf16BitLevel(LPF_VerySoft);
   SetFilterConfig( &filter_cfg );
   /* USER CODE END 2 */
@@ -195,7 +194,7 @@ int main(void)
     // Start playback of your chosen sample here
     // PlaySample( guitar_harmony2_16bm_11k, GUITAR_HARMONY2_16BM_11K_SZ,
     //     I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_VerySoft );
-    //     WaitForSampleEnd();
+    // WaitForSampleEnd();
     // PlaySample( handpan16bm, HANDPAN16BM_SZ,
     //     I2S_AUDIOFREQ_44K, 16, Mode_mono, LPF_Medium );
     // WaitForSampleEnd();
@@ -207,9 +206,9 @@ int main(void)
     // WaitForSampleEnd();
     // PlaySample( rooster16b2c, ROOSTER16B2C_SZ, I2S_AUDIOFREQ_22K, 16, Mode_stereo, LPF_Medium );
     // WaitForSampleEnd();
-    PlaySample( ocarina32k, OCARINA32K_SZ,
-        I2S_AUDIOFREQ_32K, 16, Mode_mono, LPF_Aggressive );
-    WaitForSampleEnd();
+    // PlaySample( ocarina32k, OCARINA32K_SZ,
+    //     I2S_AUDIOFREQ_32K, 16, Mode_mono, LPF_Aggressive );
+    // WaitForSampleEnd();
     // PlaySample( rooster8b2c, ROOSTER8B2C_SZ,
     // I2S_AUDIOFREQ_22K, 8, Mode_stereo, LPF_VerySoft );
     // WaitForSampleEnd();
@@ -217,11 +216,14 @@ int main(void)
     // PlaySample( harmony8b, HARMONY8B_SZ,
     //     I2S_AUDIOFREQ_11K, 8, Mode_mono, LPF_Aggressive );
     // WaitForSampleEnd();
+    PlaySample( custom_tritone16k, CUSTOM_TRITONE16K_SZ,
+      I2S_AUDIOFREQ_16K, 16, Mode_mono, LPF_VerySoft );
+    WaitForSampleEnd();
 
-    // PlaySample( tt_arrival, TT_ARRIVAL_SZ, I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_Medium );
+    PlaySample( tt_arrival, TT_ARRIVAL_SZ, I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_VerySoft );
     // PlaySample( KillBill11k, KILLBILL11K_SZ,
     //  I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_Medium );
-    // WaitForSampleEnd();
+    WaitForSampleEnd();
 
     // PlaySample( guitar_riff22k, GUITAR_RIFF22K_SZ,
     //      I2S_AUDIOFREQ_22K, 16, Mode_mono, LPF_Medium );

@@ -555,20 +555,30 @@ def build_pdf_content(sections, styles):
                 except Exception as e:
                     print(f"Warning: Could not load image {img_path}: {e}")
         
-        # Add filter graph
+        # Add filter graph on full page
         if 'Filter Configuration' in title and level == 2:
             try:
+                # Page break before graph for full-page presentation
+                story.append(PageBreak())
+                
+                # Title/caption at top of page
                 story.append(Spacer(1, 0.5*cm))
                 story.append(Paragraph(
-                    "<b>Figure 1:</b> Comprehensive Filter Frequency Response Analysis",
+                    "<b>Figure 1: Comprehensive Filter Frequency Response Analysis</b>",
                     ParagraphStyle('caption', parent=styles['CustomBody'],
-                                 fontSize=9, alignment=TA_CENTER, 
-                                 textColor=HexColor('#586069'), spaceAfter=6)
+                                 fontSize=12, alignment=TA_CENTER, 
+                                 textColor=HexColor('#0366d6'), spaceAfter=0.8*cm)
                 ))
+                
+                # Full-page image (maximizes label readability)
+                # A4 with 2cm margins leaves 17cm width and 25.7cm height
+                # Reserve 2cm for caption/spacing = 23.7cm available for image
                 img = Image('filter_characteristics_enhanced.png', 
-                          width=17*cm, height=12.75*cm)
+                          width=18*cm, height=23*cm)
                 story.append(img)
-                story.append(Spacer(1, 0.5*cm))
+                
+                # Page break after to separate from next section
+                story.append(PageBreak())
             except:
                 pass
     
