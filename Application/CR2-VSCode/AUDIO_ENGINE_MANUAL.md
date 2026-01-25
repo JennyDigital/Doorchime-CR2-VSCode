@@ -18,7 +18,7 @@
 
 ## Overview
 
-The Audio Engine is a reusable, embedded DSP audio playback system designed for the STM32G474 microcontroller with I2S2 audio output to a MAX98357A digital amplifier.
+The Audio Engine is a reusable, embedded DSP audio playback system designed for STM32 microcontrollers with I2S support (including the STM32G4, STM32F4, STM32H7 series and others) with audio output to digital amplifiers such as the MAX98357A.
 
 ### Key Features
 
@@ -115,46 +115,9 @@ SetLpf16BitLevel(LPF_Aggressive);     // Stronger filtering
 
 ### System Block Diagram
 
-```
-┌─────────────────────────────────────────────────┐
-│         Audio Sample (Flash Memory)             │
-│  (8-bit PCM or 16-bit WAV format)               │
-└────────────────┬────────────────────────────────┘
-                 │
-                 ▼
-        ┌────────────────────┐
-        │  PlaySample()      │
-        │  Configuration     │
-        └────────┬───────────┘
-                 │
-        ┌────────▼────────┐
-        │ Sample Pointer  │
-        │ DMA Setup       │
-        │ I2S Init        │
-        └────────┬────────┘
-                 │
-    ┌────────────┴────────────┐
-    │  DMA Half-Buffer Done   │
-    │  → ProcessNextChunk()   │
-    └────────────┬────────────┘
-                 │
-    ┌────────────▼─────────────────────┐
-    │  Per-Sample DSP Filter Chain     │
-    ├──────────────────────────────────┤
-    │ 1. DC Blocking (high-pass)       │
-    │ 2. Low-Pass Filter (configurable)|
-    │ 3. Soft Clipping                 │
-    │ 4. Fade In/Out                   │
-    │ 5. Noise Gate (optional)         │
-    │ 6. Volume Scaling                │
-    └────────────┬─────────────────────┘
-                 │
-                 ▼
-        ┌────────────────────┐
-        │  I2S DMA Buffer    │
-        │  (to MAX98357A)    │
-        └────────────────────┘
-```
+![System Block Diagram](system_block_diagram.svg)
+
+The audio playback system follows a clear data flow from flash memory through DSP processing to the I2S output. The DMA operates in ping-pong mode, processing audio chunks as they're transmitted, ensuring continuous playback without CPU blocking.
 
 ### Filter Chain Stages (16-bit Audio)
 
@@ -888,7 +851,7 @@ SetFilterConfig(&cfg);
 
 ### STM32CubeMX Configuration
 
-1. **I2S2 Setup:**
+1. **I2S Setup (e.g., I2S2 or other available I2S peripheral):**
    - Mode: Master Transmit Only
    - Sample Rate: 22000 Hz
    - Data Format: 16-bit, Mono or Stereo
@@ -900,7 +863,7 @@ SetFilterConfig(&cfg);
    - Enable both **Half-Transfer Complete** and **Transfer Complete** interrupts
 
 3. **GPIO:**
-   - Amplifier enable pin (e.g., PE7 on STM32G474)
+   - Amplifier enable pin (e.g., PE7 on STM32G474, or any available GPIO)
    - Volume select pins (2–3 GPIO inputs for 3-level selector)
    - LED indicators (optional)
 

@@ -1,10 +1,10 @@
-# Audio Engine - STM32G474 DSP Audio Playback System
+# Audio Engine - STM32 DSP Audio Playback System
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-STM32G474-orange.svg)](https://www.st.com/en/microcontrollers-microprocessors/stm32g474.html)
+[![Platform](https://img.shields.io/badge/platform-STM32%20with%20I2S-orange.svg)](https://www.st.com/en/microcontrollers-microprocessors/stm32-32-bit-arm-cortex-mcus.html)
 [![Audio](https://img.shields.io/badge/audio-8bit%20%7C%2016bit-green.svg)]()
 
-A professional, reusable audio playback engine for STM32G474 with runtime-configurable DSP filter chain, supporting 8-bit and 16-bit audio playback through I2S2 to a MAX98357A digital amplifier.
+A professional, reusable audio playback engine for STM32 microcontrollers with I2S support (including STM32G4, STM32F4, STM32H7 series and others) with runtime-configurable DSP filter chain, supporting 8-bit and 16-bit audio playback through I2S to digital amplifiers such as the MAX98357A.
 
 ## 📋 Table of Contents
 
@@ -209,13 +209,15 @@ Input Sample (8-bit unsigned)
 
 ## 🔧 Hardware Setup
 
-### Pin Configuration (STM32G474)
+### Pin Configuration Example (STM32G474)
 
-| Function | Pin | Peripheral |
+Note: Pin assignments vary by STM32 model. Consult your device's datasheet for I2S pin locations.
+
+| Function | Pin (Example) | Peripheral |
 |----------|-----|------------|
-| I2S2 Data Out | PB15 | I2S2_SD |
-| I2S2 Clock | PB13 | I2S2_CK |
-| I2S2 Word Select | PB12 | I2S2_WS |
+| I2S Data Out | PB15 | I2S2_SD |
+| I2S Clock | PB13 | I2S2_CK |
+| I2S Word Select | PB12 | I2S2_WS |
 | DAC Enable | GPIO | User-defined |
 | Volume Control | GPIO | 2-bit selector |
 
@@ -396,8 +398,8 @@ This project is provided under the MIT License. See LICENSE file for details.
 
 ## 🙏 Credits
 
-- **Platform**: STMicroelectronics STM32G474
-- **Digital Amplifier**: Maxim MAX98357A
+- **Platform**: STMicroelectronics STM32 microcontrollers with I2S support
+- **Digital Amplifier**: Maxim MAX98357A and compatible
 - **DSP Algorithms**: Fixed-point biquad and one-pole IIR filters
 - **Development**: VSCode + STM32CubeMX + ARM GCC
 

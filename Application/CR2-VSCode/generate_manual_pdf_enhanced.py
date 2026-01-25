@@ -17,10 +17,15 @@ from reportlab.platypus import (
 from reportlab.lib import colors
 from reportlab.pdfgen import canvas
 from reportlab.lib.colors import HexColor
+from reportlab.graphics import renderPDF
+from svglib.svglib import svg2rlg
 from pygments import highlight
-from pygments.lexers import CLexer, BashLexer, PythonLexer
-from pygments.formatters import TerminalFormatter
+from pygments.lexers import CLexer, BashLexer, PythonLexer, get_lexer_by_name
+from pygments.formatters import HtmlFormatter
 from pygments.token import Token
+import html
+import os
+import subprocess
 
 # GitHub-style colors
 COLOR_KEYWORD = HexColor('#d73a49')
@@ -127,7 +132,7 @@ def create_styles():
     styles.add(ParagraphStyle(
         name='CodeBlock',
         parent=styles['Code'],
-        fontSize=8,
+        fontSize=7,
         textColor=COLOR_TEXT,
         backColor=COLOR_BG,
         borderColor=HexColor('#e1e4e8'),
@@ -137,8 +142,9 @@ def create_styles():
         leftIndent=10,
         rightIndent=10,
         spaceAfter=12,
-        spaceBefore=6,
-        leading=11
+        spaceBefore=14,
+        leading=8,
+        wordWrap='CJK'
     ))
     
     styles.add(ParagraphStyle(
@@ -231,6 +237,19 @@ def parse_markdown_manual(md_file):
             })
             continue
         
+        # Images
+        img_match = re.match(r'!\[([^\]]*)\]\(([^\)]+)\)', line)
+        if img_match:
+            alt_text = img_match.group(1)
+            img_path = img_match.group(2)
+            current_section['content'].append({
+                'type': 'image',
+                'alt': alt_text,
+                'path': img_path
+            })
+            i += 1
+            continue
+        
         # Regular paragraphs
         if line.strip():
             current_section['content'].append({
@@ -258,9 +277,24 @@ def parse_table(table_lines):
 
 
 def create_table_flowable(headers, rows):
-    """Create formatted table."""
-    data = [headers] + rows
-    col_widths = [A4[0] / len(headers) - 1*cm for _ in headers]
+    """Create formatted table with proper cell wrapping."""
+    # Convert cells to Paragraphs for better text wrapping
+    table_style = ParagraphStyle('TableCell', fontSize=8, fontName='Helvetica')
+    header_style = ParagraphStyle('TableHeader', fontSize=9, fontName='Helvetica-Bold')
+    
+    # Process headers
+    header_paras = [Paragraph(process_inline_code(h), header_style) for h in headers]
+    
+    # Process rows
+    row_paras = []
+    for row in rows:
+        row_paras.append([Paragraph(process_inline_code(cell), table_style) for cell in row])
+    
+    data = [header_paras] + row_paras
+    
+    # Dynamic column widths based on header count
+    available_width = A4[0] - 4*cm  # Account for margins
+    col_widths = [available_width / len(headers) for _ in headers]
     
     table = Table(data, colWidths=col_widths)
     table.setStyle(TableStyle([
@@ -284,13 +318,95 @@ def create_table_flowable(headers, rows):
 
 
 def process_inline_code(text):
-    """Convert inline markdown to styled text."""
+    """Convert inline markdown to styled text with proper escaping."""
+    # Escape HTML characters first
+    text = html.escape(text, quote=False)
+    # Then apply formatting
     text = re.sub(r'`([^`]+)`', 
                  r'<font face="Courier" color="#d73a49" backColor="#f6f8fa"><sub> </sub>\1<sub> </sub></font>', 
                  text)
     text = re.sub(r'\*\*([^*]+)\*\*', r'<b>\1</b>', text)
     text = re.sub(r'\*([^*]+)\*', r'<i>\1</i>', text)
     return text
+
+
+def colorize_code(code, language='c'):
+    """Apply syntax highlighting using Pygments and convert to ReportLab markup."""
+    try:
+        lexer = get_lexer_by_name(language, stripall=True)
+    except:
+        lexer = CLexer()
+    
+    tokens = list(lexer.get_tokens(code))
+    output_lines = []
+    current_line = []
+    
+    for ttype, value in tokens:
+        # Escape XML special characters
+        value = html.escape(value)
+        
+        # Apply colors based on token type
+        if ttype in Token.Keyword:
+            current_line.append(f'<font color="#d73a49"><b>{value}</b></font>')
+        elif ttype in Token.String:
+            current_line.append(f'<font color="#032f62">{value}</font>')
+        elif ttype in Token.Comment:
+            current_line.append(f'<font color="#6a737d"><i>{value}</i></font>')
+        elif ttype in Token.Name.Function:
+            current_line.append(f'<font color="#6f42c1">{value}</font>')
+        elif ttype in Token.Number or ttype in Token.Literal.Number:
+            current_line.append(f'<font color="#005cc5">{value}</font>')
+        elif ttype in Token.Operator:
+            current_line.append(f'<font color="#d73a49">{value}</font>')
+        elif ttype in Token.Name.Builtin:
+            current_line.append(f'<font color="#005cc5">{value}</font>')
+        else:
+            current_line.append(value)
+        
+        # Handle newlines
+        if '\n' in value:
+            parts = value.split('\n')
+            for i, part in enumerate(parts[:-1]):
+                output_lines.append(''.join(current_line))
+                current_line = []
+            if parts[-1]:
+                current_line.append(parts[-1])
+    
+    if current_line:
+        output_lines.append(''.join(current_line))
+    
+    return '\n'.join(output_lines)
+
+
+def convert_svg_to_png(svg_path, png_path, width=None):
+    """Convert SVG to PNG using cairosvg if available, otherwise return SVG path."""
+    try:
+        import cairosvg
+        cairosvg.svg2png(url=svg_path, write_to=png_path, output_width=width)
+        return png_path
+    except ImportError:
+        # If cairosvg not available, try using rsvg-convert (librsvg)
+        try:
+            cmd = ['rsvg-convert', svg_path, '-o', png_path]
+            if width:
+                cmd.extend(['-w', str(width)])
+            subprocess.run(cmd, check=True, capture_output=True)
+            return png_path
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            # If conversion fails, just return the SVG path
+            print(f"Warning: Could not convert {svg_path} to PNG. SVG will be embedded directly.")
+            return svg_path
+
+
+def parse_table(table_lines):
+    """Parse markdown table."""
+    headers = [cell.strip() for cell in table_lines[0].split('|') if cell.strip()]
+    rows = []
+    for line in table_lines[2:]:
+        cells = [cell.strip() for cell in line.split('|') if cell.strip()]
+        if cells:
+            rows.append(cells)
+    return headers, rows
 
 
 def build_pdf_content(sections, styles):
@@ -303,7 +419,7 @@ def build_pdf_content(sections, styles):
     story.append(Paragraph("User Manual", styles['CustomTitle']))
     story.append(Spacer(1, 1*cm))
     story.append(Paragraph(
-        "STM32G474 DSP Audio Playback System<br/>Version 2.0",
+        "STM32 DSP Audio Playback System<br/>for microcontrollers with I2S support<br/>Version 2.0",
         ParagraphStyle('subtitle', parent=styles['CustomBody'], 
                       fontSize=14, alignment=TA_CENTER, textColor=HexColor('#586069'))
     ))
@@ -344,15 +460,41 @@ def build_pdf_content(sections, styles):
                 story.append(Paragraph(text, styles['CustomBody']))
             
             elif item['type'] == 'code':
-                # Use Preformatted with monospace
+                # Use Pygments syntax highlighting
                 code = item['content']
-                # Simple formatting - preserve whitespace
+                language = item.get('language', 'c')
+                
+                # Split long lines and limit total lines
                 code_lines = code.split('\n')
                 formatted_lines = []
-                for line in code_lines[:40]:  # Limit lines to avoid overflow
-                    formatted_lines.append(line[:100])  # Limit line width
+                max_line_length = 85  # Characters per line
+                max_lines = 50  # Maximum lines per code block
+                
+                for line in code_lines[:max_lines]:
+                    # Break long lines
+                    while len(line) > max_line_length:
+                        formatted_lines.append(line[:max_line_length])
+                        line = '  ' + line[max_line_length:]  # Indent continuation
+                    formatted_lines.append(line)
+                
+                if len(code_lines) > max_lines:
+                    formatted_lines.append('... (truncated)')
+                
                 code_text = '\n'.join(formatted_lines)
-                story.append(Preformatted(code_text, styles['CodeBlock']))
+                
+                # Apply syntax highlighting
+                try:
+                    highlighted_code = colorize_code(code_text, language)
+                    # Replace newlines with <br/> for Paragraph rendering
+                    highlighted_code = highlighted_code.replace('\n', '<br/>')
+                    code_para = Paragraph(
+                        f'<font face="Courier" size="7">{highlighted_code}</font>',
+                        styles['CodeBlock']
+                    )
+                    story.append(code_para)
+                except Exception as e:
+                    # Fallback to plain preformatted
+                    story.append(Preformatted(code_text, styles['CodeBlock']))
             
             elif item['type'] == 'table':
                 headers, rows = parse_table(item['content'])
@@ -366,6 +508,52 @@ def build_pdf_content(sections, styles):
                     bullet_para = Paragraph(f'• {text}', styles['BulletList'])
                     story.append(bullet_para)
                 story.append(Spacer(1, 0.2*cm))
+            
+            elif item['type'] == 'image':
+                # Handle images (SVG or PNG)
+                img_path = item['path']
+                alt_text = item.get('alt', '')
+                
+                # Try to load the image
+                try:
+                    if os.path.exists(img_path):
+                        # Add caption if alt text exists
+                        if alt_text:
+                            story.append(Spacer(1, 0.3*cm))
+                            story.append(Paragraph(
+                                f"<b>{alt_text}</b>",
+                                ParagraphStyle('caption', parent=styles['CustomBody'],
+                                             fontSize=9, alignment=TA_CENTER, 
+                                             textColor=HexColor('#586069'), spaceAfter=6)
+                            ))
+                        
+                        # Handle SVG with svglib
+                        if img_path.endswith('.svg'):
+                            drawing = svg2rlg(img_path)
+                            if drawing:
+                                # Get dimensions
+                                width = drawing.width if isinstance(drawing.width, (int, float)) else (drawing.width[0] if isinstance(drawing.width, list) and drawing.width else 600)
+                                height = drawing.height if isinstance(drawing.height, (int, float)) else (drawing.height[0] if isinstance(drawing.height, list) and drawing.height else 700)
+                                
+                                # Scale to fit page
+                                target_width = 14*cm
+                                target_height = 18*cm  # Allow taller diagrams
+                                scale_x = target_width / width
+                                scale_y = target_height / height
+                                scale = min(scale_x, scale_y)
+                                
+                                drawing.width = width * scale
+                                drawing.height = height * scale
+                                drawing.scale(scale, scale)
+                                story.append(drawing)
+                        else:
+                            # Handle PNG/JPG
+                            img = Image(img_path, width=15*cm, height=15*cm, kind='proportional')
+                            story.append(img)
+                        
+                        story.append(Spacer(1, 0.5*cm))
+                except Exception as e:
+                    print(f"Warning: Could not load image {img_path}: {e}")
         
         # Add filter graph
         if 'Filter Configuration' in title and level == 2:
