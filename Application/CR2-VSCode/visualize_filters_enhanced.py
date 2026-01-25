@@ -62,7 +62,8 @@ def dc_blocking_filter_response(alpha, fs=FS):
     numerator = 1 - z**(-1)
     denominator = 1 - alpha * z**(-1)
     H = numerator / denominator
-    magnitude_db = 20 * np.log10(np.abs(H))
+    mag = np.maximum(np.abs(H), 1e-12)
+    magnitude_db = 20 * np.log10(mag)
     
     return frequencies, magnitude_db
 
@@ -78,7 +79,8 @@ def lpf_8bit_response(alpha, fs=FS):
     numerator = alpha
     denominator = 1 - (1 - alpha) * z**(-1)
     H = numerator / denominator
-    magnitude_db = 20 * np.log10(np.abs(H))
+    mag = np.maximum(np.abs(H), 1e-12)
+    magnitude_db = 20 * np.log10(mag)
     
     return frequencies, magnitude_db
 
@@ -107,7 +109,8 @@ def lpf_16bit_biquad_response(alpha, fs=FS):
     numerator = b0 + b1 * z**(-1) + b2 * z**(-2)
     denominator = a0 + a1 * z**(-1) + a2 * z**(-2)
     H = numerator / denominator
-    magnitude_db = 20 * np.log10(np.abs(H))
+    mag = np.maximum(np.abs(H), 1e-12)
+    magnitude_db = 20 * np.log10(mag)
     phase_rad = np.angle(H)
     
     return frequencies, magnitude_db, phase_rad
@@ -147,7 +150,8 @@ def air_effect_response(alpha=AIR_EFFECT_CUTOFF, shelf_gain=AIR_EFFECT_SHELF_GAI
     denominator = a0 + a1 * z**(-1)
     
     H = numerator / denominator
-    magnitude_db = 20 * np.log10(np.abs(H) + 1e-10)
+    mag = np.maximum(np.abs(H), 1e-12)
+    magnitude_db = 20 * np.log10(mag)
     
     return frequencies, magnitude_db
 
@@ -384,6 +388,7 @@ Cutoff Alpha:        {AIR_EFFECT_CUTOFF:.4f} (≈ 5–6 kHz shelving frequency @
 Shelf Gain:          {AIR_EFFECT_SHELF_GAIN:.4f} (≈ +1.6 dB HF boost @ α=0.75)
 Presets Shown:       0 dB, +2 dB, +3 dB (clamped to 2.0x max)
 Purpose:             Adds presence and brightness to audio
+Runtime Control:     enable_air_effect; SetAirEffectPresetDb(), SetAirEffectGainDb()
 
 ═══════════════════════════════════════════════════════════════════════════════
 

@@ -305,10 +305,10 @@ SetAirEffectGainDb(2.0f);             // +2 dB boost at ω=π
 
 | Metric | Value |
 |--------|-------|
-| **CPU Usage** | ~15% @ 170 MHz (during playback) |
-| **Latency** | 93 ms (2048 samples @ 22 kHz) |
-| **Memory (RAM)** | 4 KB (playback buffer) |
-| **Memory (Flash)** | ≈12.9 KB (.text, Release build) |
+| **CPU Usage** | ~15% @ 170 MHz (during playback, full filter chain) |
+| **Latency** | ~93 ms total (~50 ms buffer + warm-up @ 22 kHz) |
+| **Memory (RAM)** | ~4 KB (playback buffer) |
+| **Memory (Flash)** | ≈12.9 KB (.text/.rodata, Release build) |
 | **Max Sample Rate** | 48 kHz (I2S limit) |
 | **Typical Sample Rate** | 22 kHz (11 kHz Nyquist) |
 

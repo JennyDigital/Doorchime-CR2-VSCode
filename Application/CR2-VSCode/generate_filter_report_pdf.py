@@ -30,47 +30,50 @@ LPF_AGGRESSIVE = 40960 / 65536  # 0.625
 FS = 22000  # Hz (default playback speed)
 
 def dc_blocking_filter_response(alpha, fs=FS):
-    """Calculate frequency response of DC blocking filter (high-pass)."""
-    frequencies = np.logspace(0, np.log10(fs/2), 1000)
-    omega = 2 * np.pi * frequencies / fs
-    z = np.exp(1j * omega)
-    numerator = 1 - z**(-1)
-    denominator = 1 - alpha * z**(-1)
-    H = numerator / denominator
-    magnitude_db = 20 * np.log10(np.abs(H))
-    return frequencies, magnitude_db
+   """Calculate frequency response of DC blocking filter (high-pass)."""
+   frequencies = np.logspace(0, np.log10(fs / 2), 1000)
+   omega = 2 * np.pi * frequencies / fs
+   z = np.exp(1j * omega)
+   numerator = 1 - z ** (-1)
+   denominator = 1 - alpha * z ** (-1)
+   H = numerator / denominator
+   mag = np.maximum(np.abs(H), 1e-12)
+   magnitude_db = 20 * np.log10(mag)
+   return frequencies, magnitude_db
 
 def lpf_8bit_response(alpha, fs=FS):
-    """Calculate frequency response of 1-pole LPF for 8-bit samples."""
-    frequencies = np.logspace(0, np.log10(fs/2), 1000)
-    omega = 2 * np.pi * frequencies / fs
-    z = np.exp(1j * omega)
-    numerator = alpha
-    denominator = 1 - (1 - alpha) * z**(-1)
-    H = numerator / denominator
-    magnitude_db = 20 * np.log10(np.abs(H))
-    return frequencies, magnitude_db
+   """Calculate frequency response of 1-pole LPF for 8-bit samples."""
+   frequencies = np.logspace(0, np.log10(fs / 2), 1000)
+   omega = 2 * np.pi * frequencies / fs
+   z = np.exp(1j * omega)
+   numerator = alpha
+   denominator = 1 - (1 - alpha) * z ** (-1)
+   H = numerator / denominator
+   mag = np.maximum(np.abs(H), 1e-12)
+   magnitude_db = 20 * np.log10(mag)
+   return frequencies, magnitude_db
 
 def lpf_16bit_biquad_response(alpha, fs=FS):
-    """Calculate frequency response of biquad LPF for 16-bit samples."""
-    frequencies = np.logspace(0, np.log10(fs/2), 1000)
-    omega = 2 * np.pi * frequencies / fs
-    
-    b0 = ((1 - alpha)**2) / 2
-    b1 = 2 * b0
-    b2 = b0
-    a0 = 1
-    a1 = -2 * alpha
-    a2 = alpha**2
-    
-    z = np.exp(1j * omega)
-    numerator = b0 + b1 * z**(-1) + b2 * z**(-2)
-    denominator = a0 + a1 * z**(-1) + a2 * z**(-2)
-    H = numerator / denominator
-    magnitude_db = 20 * np.log10(np.abs(H))
-    phase_rad = np.angle(H)
-    
-    return frequencies, magnitude_db, phase_rad
+   """Calculate frequency response of biquad LPF for 16-bit samples."""
+   frequencies = np.logspace(0, np.log10(fs / 2), 1000)
+   omega = 2 * np.pi * frequencies / fs
+
+   b0 = ((1 - alpha) ** 2) / 2
+   b1 = 2 * b0
+   b2 = b0
+   a0 = 1
+   a1 = -2 * alpha
+   a2 = alpha ** 2
+
+   z = np.exp(1j * omega)
+   numerator = b0 + b1 * z ** (-1) + b2 * z ** (-2)
+   denominator = a0 + a1 * z ** (-1) + a2 * z ** (-2)
+   H = numerator / denominator
+   mag = np.maximum(np.abs(H), 1e-12)
+   magnitude_db = 20 * np.log10(mag)
+   phase_rad = np.angle(H)
+
+   return frequencies, magnitude_db, phase_rad
 
 def find_cutoff_frequency(frequencies, magnitude_db):
     """Find the -3dB cutoff frequency."""
@@ -156,6 +159,7 @@ Filter Chain Components:
   • Fade in/out effects (configurable)
   • Noise gate (optional)
   • Dithering for 8-bit samples (TPDF)
+   • Air Effect (high-shelf brightening; presets 0/+2/+3 dB and direct dB control)
 
 Implementation:
   • All filters use fixed-point integer arithmetic
@@ -166,6 +170,18 @@ Implementation:
 
 ax.text(0.5, y_pos, specs_text, ha='center', va='top', fontsize=8.5, family='monospace',
         transform=ax.transAxes, bbox=dict(boxstyle='round', facecolor='lightblue', alpha=0.3, pad=1.0))
+
+# What's New box (positioned lower to avoid overlap)
+y_pos_whats_new = 0.14
+whats_new_text = """WHAT'S NEW
+
+• Flash Footprint: .text ≈ 12.9 KB (Release build)
+• Air Effect: High-shelf brightening with runtime presets (0, +2, +3 dB) and direct dB control
+• Startup Improvements: WarmupBiquadFilter16Bit() and RESET_ALL_FILTER_STATE() reduce transients and simplify PlaySample()
+• Documentation: Manual and README updated; enhanced visuals and PDF report
+"""
+ax.text(0.5, y_pos_whats_new, whats_new_text, ha='center', va='top', fontsize=8.5, family='monospace',
+        transform=ax.transAxes, bbox=dict(boxstyle='round', facecolor='#e8ffe8', alpha=0.35, pad=1.0))
 
 pdf.savefig(fig, bbox_inches='tight')
 plt.close()
@@ -402,6 +418,14 @@ specs_detailed = """TECHNICAL SPECIFICATIONS & IMPLEMENTATION DETAILS
    Generator: Linear Congruential Generator (LCG)
    Purpose:  Reduce quantization noise from 8-bit to 16-bit upsampling
 
+9. AIR EFFECT (High-Shelf Brightening)
+   Purpose:  Add presence and brightness by boosting treble
+   Type:     One-pole high-shelf filter (CPU efficient)
+   Cutoff:   α ≈ 0.75 (≈5–6 kHz @ 22 kHz sample rate)
+   Gain:     Shelf gain clamped to 2.0× (presets: 0, +2, +3 dB)
+   Runtime:  Enable via `enable_air_effect`; tune via `SetAirEffectPresetDb()` or `SetAirEffectGainDb()`
+   Position: After DC filter, before fade/clipping in the chain
+
 HARDWARE INTEGRATION
    • Microcontroller: STM32G474 (ARM Cortex-M4F)
    • I2S Audio Interface: I2S2 (DMA-driven stereo output)
@@ -409,9 +433,9 @@ HARDWARE INTEGRATION
    • Playback Buffer: 2048 samples (ping-pong DMA)
 
 PERFORMANCE
-   • Processing Overhead: <5% CPU @ 22 kHz
-   • Memory Footprint: ~12 KB code + state vars
-   • Latency: ~50 ms (playback buffer)
+   • Processing Overhead: <5% CPU @ 22 kHz (full filter chain)
+   • Memory Footprint: Flash (.text/.rodata, Release) ≈ 12.9 KB; RAM ≈ 4 KB (playback buffer)
+   • Latency: ~93 ms total (2048 samples @ 22 kHz; ~50 ms buffer + warm-up)
    • Audio Quality: 16-bit / 22 kHz"""
 
 ax.text(0.5, 0.97, specs_detailed, transform=ax.transAxes, fontsize=7.5,
