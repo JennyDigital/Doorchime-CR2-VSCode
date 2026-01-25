@@ -787,17 +787,24 @@ Where coefficients are derived from α:
 
 **Problem:** With aggressive filtering (α = 0.625), the first playback sample causes a brief "cracking" sound due to the filter initializing from zero state.
 
-**Solution:** **8-Pass Warm-Up**
+**Solution:** **Configurable Warm-Up (Default: 16 passes)**
 - Automatically invoked when playing 16-bit audio with enabled LPF
-- Feeds the first audio sample through the biquad filter 8 times on each channel
+- Feeds the first audio sample through the biquad filter `BIQUAD_WARMUP_CYCLES` times on each channel (default: 16)
 - Allows filter state to converge smoothly before DMA streaming starts
 - Result: Eliminates startup transient artifacts
+
+**Configuration:**
+The warm-up behavior can be adjusted by changing the `BIQUAD_WARMUP_CYCLES` define in `audio_engine.h`:
+```c
+#define BIQUAD_WARMUP_CYCLES  16  // Default: 16 passes (was 8)
+```
 
 **Code Example (from audio_engine.c):**
 ```c
 if (sample_depth == 16 && filter_cfg.enable_16bit_biquad_lpf) {
     int16_t first_sample = *((int16_t *)sample_to_play);
-    for (uint8_t i = 0; i < 8; i++) {
+    // Run BIQUAD_WARMUP_CYCLES passes to let filter state settle
+    for (uint8_t i = 0; i < BIQUAD_WARMUP_CYCLES; i++) {
         ApplyLowPassFilter16Bit(first_sample, 
             &lpf_16bit_x1_left, &lpf_16bit_x2_left,
             &lpf_16bit_y1_left, &lpf_16bit_y2_left);
