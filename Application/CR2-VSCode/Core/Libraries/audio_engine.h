@@ -52,14 +52,14 @@ extern "C" {
 #define SOFT_DC_FILTER_ALPHA  65216    // 0.995 in fixed-point (65216/65536)
 
 /* Biquad low-pass filter for 16-bit samples */
-#define LPF_16BIT_ALPHA       57344    // 0.875 - gentle filtering (default)
+#define LPF_16BIT_ALPHA       52429    // ~0.80 - gentle filtering (default)
 
 /* 16-bit biquad low-pass filter aggressiveness levels (alpha coefficients) */
-/* Wider range while keeping aggressive end aligned with 8-bit (0.625) */
-#define LPF_16BIT_VERY_SOFT   63488    // ~0.97 - very gentle filtering
-#define LPF_16BIT_SOFT        57344    // 0.875 - gentle filtering
-#define LPF_16BIT_MEDIUM      52429    // ~0.80 - balanced filtering
-#define LPF_16BIT_AGGRESSIVE  40960    // 0.625 - strong filtering (unchanged)
+/* Higher alpha is heavier filtering for this biquad, so values are ordered light -> heavy. */
+#define LPF_16BIT_VERY_SOFT   40960    // 0.625 - light filtering / highest cutoff
+#define LPF_16BIT_SOFT        52429    // ~0.80 - gentle filtering
+#define LPF_16BIT_MEDIUM      57344    // 0.875 - balanced filtering
+#define LPF_16BIT_AGGRESSIVE  63488    // ~0.97 - strong filtering / lowest cutoff
 
 /* Low-pass filter for 8-bit samples */
 #define LPF_8BIT_SHIFT        16       // Right shift for fixed-point division

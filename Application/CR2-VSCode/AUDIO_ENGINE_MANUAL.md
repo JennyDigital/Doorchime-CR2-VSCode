@@ -584,23 +584,24 @@ The audio engine provides these implementations that will be called automaticall
 
 ### 16-bit LPF Aggressiveness Levels
 
-The 16-bit biquad low-pass filter has 4 configurable levels, each with a different feedback coefficient (α) that determines cutoff frequency and filtering strength.
+The 16-bit biquad uses higher α for heavier filtering (opposite direction from the 8-bit one-pole), so the level names are mapped from lowest to highest α to stay consistent with the 8-bit naming.
 
-| Level | Alpha | Cutoff Freq | Use Case |
-|-------|-------|------------|----------|
-| **Very Soft** | ~0.97 | ~8700 Hz | Minimal filtering, preserve brightness |
-| **Soft** | 0.875 | ~6800 Hz | Gentle filtering, good for speech (default) |
-| **Medium** | ~0.80 | ~5900 Hz | Balanced filtering |
-| **Aggressive** | 0.625 | ~4100 Hz | Strong filtering, suppress high noise |
+| Level | Alpha | Notes |
+|-------|-------|-------|
+| **Very Soft** | 0.625 | Lightest filtering / brightest tone |
+| **Soft** | ~0.80 | Gentle filtering |
+| **Medium** | 0.875 | Balanced filtering |
+| **Aggressive** | ~0.97 | Strongest filtering / darkest tone |
 
-**Why 0.625 is Special:**
-- The "Aggressive" endpoint (0.625) is aligned with the 8-bit LPF aggressive level
-- This ensures consistent behavior across both audio paths
-- Warm-up (8 passes) eliminates startup artifacts at this level
+- Warm-up (8 passes) still runs to suppress startup artifacts at the most aggressive setting.
 
 ### 8-bit LPF Aggressiveness Levels
 
-8-bit audio uses separate alpha coefficients (lower sample quality allows more aggressive filtering).
+8-bit audio uses a **first-order (one-pole) filter** rather than a biquad. This architecture avoids feedback loop instability on quantized 8-bit data. As a result, the alpha range is narrower than the 16-bit biquad to maintain filter stability.
+
+**Filter Architecture:**
+- **One-pole formula**: `output = (α × input + (1 − α) × prev_output) × makeup_gain`
+- **Why narrower range**: One-pole filters at low alpha (high filtering) can amplify quantization noise; biquads are more robust to this.
 
 | Level | Alpha | Cutoff Freq |
 |-------|-------|------------|
@@ -608,6 +609,9 @@ The 16-bit biquad low-pass filter has 4 configurable levels, each with a differe
 | **Soft** | 0.875 | ~2800 Hz |
 | **Medium** | 0.75 | ~2300 Hz |
 | **Aggressive** | 0.625 | ~1800 Hz |
+
+**Note on Range Differences:**  
+The 16-bit biquad (α: 0.625 → 0.97) and 8-bit one-pole (α: 0.625 → 0.9375) do *not* span the same range. This is intentional: the biquad's wider range is safe for 16-bit data, while the one-pole's narrower range prevents instability on 8-bit input. Both filters provide LPF_VerySoft, LPF_Soft, LPF_Medium, and LPF_Aggressive presets for user consistency, but their underlying coefficients differ.
 
 ### DC Blocking Filter
 

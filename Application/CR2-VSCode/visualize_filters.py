@@ -11,9 +11,14 @@ from matplotlib.gridspec import GridSpec
 # Filter coefficients from audio_engine.h
 DC_FILTER_ALPHA = 64225 / 65536  # 0.98
 SOFT_DC_FILTER_ALPHA = 65216 / 65536  # 0.995
-LPF_16BIT_ALPHA = 57344 / 65536  # 0.875
 
-# 8-bit LPF levels
+# 16-bit Biquad LPF levels (higher alpha = stronger filtering)
+LPF_16BIT_VERY_SOFT = 40960 / 65536  # 0.625 - lightest filtering
+LPF_16BIT_SOFT = 52429 / 65536  # ~0.80 - gentle filtering
+LPF_16BIT_MEDIUM = 57344 / 65536  # 0.875 - balanced filtering
+LPF_16BIT_AGGRESSIVE = 63488 / 65536  # ~0.97 - strongest filtering
+
+# 8-bit LPF levels (one-pole filter, narrower range for stability)
 LPF_VERY_SOFT = 61440 / 65536  # 0.9375
 LPF_SOFT = 57344 / 65536  # 0.875
 LPF_MEDIUM = 49152 / 65536  # 0.75

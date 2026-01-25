@@ -170,9 +170,11 @@ int main(void)
   // FilterConfig_TypeDef filter_cfg;
 
   filter_cfg.enable_16bit_biquad_lpf      = 1;
+  filter_cfg.enable_8bit_lpf  = 1;
+  filter_cfg.enable_soft_dc_filter_16bit  = 1;
 
-  SetLpfMakeupGain8Bit(0.5f);
-  SetLpf16BitLevel(LPF_Aggressive);
+  SetLpfMakeupGain8Bit(1.0f);
+  SetLpf16BitLevel(LPF_VerySoft);
   SetFilterConfig( &filter_cfg );
   /* USER CODE END 2 */
 
@@ -195,9 +197,9 @@ int main(void)
     // PlaySample( handpan16bm, HANDPAN16BM_SZ,
     //     I2S_AUDIOFREQ_44K, 16, Mode_mono, LPF_Medium );
     // WaitForSampleEnd();
-    PlaySample( magic_gong44k, MAGIC_GONG44K_SZ,
-        I2S_AUDIOFREQ_44K, 16, Mode_mono, LPF_Medium );
-    WaitForSampleEnd();
+    // PlaySample( magic_gong44k, MAGIC_GONG44K_SZ,
+    //     I2S_AUDIOFREQ_44K, 16, Mode_mono, LPF_Medium );
+    // WaitForSampleEnd();
     // PlaySample( custom_tritone16k, CUSTOM_TRITONE16K_SZ,
     //   I2S_AUDIOFREQ_16K, 16, Mode_mono, LPF_Medium );
     // WaitForSampleEnd();
@@ -207,16 +209,12 @@ int main(void)
     //     I2S_AUDIOFREQ_32K, 16, Mode_mono, LPF_Soft );
     // WaitForSampleEnd();
     // PlaySample( rooster8b2c, ROOSTER8B2C_SZ,
-    //    I2S_AUDIOFREQ_22K, 8, Mode_stereo, LPF_Medium );
-    // HAL_Delay( 1000 );
-    // PausePlayback();
-    // HAL_Delay( 1000 );
-    // ResumePlayback();
+    // I2S_AUDIOFREQ_22K, 8, Mode_stereo, LPF_VerySoft );
     // WaitForSampleEnd();
 
-    // PlaySample( harmony8b, HARMONY8B_SZ,
-    //     I2S_AUDIOFREQ_11K, 8, Mode_mono, LPF_Medium );
-    // WaitForSampleEnd();
+    PlaySample( harmony8b, HARMONY8B_SZ,
+        I2S_AUDIOFREQ_11K, 8, Mode_mono, LPF_Aggressive );
+    WaitForSampleEnd();
 
     // PlaySample( tt_arrival, TT_ARRIVAL_SZ, I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_Medium );
     // PlaySample( KillBill11k, KILLBILL11K_SZ,
