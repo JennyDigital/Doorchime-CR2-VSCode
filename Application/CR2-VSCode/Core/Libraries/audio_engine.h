@@ -39,7 +39,7 @@ extern "C" {
 #define SECOND                1U
 
 /* Volume configuration */
-#define VOL_MULT              3         // Volume multiplication factor for integer math
+#define VOL_MULT              12       // Volume multiplication factor for integer math. Maximum volume is approx 8.
 
 /* Fade configuration */
 #define FADEOUT_SAMPLES       2048U    // About 100ms at 22kHz
@@ -222,27 +222,27 @@ uint8_t              CycleAirEffectPresetDb     ( void );
 uint8_t              GetAirEffectPresetIndex    ( void );
 uint8_t              GetAirEffectPresetCount    ( void );
 float                GetAirEffectPresetDb       ( uint8_t preset_index );
-int16_t             ApplySoftDCFilter16Bit      (
+int16_t              ApplySoftDCFilter16Bit     (
                                                   volatile int16_t input,
                                                   volatile int32_t *prev_input,
                                                   volatile int32_t *prev_output
                                                 );
-int16_t             ApplySoftDCFilter16Bit      (
+int16_t              ApplySoftDCFilter16Bit     (
                                                   volatile int16_t input,
                                                   volatile int32_t *prev_input,
                                                   volatile int32_t *prev_output
                                                 );
-int16_t             ApplyFilterChain16Bit       ( int16_t sample, uint8_t is_left_channel );
-int16_t             ApplyFilterChain8Bit        ( int16_t sample, uint8_t is_left_channel );
+int16_t              ApplyFilterChain16Bit      ( int16_t sample, uint8_t is_left_channel );
+int16_t              ApplyFilterChain8Bit       ( int16_t sample, uint8_t is_left_channel );
 
 /* Hardware callbacks (to be called from I2S DMA callbacks) */
-void                HAL_I2S_TxHalfCpltCallback  ( I2S_HandleTypeDef *hi2s );
-void                HAL_I2S_TxCpltCallback      ( I2S_HandleTypeDef *hi2s );
+void                 HAL_I2S_TxHalfCpltCallback ( I2S_HandleTypeDef *hi2s );
+void                 HAL_I2S_TxCpltCallback     ( I2S_HandleTypeDef *hi2s );
 
 /* Internal chunk processing functions */
-void                AdvanceSamplePointer        ( void );
-PB_StatusTypeDef    ProcessNextWaveChunk        ( int16_t * chunk_p );
-PB_StatusTypeDef    ProcessNextWaveChunk_8_bit  ( uint8_t * chunk_p );
+void                 AdvanceSamplePointer       ( void );
+PB_StatusTypeDef     ProcessNextWaveChunk       ( int16_t * chunk_p );
+PB_StatusTypeDef     ProcessNextWaveChunk_8_bit ( uint8_t * chunk_p );
 
 /* Playback control functions */
 PB_StatusTypeDef    PlaySample                  (

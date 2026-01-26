@@ -166,12 +166,13 @@ int main(void)
     Error_Handler();
   }
 
+  // Small delay to allow hardware to stabilize
   HAL_Delay( 150 );
 
   // FilterConfig_TypeDef filter_cfg;
 
   filter_cfg.enable_16bit_biquad_lpf      = 0;
-  filter_cfg.enable_8bit_lpf              = 1;
+  filter_cfg.enable_8bit_lpf              = 0;
   filter_cfg.enable_soft_dc_filter_16bit  = 1;
   filter_cfg.enable_soft_clipping         = 1;
   filter_cfg.enable_air_effect            = 0;  // Air effect (high-shelf brightening) disabled by default; enable as needed
@@ -184,8 +185,8 @@ int main(void)
   SetAirEffectPresetDb( 2 ); // default +3 dB preset
 
   // Set fade times
-  SetFadeInTime( 0.2f );        // 200 ms fade-in
-  SetFadeOutTime( 0.2f );       // 200 ms fade-out
+  SetFadeInTime( 0.1f );        // 100 ms fade-in
+  SetFadeOutTime( 0.1f );       // 100 ms fade-out
   SetPauseFadeTime( 0.1f );     // 100 ms pause fade-out
   SetResumeFadeTime( 0.1f );    // 100 ms resume fade-in
 
@@ -209,8 +210,8 @@ int main(void)
     // I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_VerySoft );
     // Start playback of your chosen sample here
     // WaitForSampleEnd();
-    PlaySample( handpan16bm, HANDPAN16BM_SZ,
-        I2S_AUDIOFREQ_44K, 16, Mode_mono, LPF_Medium );
+    // PlaySample( handpan16bm, HANDPAN16BM_SZ,
+    //     I2S_AUDIOFREQ_44K, 16, Mode_mono, LPF_Medium );
     // WaitForSampleEnd();
     // PlaySample( magic_gong44k, MAGIC_GONG44K_SZ,
     //     I2S_AUDIOFREQ_44K, 16, Mode_mono, LPF_Medium );
@@ -227,8 +228,8 @@ int main(void)
     // I2S_AUDIOFREQ_22K, 8, Mode_stereo, LPF_VerySoft );
     // WaitForSampleEnd();
 
-    // PlaySample( harmony8b, HARMONY8B_SZ,
-    //     I2S_AUDIOFREQ_11K, 8, Mode_mono, LPF_Aggressive );
+     PlaySample( harmony8b, HARMONY8B_SZ,
+        I2S_AUDIOFREQ_11K, 8, Mode_mono, LPF_VerySoft );
     // WaitForSampleEnd();
     // PlaySample( custom_tritone16k, CUSTOM_TRITONE16K_SZ,
     //   I2S_AUDIOFREQ_16K, 16, Mode_mono, LPF_VerySoft );
@@ -243,10 +244,10 @@ int main(void)
     //      I2S_AUDIOFREQ_22K, 16, Mode_mono, LPF_Medium );
     // WaitForSampleEnd();
 
-    HAL_Delay( 1000 );
-    PausePlayback();
-    HAL_Delay( 2000 );
-    ResumePlayback();
+    // HAL_Delay( 1000 );
+    // PausePlayback();
+    // HAL_Delay( 2000 );
+    // ResumePlayback();
     WaitForSampleEnd();
 
     ShutDownAudio();

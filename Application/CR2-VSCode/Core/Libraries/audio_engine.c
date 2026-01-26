@@ -18,7 +18,8 @@
 #include <string.h>
 
 /* Forward declarations for internal helper functions */
-static inline void UpdateFadeCounters( uint32_t samples_processed );
+static inline void    UpdateFadeCounters  ( uint32_t samples_processed );
+static inline int32_t ComputeSoftClipCurve( int32_t excess, int32_t range );
 
 /* External variables that need to be defined by the application */
 extern I2S_HandleTypeDef AUDIO_ENGINE_I2S_HANDLE;
@@ -644,6 +645,25 @@ static inline void WarmupBiquadFilter16Bit( int16_t sample )
 }
 
 
+/** Compute soft clipping curve response
+  * 
+  * Helper function that calculates the smooth clipping curve.
+  * Uses a cubic smoothstep function to gradually limit excess signal.
+  * 
+  * @param: excess - Amount by which signal exceeds threshold
+  * @param: range - Dynamic range available beyond threshold (max - threshold)
+  * @retval: int32_t - Curve scaling factor (typically 0 to 65536)
+  */
+static inline int32_t ComputeSoftClipCurve( int32_t excess, int32_t range )
+{
+  int32_t x = excess * 65536 / range;
+  if( x > 65536 ) x = 65536;
+  int32_t x2 = (x * x) >> 16;
+  int32_t x3 = (x2 * x) >> 16;
+  return ((3 * x2) >> 1) - ((2 * x3) >> 1);
+}
+
+
 /** Apply soft clipping to audio sample
   * 
   * @param: sample - Signed 16-bit audio sample
@@ -659,21 +679,13 @@ int16_t ApplySoftClipping( int16_t sample )
   if( s > threshold ) {
     int32_t excess = s - threshold;
     int32_t range = max_val - threshold;
-    int32_t x = excess * 65536 / range;
-    if( x > 65536 ) x = 65536;
-    int32_t x2 = (x * x) >> 16;
-    int32_t x3 = (x2 * x) >> 16;
-    int32_t curve = ((3 * x2) >> 1) - ((2 * x3) >> 1);
+    int32_t curve = ComputeSoftClipCurve( excess, range );
     s = threshold + ((range * curve) >> 16);
   }
   else if( s < -threshold ) {
     int32_t excess = -threshold - s;
     int32_t range = max_val - threshold;
-    int32_t x = excess * 65536 / range;
-    if( x > 65536 ) x = 65536;
-    int32_t x2 = (x * x) >> 16;
-    int32_t x3 = (x2 * x) >> 16;
-    int32_t curve = ((3 * x2) >> 1) - ((2 * x3) >> 1);
+    int32_t curve = ComputeSoftClipCurve( excess, range );
     s = -threshold - ((range * curve) >> 16);
   }
   
@@ -999,6 +1011,45 @@ void SetPlaybackSpeed( uint16_t speed )
  * DMA Callbacks
  * ============================================================================ */
 
+/** Common DMA callback processing logic
+  *
+  * Helper function to handle buffer refilling for both half-complete and 
+  * complete DMA callbacks. Eliminates duplication between the two callbacks.
+  *
+  * @param: which_half - Which half of buffer to fill (FIRST or SECOND)
+  * @retval: none
+  */
+static inline void ProcessDMACallback( uint8_t which_half )
+{
+  /* If paused, stop processing samples and continue outputting silence */
+  if( pb_state == PB_Paused ) {
+    return;
+  }
+
+  half_to_fill = which_half;
+
+  if( pb_mode == 16 ) {
+    if( pb_p16 >= pb_end16 ) {
+      pb_state = PB_Idle;
+      return;
+    }
+    if( ProcessNextWaveChunk( (int16_t *) pb_p16 ) != PB_Playing ) {
+      return;
+    }
+  }
+  else if( pb_mode == 8 ) {
+    if( pb_p8 >= pb_end8 ) {
+      pb_state = PB_Idle;
+      return;
+    }
+    if( ProcessNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PB_Playing ) {
+      return;
+    }
+  }
+  AdvanceSamplePointer();
+}
+
+
 /** Handle refilling the first half of the buffer whilst the second half is playing
   *
   * params: hi2s_p I2S port handle.
@@ -1010,40 +1061,7 @@ void SetPlaybackSpeed( uint16_t speed )
 void HAL_I2S_TxHalfCpltCallback( I2S_HandleTypeDef *hi2s_p )
 {
   UNUSED( hi2s_p );
-
-  /* If paused, stop processing samples and continue outputting silence */
-  if( pb_state == PB_Paused ) {
-    return;
-  }
-
-  if( pb_mode == 16 ) {             // 16-bit samples exhausted check.
-    if( pb_p16 >= pb_end16 ) {
-      // Set state to idle - cleanup will happen in main loop
-      pb_state = PB_Idle;
-      return;
-    }
-    else {                          // Refill the first half of the buffer with 16-bit samples.
-      half_to_fill = FIRST;
-      if( ProcessNextWaveChunk( (int16_t *) pb_p16 ) != PB_Playing ) {
-        return;
-      }
-    }
-  } 
-  else if( pb_mode == 8 ) {             // 8-bit samples exhausted check.
-
-    if( pb_p8 >= pb_end8 ) {
-      // Set state to idle - cleanup will happen in main loop
-      pb_state = PB_Idle;
-      return;
-    }
-    else {                              // Refill the first half of the buffer with 8-bit samples.
-      half_to_fill = FIRST;
-      if( ProcessNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PB_Playing ) {
-        return;
-      } 
-    }
-  }
-  AdvanceSamplePointer();
+  ProcessDMACallback( FIRST );
 }
 
 
@@ -1058,41 +1076,7 @@ void HAL_I2S_TxHalfCpltCallback( I2S_HandleTypeDef *hi2s_p )
 void HAL_I2S_TxCpltCallback( I2S_HandleTypeDef *hi2s_p )
 {
   UNUSED( hi2s_p );
-
-  /* If paused, stop processing samples and continue outputting silence */
-  if( pb_state == PB_Paused ) {
-    return;
-  }
-
-  if( pb_mode == 16 ) {
-
-    if( pb_p16 >= pb_end16 ) {
-      // Set state to idle - cleanup will happen in main loop
-      pb_state = PB_Idle;
-      return;
-    }
-    else {
-      half_to_fill = SECOND;
-      if( ProcessNextWaveChunk( (int16_t *) pb_p16 ) != PB_Playing ) {
-       return;  
-      }
-    }
-  }
-  else if( pb_mode == 8 ) {
-
-    if( pb_p8 >= pb_end8 ) {
-      // Set state to idle - cleanup will happen in main loop
-      pb_state = PB_Idle;
-      return;
-    }
-    else {
-      half_to_fill = SECOND;
-      if( ProcessNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PB_Playing ) {  
-          return;  
-      }
-    }
-  }
-  AdvanceSamplePointer();
+  ProcessDMACallback( SECOND );
 }
 
 
@@ -1156,27 +1140,27 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
   //
   for( uint16_t i = 0; i < HALFCHUNK_SZ; i++ )
   {
-    if( (uint16_t *) input >=  pb_end16 ) {                                             // Check for end of sample data
-      leftsample = MIDPOINT_S16;                                                        // Pad with silence if at end 
+    if( (uint16_t *) input >=  pb_end16 ) {                                                // Check for end of sample data
+      leftsample = MIDPOINT_S16;                                                           // Pad with silence if at end 
     }
     else {
-      leftsample = ( (int16_t) (*input) / vol_div ) * VOL_MULT;                         // Left channel
-      leftsample = ApplyFilterChain16Bit( leftsample, 1 );      // Apply complete filter chain
+      leftsample = ( (int16_t) (*input) / vol_div ) * VOL_MULT;                            // Left channel
+      leftsample = ApplyFilterChain16Bit( leftsample, 1 );         // Apply complete filter chain
     }
     input++;
 
-    if( channels == Mode_mono ) { rightsample = leftsample; }                           // Right channel is the same as left.
+    if( channels == Mode_mono ) { rightsample = leftsample; }                              // Right channel is the same as left.
     else {
-      if( (uint16_t *) input >=  pb_end16 ) {                                             // Check for end of sample data
+      if( (uint16_t *) input >=  pb_end16 ) {                                              // Check for end of sample data
         rightsample = MIDPOINT_S16;                                                        // Pad with silence if at end
       }
       else { 
         rightsample = ( (int16_t) (*input) / vol_div ) * VOL_MULT;                         // Right channel
-        rightsample = ApplyFilterChain16Bit( rightsample, 0 );                            // Apply complete filter chain
+        rightsample = ApplyFilterChain16Bit( rightsample, 0 );     // Apply complete filter chain
       }   // End of right channel processing
       input++;
     }
-    *output = leftsample;  output++;                                                      // Write samples to output buffer
+    *output = leftsample;  output++;                                                       // Write samples to output buffer
     *output = rightsample; output++;
     
     // Update fade counters based on samples processed
