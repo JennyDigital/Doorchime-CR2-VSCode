@@ -131,6 +131,20 @@ typedef struct {
   uint16_t playback_speed;
 } AudioEngine_HandleTypeDef;
 
+/* Hardware interface function pointer types */
+typedef void        ( *DAC_SwitchFunc )         ( GPIO_PinState setting );
+typedef uint8_t     ( *ReadVolumeFunc )         ( void );
+typedef void        ( *I2S_InitFunc )           ( void );
+
+extern DAC_SwitchFunc AudioEngine_DACSwitch;
+extern ReadVolumeFunc AudioEngine_ReadVolume;
+extern I2S_InitFunc   AudioEngine_I2SInit;
+
+/* Audio engine initialization */
+PB_StatusTypeDef    AudioEngine_Init            ( DAC_SwitchFunc dac_switch,
+                                                  ReadVolumeFunc read_volume,
+                                                  I2S_InitFunc i2s_init );
+
 /* Filter configuration functions */
 void                SetFilterConfig             ( const FilterConfig_TypeDef *cfg );
 void                GetFilterConfig             ( FilterConfig_TypeDef *cfg );
@@ -214,15 +228,6 @@ int16_t             ApplyFilterChain8Bit        ( int16_t sample, uint8_t is_lef
 /* Hardware callbacks (to be called from I2S DMA callbacks) */
 void                HAL_I2S_TxHalfCpltCallback  ( I2S_HandleTypeDef *hi2s );
 void                HAL_I2S_TxCpltCallback      ( I2S_HandleTypeDef *hi2s );
-
-/* Hardware interface functions (implemented by application) */
-typedef void        ( *DAC_SwitchFunc )         ( GPIO_PinState setting );
-typedef uint8_t     ( *ReadVolumeFunc )         ( void );
-typedef void        ( *I2S_InitFunc )           ( void );
-
-extern DAC_SwitchFunc AudioEngine_DACSwitch;
-extern ReadVolumeFunc AudioEngine_ReadVolume;
-extern I2S_InitFunc   AudioEngine_I2SInit;
 
 /* Internal chunk processing functions */
 void                AdvanceSamplePointer        ( void );

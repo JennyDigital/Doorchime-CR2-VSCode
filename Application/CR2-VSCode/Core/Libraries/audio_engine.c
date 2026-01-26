@@ -155,6 +155,60 @@ volatile  uint32_t        paused_total_samples        = 0;
     RESET_AIR_EFFECT_STATE(); \
   } while(0)
 
+/* ===== Audio Engine Initialization ===== */
+
+/** Initialize the audio engine with hardware interface functions
+  * 
+  * @brief Initializes the audio engine and validates that all required hardware
+  *        interface functions have been provided. Resets all filter state and
+  *        playback variables to safe defaults.
+  * 
+  * @param: dac_switch - Function pointer for DAC on/off control
+  * @param: read_volume - Function pointer for reading volume setting
+  * @param: i2s_init - Function pointer for I2S initialization
+  * @retval: PB_Playing if initialization successful, PB_Error if any pointer is NULL
+  */
+PB_StatusTypeDef AudioEngine_Init( DAC_SwitchFunc dac_switch,
+                                   ReadVolumeFunc read_volume,
+                                   I2S_InitFunc i2s_init )
+{
+  /* Validate that all required function pointers are provided */
+  if( dac_switch == NULL || read_volume == NULL || i2s_init == NULL ) {
+    return PB_Error;
+  }
+  
+  /* Assign hardware interface functions */
+  AudioEngine_DACSwitch = dac_switch;
+  AudioEngine_ReadVolume = read_volume;
+  AudioEngine_I2SInit = i2s_init;
+  
+  /* Reset all filter state variables to clean state */
+  RESET_ALL_FILTER_STATE();
+  
+  /* Reset playback state variables */
+  pb_state = PB_Idle;
+  pb_mode = 0;
+  fadeout_samples_remaining = 0;
+  fadein_samples_remaining = 0;
+  paused_sample_ptr = NULL;
+  vol_div = 1;
+  
+  /* Reset dither state to non-zero seed */
+  dither_state = 12345;
+  
+  /* Initialize default filter configuration */
+  filter_cfg.enable_16bit_biquad_lpf = 1;
+  filter_cfg.enable_soft_dc_filter_16bit = 1;
+  filter_cfg.enable_8bit_lpf = 1;
+  filter_cfg.enable_noise_gate = 0;
+  filter_cfg.enable_soft_clipping = 1;
+  filter_cfg.enable_air_effect = 0;
+  filter_cfg.lpf_makeup_gain_q16 = LPF_MAKEUP_GAIN_Q16;
+  filter_cfg.lpf_16bit_level = LPF_Soft;
+  
+  return PB_Idle;  // Success - ready to play but not currently playing
+}
+
 /* ===== Filter Configuration Functions ===== */
 
 
@@ -389,8 +443,13 @@ int16_t ApplyFadeIn( int16_t sample )
 {
   if( fadein_samples_remaining > 0 ) {
     int32_t progress = FADEIN_SAMPLES - fadein_samples_remaining;
-    int32_t fade_mult = (progress * progress) / FADEIN_SAMPLES;
-    return (int32_t) sample * fade_mult / FADEIN_SAMPLES;
+    // Use 64-bit intermediate to prevent overflow when squaring progress
+    int64_t fade_mult = ((int64_t)progress * (int64_t)progress) / FADEIN_SAMPLES;
+    int64_t result = ((int64_t)sample * fade_mult) / FADEIN_SAMPLES;
+    // Clamp to valid 16-bit range
+    if( result > 32767 ) result = 32767;
+    if( result < -32768 ) result = -32768;
+    return (int16_t)result;
   }
   return sample;
 }
@@ -404,8 +463,13 @@ int16_t ApplyFadeIn( int16_t sample )
 int16_t ApplyFadeOut( int16_t sample )
 {
   if( fadeout_samples_remaining > 0 && fadeout_samples_remaining <= FADEOUT_SAMPLES ) {
-    int32_t fade_mult = (fadeout_samples_remaining * fadeout_samples_remaining) / FADEOUT_SAMPLES;
-    return (int32_t) sample * fade_mult / FADEOUT_SAMPLES;
+    // Use 64-bit intermediate to prevent overflow when squaring fadeout_samples_remaining
+    int64_t fade_mult = ((int64_t)fadeout_samples_remaining * (int64_t)fadeout_samples_remaining) / FADEOUT_SAMPLES;
+    int64_t result = ((int64_t)sample * fade_mult) / FADEOUT_SAMPLES;
+    // Clamp to valid 16-bit range
+    if( result > 32767 ) result = 32767;
+    if( result < -32768 ) result = -32768;
+    return (int16_t)result;
   }
   return sample;
 }
@@ -477,7 +541,7 @@ int16_t ApplySoftClipping( int16_t sample )
     if( x > 65536 ) x = 65536;
     int32_t x2 = (x * x) >> 16;
     int32_t x3 = (x2 * x) >> 16;
-    int32_t curve = ((3 * x2) >> 1) - ((2 * x3) >> 0);
+    int32_t curve = ((3 * x2) >> 1) - ((2 * x3) >> 1);
     s = threshold + ((range * curve) >> 16);
   }
   else if( s < -threshold ) {
@@ -487,7 +551,7 @@ int16_t ApplySoftClipping( int16_t sample )
     if( x > 65536 ) x = 65536;
     int32_t x2 = (x * x) >> 16;
     int32_t x3 = (x2 * x) >> 16;
-    int32_t curve = ((3 * x2) >> 1) - ((2 * x3) >> 0);
+    int32_t curve = ((3 * x2) >> 1) - ((2 * x3) >> 1);
     s = -threshold - ((range * curve) >> 16);
   }
   
@@ -1224,7 +1288,11 @@ PB_StatusTypeDef PausePlayback( void )
   
   /* Save current playback state for resuming */
   pb_paused_state = PB_Paused;
-  paused_sample_index = (const uint8_t *)pb_p8 - (const uint8_t *)pb_p8;  // Will be restored via pb_p8
+  if( pb_mode == 16 ) {
+    paused_sample_ptr = (const void *)pb_p16;
+  } else {
+    paused_sample_ptr = (const void *)pb_p8;
+  }
   
   /* Initiate smooth fade-out */
   fadeout_samples_remaining = PAUSE_FADEOUT_SAMPLES;
@@ -1263,6 +1331,15 @@ PB_StatusTypeDef ResumePlayback( void )
   /* Turn on DAC before resuming playback */
   if( AudioEngine_DACSwitch ) {
     AudioEngine_DACSwitch( DAC_ON );
+  }
+  
+  /* Restore playback position from where it was paused */
+  if( paused_sample_ptr != NULL ) {
+    if( pb_mode == 16 ) {
+      pb_p16 = (uint16_t *)paused_sample_ptr;
+    } else {
+      pb_p8 = (uint8_t *)paused_sample_ptr;
+    }
   }
   
   /* Resume playback from where it was paused */

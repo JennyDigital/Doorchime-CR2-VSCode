@@ -161,18 +161,18 @@ int main(void)
   MX_DMA_Init();
   /* USER CODE BEGIN 2 */
 
-  /* Setup hardware function pointers for audio engine */
-  AudioEngine_DACSwitch   = DAC_MasterSwitch;
-  AudioEngine_ReadVolume  = ReadVolume;
-  AudioEngine_I2SInit     = MX_I2S2_Init;
+  /* Initialize audio engine with hardware interface functions */
+  if( AudioEngine_Init( DAC_MasterSwitch, ReadVolume, MX_I2S2_Init ) != PB_Idle ) {
+    Error_Handler();
+  }
 
   HAL_Delay( 150 );
 
   // FilterConfig_TypeDef filter_cfg;
 
-  filter_cfg.enable_16bit_biquad_lpf      = 0;
+  filter_cfg.enable_16bit_biquad_lpf      = 1;
   filter_cfg.enable_8bit_lpf              = 1;
-  filter_cfg.enable_soft_dc_filter_16bit  = 0;
+  filter_cfg.enable_soft_dc_filter_16bit  = 1;
   filter_cfg.enable_soft_clipping         = 1;
   filter_cfg.enable_air_effect            = 0;  // Air effect (high-shelf brightening) disabled by default; enable as needed
 
@@ -506,6 +506,9 @@ uint8_t ReadVolume( void )
 
     /* volume divisor is 1..8 so add 1 to the 3-bit value to make range 1..8 */
     v = (uint8_t) ( ( v + 1 ) * vol_scaling) ;
+
+    /* Clamp to reasonable maximum to prevent excessive attenuation */
+    if( v > 255 ) v = 255;
 
     /* never return 0 even if vol_scaling is mis-set */
     return v ? v : 1;
