@@ -15,6 +15,7 @@
 #include "audio_engine.h"
 #include <math.h>
 #include <stddef.h>
+#include <string.h>
 
 /* Forward declarations for internal helper functions */
 static inline void UpdateFadeCounters( uint32_t samples_processed );
@@ -61,6 +62,14 @@ volatile  uint8_t         half_to_fill;
           PB_ModeTypeDef  channels                    = Mode_mono;
 volatile  uint32_t        fadeout_samples_remaining   = 0;
 volatile  uint32_t        fadein_samples_remaining    = 0;
+
+/* Fade time configuration (stored in seconds, converted to samples based on playback speed) */
+          float           fadein_time_seconds         = 0.150f;  // 150ms default
+          float           fadeout_time_seconds        = 0.150f;  // 150ms default
+          float           pause_fadeout_time_seconds  = 0.100f;  // 100ms default
+          uint32_t        fadein_samples              = 3300;    // Calculated from time and speed
+          uint32_t        fadeout_samples             = 3300;    // Calculated from time and speed
+          uint32_t        pause_fadeout_samples       = 2200;    // Calculated from time and speed
 /* DC filter state */
 volatile  int32_t         dc_filter_prev_input_left   = 0;
 volatile  int32_t         dc_filter_prev_input_right  = 0;
@@ -377,6 +386,87 @@ void SetLpf16BitLevel( LPF_Level level )
 }
 
 
+/** Set fade-in time in seconds
+  * 
+  * @brief Sets the fade-in duration based on the current playback speed.
+  * @param: seconds - Fade-in time in seconds (0.001 to 5.0).
+  * @retval: none
+  */
+void SetFadeInTime( float seconds )
+{
+  if( seconds < 0.001f ) seconds = 0.001f;
+  if( seconds > 5.0f ) seconds = 5.0f;
+  fadein_time_seconds = seconds;
+  fadein_samples = (uint32_t)(seconds * (float)I2S_PlaybackSpeed + 0.5f);
+  if( fadein_samples == 0 ) fadein_samples = 1;
+}
+
+
+/** Get fade-in time in seconds
+  * 
+  * @brief Returns the current fade-in duration in seconds.
+  * @retval: float - Fade-in time in seconds.
+  */
+float GetFadeInTime( void )
+{
+  return fadein_time_seconds;
+}
+
+
+/** Set fade-out time in seconds
+  * 
+  * @brief Sets the fade-out duration based on the current playback speed.
+  * @param: seconds - Fade-out time in seconds (0.001 to 5.0).
+  * @retval: none
+  */
+void SetFadeOutTime( float seconds )
+{
+  if( seconds < 0.001f ) seconds = 0.001f;
+  if( seconds > 5.0f ) seconds = 5.0f;
+  fadeout_time_seconds = seconds;
+  fadeout_samples = (uint32_t)(seconds * (float)I2S_PlaybackSpeed + 0.5f);
+  if( fadeout_samples == 0 ) fadeout_samples = 1;
+}
+
+
+/** Get fade-out time in seconds
+  * 
+  * @brief Returns the current fade-out duration in seconds.
+  * @retval: float - Fade-out time in seconds.
+  */
+float GetFadeOutTime( void )
+{
+  return fadeout_time_seconds;
+}
+
+
+/** Set pause fade-out time in seconds
+  * 
+  * @brief Sets the pause fade-out duration based on the current playback speed.
+  * @param: seconds - Pause fade-out time in seconds (0.001 to 5.0).
+  * @retval: none
+  */
+void SetPauseFadeTime( float seconds )
+{
+  if( seconds < 0.001f ) seconds = 0.001f;
+  if( seconds > 5.0f ) seconds = 5.0f;
+  pause_fadeout_time_seconds = seconds;
+  pause_fadeout_samples = (uint32_t)(seconds * (float)I2S_PlaybackSpeed + 0.5f);
+  if( pause_fadeout_samples == 0 ) pause_fadeout_samples = 1;
+}
+
+
+/** Get pause fade-out time in seconds
+  * 
+  * @brief Returns the current pause fade-out duration in seconds.
+  * @retval: float - Pause fade-out time in seconds.
+  */
+float GetPauseFadeTime( void )
+{
+  return pause_fadeout_time_seconds;
+}
+
+
 /* ===== DSP Filter Functions ===== */
 
 
@@ -442,10 +532,10 @@ int16_t ApplyLowPassFilter8Bit( int16_t sample,
 int16_t ApplyFadeIn( int16_t sample ) 
 {
   if( fadein_samples_remaining > 0 ) {
-    int32_t progress = FADEIN_SAMPLES - fadein_samples_remaining;
+    int32_t progress = fadein_samples - fadein_samples_remaining;
     // Use 64-bit intermediate to prevent overflow when squaring progress
-    int64_t fade_mult = ((int64_t)progress * (int64_t)progress) / FADEIN_SAMPLES;
-    int64_t result = ((int64_t)sample * fade_mult) / FADEIN_SAMPLES;
+    int64_t fade_mult = ((int64_t)progress * (int64_t)progress) / fadein_samples;
+    int64_t result = ((int64_t)sample * fade_mult) / fadein_samples;
     // Clamp to valid 16-bit range
     if( result > 32767 ) result = 32767;
     if( result < -32768 ) result = -32768;
@@ -462,10 +552,10 @@ int16_t ApplyFadeIn( int16_t sample )
   */
 int16_t ApplyFadeOut( int16_t sample )
 {
-  if( fadeout_samples_remaining > 0 && fadeout_samples_remaining <= FADEOUT_SAMPLES ) {
+  if( fadeout_samples_remaining > 0 && fadeout_samples_remaining <= fadeout_samples ) {
     // Use 64-bit intermediate to prevent overflow when squaring fadeout_samples_remaining
-    int64_t fade_mult = ((int64_t)fadeout_samples_remaining * (int64_t)fadeout_samples_remaining) / FADEOUT_SAMPLES;
-    int64_t result = ((int64_t)sample * fade_mult) / FADEOUT_SAMPLES;
+    int64_t fade_mult = ((int64_t)fadeout_samples_remaining * (int64_t)fadeout_samples_remaining) / fadeout_samples;
+    int64_t result = ((int64_t)sample * fade_mult) / fadeout_samples;
     // Clamp to valid 16-bit range
     if( result > 32767 ) result = 32767;
     if( result < -32768 ) result = -32768;
@@ -1019,7 +1109,7 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
     return PB_Error;
   }
 
-  vol_div = AudioEngine_ReadVolume();
+  vol_div = (AudioEngine_ReadVolume != NULL) ? AudioEngine_ReadVolume() : 1;
   vol_div =  vol_div ? vol_div : 1;
   input = chunk_p;      // Source sample pointer
   output = ( half_to_fill == SECOND ) ? (pb_buffer + CHUNK_SZ ) : pb_buffer;
@@ -1082,7 +1172,7 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
   if( chunk_p == NULL ) {   // Sanity check
     return PB_Error;
   }
-  vol_div = AudioEngine_ReadVolume();
+  vol_div = (AudioEngine_ReadVolume != NULL) ? AudioEngine_ReadVolume() : 1;
   vol_div =  vol_div ? vol_div : 1;
   input = chunk_p;                                               /* Source sample pointer */
   output = ( half_to_fill == SECOND ) ? ( pb_buffer + CHUNK_SZ ) : pb_buffer;
@@ -1192,6 +1282,15 @@ PB_StatusTypeDef PlaySample (
   }
 
   I2S_PlaybackSpeed = playback_speed;                     // Turn the DAC on in readyness and initialize I2S with the requested sample rate.
+  
+  // Recalculate fade sample counts based on new playback speed
+  fadein_samples = (uint32_t)(fadein_time_seconds * (float)I2S_PlaybackSpeed + 0.5f);
+  if( fadein_samples == 0 ) fadein_samples = 1;
+  fadeout_samples = (uint32_t)(fadeout_time_seconds * (float)I2S_PlaybackSpeed + 0.5f);
+  if( fadeout_samples == 0 ) fadeout_samples = 1;
+  pause_fadeout_samples = (uint32_t)(pause_fadeout_time_seconds * (float)I2S_PlaybackSpeed + 0.5f);
+  if( pause_fadeout_samples == 0 ) pause_fadeout_samples = 1;
+  
   if( AudioEngine_I2SInit ) {
     AudioEngine_I2SInit();
   }
@@ -1222,7 +1321,7 @@ PB_StatusTypeDef PlaySample (
   }
   // Initialize fade counters
   fadeout_samples_remaining = sample_set_sz;
-  fadein_samples_remaining  = FADEIN_SAMPLES;
+  fadein_samples_remaining  = fadein_samples;
   
   // Pre-fill the first half of the buffer with processed samples before starting DMA
   // This ensures the fade-in is applied from the very first sample that plays
@@ -1295,7 +1394,7 @@ PB_StatusTypeDef PausePlayback( void )
   }
   
   /* Initiate smooth fade-out */
-  fadeout_samples_remaining = PAUSE_FADEOUT_SAMPLES;
+  fadeout_samples_remaining = pause_fadeout_samples;
   
   /* Wait for fade-out to complete */
   while( fadeout_samples_remaining > 0 ) {
@@ -1333,6 +1432,9 @@ PB_StatusTypeDef ResumePlayback( void )
     AudioEngine_DACSwitch( DAC_ON );
   }
   
+  /* Clear buffer to prevent full-volume glitch at resume */
+  memset(pb_buffer, MIDPOINT_S16, sizeof(pb_buffer));
+  
   /* Restore playback position from where it was paused */
   if( paused_sample_ptr != NULL ) {
     if( pb_mode == 16 ) {
@@ -1345,8 +1447,9 @@ PB_StatusTypeDef ResumePlayback( void )
   /* Resume playback from where it was paused */
   pb_state = PB_Playing;
   
-  /* Initiate smooth fade-in */
-  fadein_samples_remaining = FADEIN_SAMPLES;
+  /* Reset fade-out counter and initiate smooth fade-in */
+  fadeout_samples_remaining = 0;
+  fadein_samples_remaining = fadein_samples;
   
   return PB_Playing;
 }

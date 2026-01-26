@@ -170,7 +170,7 @@ int main(void)
 
   // FilterConfig_TypeDef filter_cfg;
 
-  filter_cfg.enable_16bit_biquad_lpf      = 1;
+  filter_cfg.enable_16bit_biquad_lpf      = 0;
   filter_cfg.enable_8bit_lpf              = 1;
   filter_cfg.enable_soft_dc_filter_16bit  = 1;
   filter_cfg.enable_soft_clipping         = 1;
@@ -182,6 +182,12 @@ int main(void)
 
   // Set initial Air Effect boost in dB (runtime adjustable)
   SetAirEffectPresetDb( 2 ); // default +3 dB preset
+
+  // Set fade times
+  SetFadeInTime( 0.5f );        // 500 ms fade-in
+  SetFadeOutTime( 0.3f );       // 300 ms fade-out
+  SetPauseFadeTime( 0.5f );     // 500 ms pause fade-out
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -196,12 +202,16 @@ int main(void)
       WaitForTrigger( TRIGGER_SET );
     }
 #endif
-    PlaySample( intosuffering22k1c, INTOSUFFERING22K1C_SZ,
-        I2S_AUDIOFREQ_22K, 16, Mode_mono, LPF_Medium ); 
+    // PlaySample( intosuffering22k1c, INTOSUFFERING22K1C_SZ,
+    //     I2S_AUDIOFREQ_22K, 16, Mode_mono, LPF_Medium ); 
+    PlaySample( guitar_harmony2_16bm_11k, GUITAR_HARMONY2_16BM_11K_SZ,
+    I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_VerySoft );
+    HAL_Delay( 1000 );
+    PausePlayback();
+    HAL_Delay( 2000 );
+    ResumePlayback();
     WaitForSampleEnd();
     // Start playback of your chosen sample here
-    // PlaySample( guitar_harmony2_16bm_11k, GUITAR_HARMONY2_16BM_11K_SZ,
-    //     I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_VerySoft );
     // WaitForSampleEnd();
     // PlaySample( handpan16bm, HANDPAN16BM_SZ,
     //     I2S_AUDIOFREQ_44K, 16, Mode_mono, LPF_Medium );

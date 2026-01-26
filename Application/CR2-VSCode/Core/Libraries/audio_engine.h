@@ -43,7 +43,7 @@ extern "C" {
 
 /* Fade configuration */
 #define FADEOUT_SAMPLES       2048U    // About 100ms at 22kHz
-#define PAUSE_FADEOUT_SAMPLES 1024U    // About 50ms at 22kHz
+#define PAUSE_FADEOUT_SAMPLES 5512U    // About 0.5 second at 11kHz
 #define FADEIN_SAMPLES        2048U    // About 93ms at 22kHz
 
 /* DC blocking filter configuration */
@@ -150,6 +150,14 @@ void                SetFilterConfig             ( const FilterConfig_TypeDef *cf
 void                GetFilterConfig             ( FilterConfig_TypeDef *cfg );
 void                SetLpfMakeupGain8Bit        ( float gain );
 void                SetLpf16BitLevel            ( LPF_Level level );
+
+/* Fade time configuration functions */
+void                SetFadeInTime               ( float seconds );
+float               GetFadeInTime               ( void );
+void                SetFadeOutTime              ( float seconds );
+float               GetFadeOutTime              ( void );
+void                SetPauseFadeTime            ( float seconds );
+float               GetPauseFadeTime            ( void );
 
 /* Playback control functions */
 PB_StatusTypeDef    PlaySample                  (
