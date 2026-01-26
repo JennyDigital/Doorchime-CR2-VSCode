@@ -184,9 +184,10 @@ int main(void)
   SetAirEffectPresetDb( 2 ); // default +3 dB preset
 
   // Set fade times
-  SetFadeInTime( 0.5f );        // 500 ms fade-in
-  SetFadeOutTime( 0.3f );       // 300 ms fade-out
-  SetPauseFadeTime( 0.5f );     // 500 ms pause fade-out
+  SetFadeInTime( 0.2f );        // 200 ms fade-in
+  SetFadeOutTime( 0.2f );       // 200 ms fade-out
+  SetPauseFadeTime( 0.1f );     // 100 ms pause fade-out
+  SetResumeFadeTime( 0.1f );    // 100 ms resume fade-in
 
   /* USER CODE END 2 */
 
@@ -204,17 +205,12 @@ int main(void)
 #endif
     // PlaySample( intosuffering22k1c, INTOSUFFERING22K1C_SZ,
     //     I2S_AUDIOFREQ_22K, 16, Mode_mono, LPF_Medium ); 
-    PlaySample( guitar_harmony2_16bm_11k, GUITAR_HARMONY2_16BM_11K_SZ,
-    I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_VerySoft );
-    HAL_Delay( 1000 );
-    PausePlayback();
-    HAL_Delay( 2000 );
-    ResumePlayback();
-    WaitForSampleEnd();
+    // PlaySample( guitar_harmony2_16bm_11k, GUITAR_HARMONY2_16BM_11K_SZ,
+    // I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_VerySoft );
     // Start playback of your chosen sample here
     // WaitForSampleEnd();
-    // PlaySample( handpan16bm, HANDPAN16BM_SZ,
-    //     I2S_AUDIOFREQ_44K, 16, Mode_mono, LPF_Medium );
+    PlaySample( handpan16bm, HANDPAN16BM_SZ,
+        I2S_AUDIOFREQ_44K, 16, Mode_mono, LPF_Medium );
     // WaitForSampleEnd();
     // PlaySample( magic_gong44k, MAGIC_GONG44K_SZ,
     //     I2S_AUDIOFREQ_44K, 16, Mode_mono, LPF_Medium );
@@ -246,6 +242,12 @@ int main(void)
     // PlaySample( guitar_riff22k, GUITAR_RIFF22K_SZ,
     //      I2S_AUDIOFREQ_22K, 16, Mode_mono, LPF_Medium );
     // WaitForSampleEnd();
+
+    HAL_Delay( 1000 );
+    PausePlayback();
+    HAL_Delay( 2000 );
+    ResumePlayback();
+    WaitForSampleEnd();
 
     ShutDownAudio();
 

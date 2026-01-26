@@ -158,6 +158,8 @@ void                SetFadeOutTime              ( float seconds );
 float               GetFadeOutTime              ( void );
 void                SetPauseFadeTime            ( float seconds );
 float               GetPauseFadeTime            ( void );
+void                SetResumeFadeTime           ( float seconds );
+float               GetResumeFadeTime           ( void );
 
 /* Playback control functions */
 PB_StatusTypeDef    PlaySample                  (

@@ -67,9 +67,11 @@ volatile  uint32_t        fadein_samples_remaining    = 0;
           float           fadein_time_seconds         = 0.150f;  // 150ms default
           float           fadeout_time_seconds        = 0.150f;  // 150ms default
           float           pause_fadeout_time_seconds  = 0.100f;  // 100ms default
+          float           pause_fadein_time_seconds   = 0.100f;  // 100ms default
           uint32_t        fadein_samples              = 3300;    // Calculated from time and speed
           uint32_t        fadeout_samples             = 3300;    // Calculated from time and speed
           uint32_t        pause_fadeout_samples       = 2200;    // Calculated from time and speed
+          uint32_t        pause_fadein_samples        = 2200;    // Calculated from time and speed
 /* DC filter state */
 volatile  int32_t         dc_filter_prev_input_left   = 0;
 volatile  int32_t         dc_filter_prev_input_right  = 0;
@@ -386,6 +388,21 @@ void SetLpf16BitLevel( LPF_Level level )
 }
 
 
+/** Convert fade time in seconds to sample count
+  * 
+  * @brief Helper function to convert fade time to samples with bounds checking.
+  * @param: seconds - Fade time in seconds (will be clamped to 0.001-5.0 range).
+  * @retval: uint32_t - Number of samples (minimum 1).
+  */
+static uint32_t FadeTimeToSamples( float seconds )
+{
+  if( seconds < 0.001f ) seconds = 0.001f;
+  if( seconds > 5.0f ) seconds = 5.0f;
+  uint32_t samples = (uint32_t)(seconds * (float)I2S_PlaybackSpeed + 0.5f);
+  return (samples == 0) ? 1 : samples;
+}
+
+
 /** Set fade-in time in seconds
   * 
   * @brief Sets the fade-in duration based on the current playback speed.
@@ -394,11 +411,8 @@ void SetLpf16BitLevel( LPF_Level level )
   */
 void SetFadeInTime( float seconds )
 {
-  if( seconds < 0.001f ) seconds = 0.001f;
-  if( seconds > 5.0f ) seconds = 5.0f;
   fadein_time_seconds = seconds;
-  fadein_samples = (uint32_t)(seconds * (float)I2S_PlaybackSpeed + 0.5f);
-  if( fadein_samples == 0 ) fadein_samples = 1;
+  fadein_samples = FadeTimeToSamples( seconds );
 }
 
 
@@ -421,11 +435,8 @@ float GetFadeInTime( void )
   */
 void SetFadeOutTime( float seconds )
 {
-  if( seconds < 0.001f ) seconds = 0.001f;
-  if( seconds > 5.0f ) seconds = 5.0f;
   fadeout_time_seconds = seconds;
-  fadeout_samples = (uint32_t)(seconds * (float)I2S_PlaybackSpeed + 0.5f);
-  if( fadeout_samples == 0 ) fadeout_samples = 1;
+  fadeout_samples = FadeTimeToSamples( seconds );
 }
 
 
@@ -448,11 +459,8 @@ float GetFadeOutTime( void )
   */
 void SetPauseFadeTime( float seconds )
 {
-  if( seconds < 0.001f ) seconds = 0.001f;
-  if( seconds > 5.0f ) seconds = 5.0f;
   pause_fadeout_time_seconds = seconds;
-  pause_fadeout_samples = (uint32_t)(seconds * (float)I2S_PlaybackSpeed + 0.5f);
-  if( pause_fadeout_samples == 0 ) pause_fadeout_samples = 1;
+  pause_fadeout_samples = FadeTimeToSamples( seconds );
 }
 
 
@@ -464,6 +472,30 @@ void SetPauseFadeTime( float seconds )
 float GetPauseFadeTime( void )
 {
   return pause_fadeout_time_seconds;
+}
+
+
+/** Set resume fade-in time in seconds
+  * 
+  * @brief Sets the resume fade-in duration based on the current playback speed.
+  * @param: seconds - Resume fade-in time in seconds (0.001 to 5.0).
+  * @retval: none
+  */
+void SetResumeFadeTime( float seconds )
+{
+  pause_fadein_time_seconds = seconds;
+  pause_fadein_samples = FadeTimeToSamples( seconds );
+}
+
+
+/** Get resume fade-in time in seconds
+  * 
+  * @brief Returns the current resume fade-in duration in seconds.
+  * @retval: float - Resume fade-in time in seconds.
+  */
+float GetResumeFadeTime( void )
+{
+  return pause_fadein_time_seconds;
 }
 
 
@@ -1290,6 +1322,8 @@ PB_StatusTypeDef PlaySample (
   if( fadeout_samples == 0 ) fadeout_samples = 1;
   pause_fadeout_samples = (uint32_t)(pause_fadeout_time_seconds * (float)I2S_PlaybackSpeed + 0.5f);
   if( pause_fadeout_samples == 0 ) pause_fadeout_samples = 1;
+  pause_fadein_samples = (uint32_t)(pause_fadein_time_seconds * (float)I2S_PlaybackSpeed + 0.5f);
+  if( pause_fadein_samples == 0 ) pause_fadein_samples = 1;
   
   if( AudioEngine_I2SInit ) {
     AudioEngine_I2SInit();
@@ -1449,7 +1483,7 @@ PB_StatusTypeDef ResumePlayback( void )
   
   /* Reset fade-out counter and initiate smooth fade-in */
   fadeout_samples_remaining = 0;
-  fadein_samples_remaining = fadein_samples;
+  fadein_samples_remaining = pause_fadein_samples;
   
   return PB_Playing;
 }
