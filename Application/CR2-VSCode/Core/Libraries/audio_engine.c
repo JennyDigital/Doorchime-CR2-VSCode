@@ -119,7 +119,7 @@ volatile  int32_t         air_effect_y1_right         = 0;
 volatile  int32_t         air_effect_shelf_gain_q16   = AIR_EFFECT_SHELF_GAIN;
 
 /* Air Effect preset table (dB) */
-static const float        air_effect_presets_db[]      = { 0.0f, 2.0f, 3.0f };
+static const float        air_effect_presets_db[]      = { 1.0f, 2.0f, 3.0f };
 #define AIR_EFFECT_PRESET_COUNT ( (uint8_t)( sizeof(air_effect_presets_db) / sizeof(air_effect_presets_db[0]) ) )
 static volatile uint8_t   air_effect_preset_idx        = 1; // default +2 dB
 

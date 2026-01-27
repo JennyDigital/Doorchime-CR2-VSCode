@@ -4,7 +4,7 @@
 [![Platform](https://img.shields.io/badge/platform-STM32%20with%20I2S-orange.svg)](https://www.st.com/en/microcontrollers-microprocessors/stm32-32-bit-arm-cortex-mcus.html)
 [![Audio](https://img.shields.io/badge/audio-8bit%20%7C%2016bit-green.svg)]()
 
-A professional, reusable audio playback engine for STM32 microcontrollers with I2S support (including STM32G4, STM32F4, STM32H7 series and others) with runtime-configurable DSP filter chain, supporting 8-bit and 16-bit audio playback through I2S to digital amplifiers such as the MAX98357A. Includes an Air Effect high-shelf brightening filter with presets (0, +2, +3 dB) and direct dB control.
+A professional, reusable audio playback engine for STM32 microcontrollers with I2S support (including STM32G4, STM32F4, STM32H7 series and others) with runtime-configurable DSP filter chain, supporting 8-bit and 16-bit audio playback through I2S to digital amplifiers such as the MAX98357A. Includes an Air Effect high-shelf brightening filter with presets (+1, +2, +3 dB) and direct dB control.
 
 ## 📋 Table of Contents
 
@@ -26,7 +26,7 @@ A professional, reusable audio playback engine for STM32 microcontrollers with I
 - **No FPU Required**: All DSP operations use fixed-point integer math
 - **DMA-Driven**: Efficient I2S streaming with double-buffering
 - **Professional Filters**: Biquad LPF, DC blocking, soft clipping, fade in/out
-- **Air Effect**: Tunable high-shelf brightening (presets: 0, +2, +3 dB and direct dB control)
+- **Air Effect**: Tunable high-shelf brightening (presets: +1, +2, +3 dB and direct dB control)
 - **Low Latency**: ~93 ms playback latency (2048-sample buffer @ 22 kHz)
 - **Sample Rate Flexible**: Default 22 kHz, configurable up to 48 kHz
 
@@ -296,7 +296,7 @@ cfg.enable_air_effect = 1;            // Enable high-shelf brightening
 SetFilterConfig(&cfg);
 
 // Choose a preset or set dB directly
-SetAirEffectPresetDb(2);              // +3 dB preset (presets: 0, +2, +3 dB)
+SetAirEffectPresetDb(2);              // +3 dB preset (presets: +1, +2, +3 dB)
 // or
 SetAirEffectGainDb(2.0f);             // +2 dB boost at ω=π
 ```

@@ -34,7 +34,7 @@ LPF_AGGRESSIVE = 40960 / 65536  # 0.625
 AIR_EFFECT_CUTOFF = 49152 / 65536  # 0.75 - ~5-6 kHz shelving frequency
 AIR_EFFECT_SHELF_GAIN = 98304 / 65536  # ~1.5 - high-frequency shelf
 AIR_EFFECT_SHELF_GAIN_MAX = 131072 / 65536  # 2.0x cap
-AIR_EFFECT_PRESETS_DB = [0.0, 2.0, 3.0]
+AIR_EFFECT_PRESETS_DB = [1.0, 2.0, 3.0]
 
 # Sampling frequency
 FS = 22000  # Hz (default playback speed)

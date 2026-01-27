@@ -136,7 +136,7 @@ The audio playback system follows a clear data flow from flash memory through DS
 
 3. **Air Effect (High-Shelf)** *(Optional - enable_air_effect)*
    - Adds presence and brightness to audio
-   - Runtime-adjustable boost (0 dB, +2 dB, +3 dB presets)
+   - Runtime-adjustable boost (+1 dB, +2 dB, +3 dB presets)
    - Disabled by default
 
 4. **Fade In/Out** *(Always Active)*
@@ -642,7 +642,7 @@ The Air Effect is an optional high-shelf filter that adds presence and brightnes
 - `GetAirEffectGainDb(void)`: read current boost in dB
 - `SetAirEffectGainQ16(uint32_t gain_q16)`: set raw Q16 shelf gain (clamped)
 - `GetAirEffectGainQ16(void)`: read raw Q16 shelf gain
-- Presets (built-in): `{0 dB, +2 dB, +3 dB}` with helpers:
+- Presets (built-in): `{+1 dB, +2 dB, +3 dB}` with helpers:
   - `SetAirEffectPresetDb(uint8_t preset_index)`
   - `CycleAirEffectPresetDb(void)`
   - `GetAirEffectPresetIndex/Count/GetAirEffectPresetDb`
@@ -666,7 +666,7 @@ The Air Effect works by separating high-frequency content and amplifying it:
 // Enable Air Effect and choose +2 dB preset
 filter_cfg.enable_air_effect = 1;
 SetFilterConfig(&filter_cfg);
-SetAirEffectPresetDb(1); // presets: 0 dB, +2 dB, +3 dB
+SetAirEffectPresetDb(1); // presets: +1 dB, +2 dB, +3 dB
 
 PlaySample(
     muffled_doorbell,

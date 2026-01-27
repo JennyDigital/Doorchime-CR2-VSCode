@@ -32,7 +32,7 @@ LPF_AGGRESSIVE = 40960 / 65536  # 0.625
 AIR_EFFECT_CUTOFF = 49152 / 65536  # 0.75 - ~5-6 kHz shelving frequency
 AIR_EFFECT_SHELF_GAIN = 98304 / 65536  # ~1.5 - high-frequency shelf (≈ +1.6 dB at Nyquist with alpha=0.75)
 AIR_EFFECT_SHELF_GAIN_MAX = 131072 / 65536  # 2.0x cap (matches code)
-AIR_EFFECT_PRESETS_DB = [0.0, 2.0, 3.0]
+AIR_EFFECT_PRESETS_DB = [1.0, 2.0, 3.0]
 
 
 def db_to_shelf_gain(db, alpha=AIR_EFFECT_CUTOFF, gain_max=AIR_EFFECT_SHELF_GAIN_MAX):
