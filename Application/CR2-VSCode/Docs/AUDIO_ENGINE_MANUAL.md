@@ -1165,6 +1165,53 @@ void NonBlockingPlayback(void) {
 }
 ```
 
+### Example 6: Accessibility — Filter Settings for Hard of Hearing
+
+This example demonstrates filter configuration optimized for users with hearing loss, emphasizing speech clarity and presence without over-filtering.
+
+```c
+void SetAccessibleAudio(void) {
+    // Configuration optimized for hearing-impaired listeners
+    // Focus: speech clarity and presence in 2–6 kHz band
+    FilterConfig_TypeDef cfg = {
+        .enable_16bit_biquad_lpf = 1,
+        .lpf_16bit_level = LPF_Soft,        // Gentle filtering preserves clarity
+        .enable_soft_dc_filter_16bit = 1,   // Softer DC removal (22 Hz cutoff)
+        .enable_8bit_lpf = 1,
+        .enable_noise_gate = 0,             // Keep quiet consonants (s, th, sh)
+        .enable_soft_clipping = 1,          // Reduce harsh peaks
+        .enable_air_effect = 1,             // Boost presence in 2–6 kHz
+        .lpf_makeup_gain_q16 = 82000        // ~1.25x gain (Q16 fixed-point)
+    };
+    
+    SetFilterConfig(&cfg);
+    SetAirEffectPresetDb(2);                // +2 dB presence boost (mid-range)
+}
+
+// Usage in doorbell application
+void play_accessible_alert(void) {
+    SetAccessibleAudio();
+    
+    PlaySample(alert_tone, alert_size, 22000, 16, Mode_mono, LPF_Soft);
+    WaitForSampleEnd();
+}
+```
+
+**Design Rationale:**
+- **LPF_Soft** (α ≈ 0.80) — Gentler than Medium/Aggressive; prevents over-smoothing that muddies speech
+- **No Noise Gate** — Preserves subtle consonants and quiet speech details critical for comprehension
+- **Air Effect +2 dB** — Compensates for typical age-related high-frequency loss; boosts presence band (2–6 kHz where speech consonants live)
+- **Makeup Gain ~1.25x** — Offsets the LPF attenuation, maintaining perceived loudness
+- **Soft DC Filter** — Gentler transition than standard DC blocking; avoids unnatural clicks
+
+**Alternative for Severe Loss:**
+```c
+// For users with more pronounced loss, use Very Soft + stronger presence
+cfg.lpf_16bit_level = LPF_VerySoft;     // Lightest filtering
+SetFilterConfig(&cfg);
+SetAirEffectPresetDb(3);                // +3 dB (strongest preset)
+```
+
 ---
 
 ## Troubleshooting
