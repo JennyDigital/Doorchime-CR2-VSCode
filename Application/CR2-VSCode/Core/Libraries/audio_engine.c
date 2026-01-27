@@ -1125,8 +1125,8 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
     return PB_Error;
   }
 
-  vol_div = (AudioEngine_ReadVolume != NULL) ? AudioEngine_ReadVolume() : 1;
-  vol_div =  vol_div ? vol_div : 1;
+  vol_div = AudioEngine_ReadVolume();
+  vol_div = vol_div ? vol_div : 1;
   input = chunk_p;      // Source sample pointer
   output = ( half_to_fill == SECOND ) ? (pb_buffer + CHUNK_SZ ) : pb_buffer;
 
@@ -1188,8 +1188,8 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
   if( chunk_p == NULL ) {   // Sanity check
     return PB_Error;
   }
-  vol_div = (AudioEngine_ReadVolume != NULL) ? AudioEngine_ReadVolume() : 1;
-  vol_div =  vol_div ? vol_div : 1;
+  vol_div = AudioEngine_ReadVolume();
+  vol_div = vol_div ? vol_div : 1;
   input = chunk_p;                                               /* Source sample pointer */
   output = ( half_to_fill == SECOND ) ? ( pb_buffer + CHUNK_SZ ) : pb_buffer;
 
