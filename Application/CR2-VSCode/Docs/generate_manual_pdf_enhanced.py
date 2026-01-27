@@ -301,7 +301,7 @@ def create_table_flowable(headers, rows):
     
     table = Table(data, colWidths=col_widths)
     table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), COLOR_HEADING),
+        ('BACKGROUND', (0, 0), (-1, 0), HexColor('#6fa3d4')),  # Lighter blue for better print contrast
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),

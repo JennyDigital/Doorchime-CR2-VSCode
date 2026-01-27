@@ -56,7 +56,7 @@ volatile  uint16_t        *pb_end16;
 volatile  uint8_t         pb_state                    = PB_Idle;
 volatile  uint8_t         half_to_fill;
           uint8_t         pb_mode;
-          uint16_t        I2S_PlaybackSpeed           = 22000;  // Default
+          uint32_t        I2S_PlaybackSpeed           = 22000;  // Default
 
 /* Playback engine control variables */
           uint32_t        p_advance;
@@ -773,8 +773,13 @@ int16_t ApplyLowPassFilter16Bit( int16_t input, volatile int32_t *x1, volatile i
   int32_t a1 = -(alpha << 1);
   int32_t a2 = (alpha * alpha) >> 16;
   
-  int32_t output = (b0 * input) + (b1 * (*x1)) + (b2 * (*x2)) - (a1 * (*y1)) - (a2 * (*y2));
-  output >>= 16;
+  /* Use 64-bit accumulation to avoid overflow on aggressive coefficients */
+  int64_t acc = ((int64_t)b0 * input) +
+                ((int64_t)b1 * (*x1)) +
+                ((int64_t)b2 * (*x2)) -
+                ((int64_t)a1 * (*y1)) -
+                ((int64_t)a2 * (*y2));
+  int32_t output = (int32_t)(acc >> 16);
   
   *x2 = *x1;
   *x1 = input;
@@ -989,9 +994,9 @@ void SetHalfToFill( uint8_t half )
 /** Get current playback speed
   * 
   * @param: none
-  * @retval: uint16_t - Current playback speed in Hz
+  * @retval: uint32_t - Current playback speed in Hz
   */
-uint16_t GetPlaybackSpeed( void )
+uint32_t GetPlaybackSpeed( void )
 {
   return I2S_PlaybackSpeed;
 }
@@ -1002,7 +1007,7 @@ uint16_t GetPlaybackSpeed( void )
   * @param: speed - Desired playback speed in Hz
   * @retval: none
   */
-void SetPlaybackSpeed( uint16_t speed )
+void SetPlaybackSpeed( uint32_t speed )
 {
   I2S_PlaybackSpeed = speed;
 }
@@ -1247,17 +1252,17 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
   *
   * @param: const void* sample_to_play.  Pointer to audio sample data (8-bit or 16-bit).
   * @param: uint32_t sample_set_sz.  Many samples to play back.
-  * @param: uint16_t playback_speed.  This is the sample rate.
+  * @param: uint32_t playback_speed.  This is the sample rate.
   * @param: uint8_t sample depth.  This should be 8 or 16 bits.
   * @param: PB_ModeTypeDef mode.  Mono or stereo playback.
   * @param: LPF_Level lpf_level.  Low-pass filter level for 8-bit samples. It must be selected even if playing 16-bit samples.
-  * @retval: none
+  * @retval: PB_StatusTypeDef.  Indicates success or failure.
   *
   */
 PB_StatusTypeDef PlaySample (  
                               const void *sample_to_play,
                               uint32_t sample_set_sz,
-                              uint16_t playback_speed,
+                              uint32_t playback_speed,
                               uint8_t sample_depth,
                               PB_ModeTypeDef mode,
                               LPF_Level lpf_level
@@ -1300,7 +1305,7 @@ PB_StatusTypeDef PlaySample (
   I2S_PlaybackSpeed = playback_speed;                     // Turn the DAC on in readyness and initialize I2S with the requested sample rate.
   
   // Recalculate fade sample counts based on new playback speed
-  fadein_samples = (uint32_t)(fadein_time_seconds * (float)I2S_PlaybackSpeed + 0.5f);
+  fadein_samples = (uint32_t)( fadein_time_seconds * (float)I2S_PlaybackSpeed + 0.5f);
   if( fadein_samples == 0 ) fadein_samples = 1;
   fadeout_samples = (uint32_t)(fadeout_time_seconds * (float)I2S_PlaybackSpeed + 0.5f);
   if( fadeout_samples == 0 ) fadeout_samples = 1;

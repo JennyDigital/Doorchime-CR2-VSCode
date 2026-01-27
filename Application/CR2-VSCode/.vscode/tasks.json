@@ -9,7 +9,7 @@
                 "-c",
                 "port=SWD",
                 "-W",
-                "${workspaceFolder}/build/Debug/ShopClockV3_VSC.elf",
+                "${workspaceFolder}/build/Debug/CR2-VSCode.elf",
                 "-v"
             ],
             "presentation": {
@@ -29,7 +29,7 @@
                 "-c",
                 "port=SWD",
                 "-W",
-                "${workspaceFolder}/build/Release/ShopClockV3_VSC.elf",
+                "${workspaceFolder}/build/Release/CR2-VSCode.elf",
                 "-v"
             ],
             "presentation": {
@@ -96,6 +96,25 @@
             "group": "build",
             "problemMatcher": [],
             "dependsOn": "FLASH STM32 Device (Release)"
+        },
+        {
+            "label": "FLASH Debug and RESET STM32 Device",
+            "command": "STM32_Programmer_CLI",
+            "type": "shell",
+            "args": [
+                "-c",
+                "port=SWD",
+                "-hardRst"
+            ],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "group": "build",
+            "problemMatcher": [],
+            "dependsOn": "FLASH STM32 Device (Debug)"
         },
         {
             "label": "ERASE STM32 Device",

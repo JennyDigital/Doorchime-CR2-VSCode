@@ -123,9 +123,10 @@ The audio playback system follows a clear data flow from flash memory through DS
 
 1. **Biquad Low-Pass Filter** *(Optional - enable_16bit_biquad_lpf)*
    - Second-order IIR filter
-   - Runtime-configurable aggressiveness: Very Soft → Aggressive
-   - Warm-up: 16 passes of first sample to prevent startup artifacts
-   - Cutoff range: ~8700 Hz (Very Soft) to ~4100 Hz (Aggressive)
+    - Runtime-configurable aggressiveness: Very Soft → Aggressive
+    - Warm-up: 16 passes of first sample to prevent startup artifacts
+    - Cutoff range (22 kHz fs, approx): ~2.6 kHz (Very Soft), ~1.4 kHz (Soft), ~0.9 kHz (Medium), ~0.2 kHz (Aggressive)
+    - 64-bit accumulator in the biquad path to prevent overflow with aggressive settings
 
 2. **DC Blocking Filter** *(Selectable - enable_soft_dc_filter_16bit)*
    - Removes DC offset and very low frequencies
@@ -168,7 +169,7 @@ The audio playback system follows a clear data flow from flash memory through DS
 2. **Biquad Low-Pass Filter** *(Optional - enable_8bit_lpf)*
    - Same architecture as 16-bit path
    - Separate aggressiveness levels for 8-bit audio
-   - Cutoff range: ~3200 Hz (Very Soft) to ~1800 Hz (Aggressive)
+    - Cutoff range (22 kHz fs, approx): ~2.6 kHz (Aggressive), ~1.7 kHz (Medium), ~0.9 kHz (Soft), ~0.4 kHz (Very Soft)
 
 3. **Makeup Gain** *(Always Active when LPF enabled)*
    - Post-LPF amplitude compensation (~1.08x default)
@@ -247,7 +248,7 @@ Audio engine state handle (for initialization).
 typedef struct {
   I2S_HandleTypeDef *hi2s;   // Pointer to I2S HAL handle
   int16_t *pb_buffer;        // Playback buffer (2048 samples)
-  uint16_t playback_speed;   // Default playback speed (Hz)
+    uint32_t playback_speed;   // Default playback speed (Hz)
 } AudioEngine_HandleTypeDef;
 ```
 
@@ -273,7 +274,7 @@ Start playback of an audio sample.
 PB_StatusTypeDef PlaySample(
     const void *sample_to_play,
     uint32_t sample_set_sz,
-    uint16_t playback_speed,
+    uint32_t playback_speed,
     uint8_t sample_depth,
     PB_ModeTypeDef mode,
     LPF_Level lpf_level
@@ -470,7 +471,7 @@ if (GetPlaybackState() == PB_Playing) {
 Get current sample rate.
 
 ```c
-uint16_t GetPlaybackSpeed(void);
+uint32_t GetPlaybackSpeed(void);
 ```
 
 ---

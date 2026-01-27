@@ -53,12 +53,12 @@
   <text x="300" y="410" text-anchor="middle" class="text-white">Per-Sample DSP Filter Chain</text>
   
   <rect x="100" y="420" width="400" height="140" class="box"/>
-  <text x="120" y="440" class="list-text">1. DC Blocking (high-pass)</text>
-  <text x="120" y="463" class="list-text">2. Low-Pass Filter (configurable)</text>
-  <text x="120" y="486" class="list-text">3. Soft Clipping</text>
-  <text x="120" y="509" class="list-text">4. Fade In/Out</text>
-  <text x="120" y="532" class="list-text">5. Noise Gate (optional)</text>
-  <text x="120" y="555" class="list-text">6. Volume Scaling</text>
+  <text x="300" y="440" text-anchor="middle" class="list-text">1. DC Blocking (high-pass)</text>
+  <text x="300" y="463" text-anchor="middle" class="list-text">2. Low-Pass Filter (configurable)</text>
+  <text x="300" y="486" text-anchor="middle" class="list-text">3. Soft Clipping</text>
+  <text x="300" y="509" text-anchor="middle" class="list-text">4. Fade In/Out</text>
+  <text x="300" y="532" text-anchor="middle" class="list-text">5. Noise Gate (optional)</text>
+  <text x="300" y="555" text-anchor="middle" class="list-text">6. Volume Scaling</text>
   
   <!-- Arrow -->
   <line x1="300" y1="560" x2="300" y2="590" class="arrow"/>

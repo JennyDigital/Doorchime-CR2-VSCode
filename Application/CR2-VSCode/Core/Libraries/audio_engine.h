@@ -39,7 +39,7 @@ extern "C" {
 #define SECOND                1U
 
 /* Volume configuration */
-#define VOL_MULT              12       // Volume multiplication factor for integer math. Maximum volume is approx 8.
+#define VOL_MULT              8       // Volume multiplication factor for integer math. Maximum volume is approx 8.
 
 /* Fade configuration */
 #define FADEOUT_SAMPLES       2048U    // About 100ms at 22kHz
@@ -122,13 +122,13 @@ typedef struct {
 } FilterConfig_TypeDef;
 
 /* Global audio engine state exposed for hardware initialization */
-extern uint16_t I2S_PlaybackSpeed;
+extern uint32_t I2S_PlaybackSpeed;
 
 /* Audio engine state structure */
 typedef struct {
   I2S_HandleTypeDef *hi2s;
   int16_t *pb_buffer;
-  uint16_t playback_speed;
+  uint32_t playback_speed;
 } AudioEngine_HandleTypeDef;
 
 /* Hardware interface function pointer types */
@@ -165,7 +165,7 @@ float               GetResumeFadeTime           ( void );
 PB_StatusTypeDef    PlaySample                  (
                                                   const void *sample_to_play,
                                                   uint32_t sample_set_sz,
-                                                  uint16_t playback_speed,
+                                                  uint32_t playback_speed,
                                                   uint8_t sample_depth,
                                                   PB_ModeTypeDef mode,
                                                   LPF_Level lpf_level
@@ -248,7 +248,7 @@ PB_StatusTypeDef     ProcessNextWaveChunk_8_bit ( uint8_t * chunk_p );
 PB_StatusTypeDef    PlaySample                  (
                                                   const void *sample_to_play,
                                                   uint32_t sample_set_sz,
-                                                  uint16_t playback_speed,
+                                                  uint32_t playback_speed,
                                                   uint8_t sample_depth,
                                                   PB_ModeTypeDef mode,
                                                   LPF_Level lpf_level
@@ -262,8 +262,8 @@ uint8_t             GetPlaybackState            ( void );
 void                SetPlaybackState            ( uint8_t state );
 uint8_t             GetHalfToFill               ( void );
 void                SetHalfToFill               ( uint8_t half );
-uint16_t            GetPlaybackSpeed            ( void );
-void                SetPlaybackSpeed            ( uint16_t speed );
+uint32_t            GetPlaybackSpeed            ( void );
+void                SetPlaybackSpeed            ( uint32_t speed );
 
 #ifdef __cplusplus
 }

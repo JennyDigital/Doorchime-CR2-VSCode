@@ -251,7 +251,7 @@ Note: Pin assignments vary by STM32 model. Consult your device's datasheet for I
 PB_StatusTypeDef PlaySample(
     const void *sample_to_play,     // Pointer to audio data
     uint32_t sample_set_sz,         // Size in bytes
-    uint16_t playback_speed,        // Sample rate (Hz)
+    uint32_t playback_speed,        // Sample rate (Hz)
     uint8_t sample_depth,           // 8 or 16 bits
     PB_ModeTypeDef mode,            // Mode_mono / Mode_stereo
     LPF_Level lpf_level             // Filter aggressiveness

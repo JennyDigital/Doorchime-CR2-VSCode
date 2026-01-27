@@ -23,15 +23,15 @@
 /* USER CODE BEGIN Includes */
 //
 #include <stdint.h>
-#include "lock.h"
 #include "stm32g474xx.h"
+#include "stm32g4xx_hal.h"
 #include "audio_engine.h"
+#include "lock.h"
 
 // Sample data includes, use as needed.
 #include "newchallenger11k.h"
 #include "guitar.h"
 #include "mind_the_door.h"
-#include "stm32g4xx_hal.h"
 #include "three_tone_arrival_c.h"
 #include "tunnelbarra.h"
 #include "tunnelbarra16.h"
@@ -171,13 +171,13 @@ int main(void)
 
   // FilterConfig_TypeDef filter_cfg;
 
-  filter_cfg.enable_16bit_biquad_lpf      = 0;
-  filter_cfg.enable_8bit_lpf              = 0;
+  filter_cfg.enable_16bit_biquad_lpf      = 1;
+  filter_cfg.enable_8bit_lpf              = 1;
   filter_cfg.enable_soft_dc_filter_16bit  = 1;
   filter_cfg.enable_soft_clipping         = 1;
   filter_cfg.enable_air_effect            = 0;  // Air effect (high-shelf brightening) disabled by default; enable as needed
 
-  SetLpfMakeupGain8Bit( 0.9f );  // Slight attenuation to prevent clipping after LPF
+  SetLpfMakeupGain8Bit( 1.1f );  // Slight attenuation to prevent clipping after LPF
   SetLpf16BitLevel(LPF_VerySoft);
   SetFilterConfig( &filter_cfg );
 
@@ -227,9 +227,12 @@ int main(void)
     // PlaySample( rooster8b2c, ROOSTER8B2C_SZ,
     // I2S_AUDIOFREQ_22K, 8, Mode_stereo, LPF_VerySoft );
     // WaitForSampleEnd();
-
-     PlaySample( harmony8b, HARMONY8B_SZ,
-        I2S_AUDIOFREQ_11K, 8, Mode_mono, LPF_VerySoft );
+    // PlaySample( dreamy22k, DREAMY22K_SZ,
+    //     I2S_AUDIOFREQ_22K, 16, Mode_mono, LPF_Medium );
+    PlaySample( mind_the_door, MIND_THE_DOOR_SZ,
+        I2S_AUDIOFREQ_22K, 16, Mode_mono, LPF_Medium ); 
+    //  PlaySample( harmony8b, HARMONY8B_SZ,
+    //     I2S_AUDIOFREQ_11K, 8, Mode_mono, LPF_VerySoft );
     // WaitForSampleEnd();
     // PlaySample( custom_tritone16k, CUSTOM_TRITONE16K_SZ,
     //   I2S_AUDIOFREQ_16K, 16, Mode_mono, LPF_VerySoft );
