@@ -321,8 +321,8 @@ ax7.legend(fontsize=8)
 ax7.set_ylim([-10, 10])
 
 # Add overall title for page 1
-fig.suptitle('Audio Engine DSP Filter Characteristics - Page 1: Filter Responses\nSTM32 Audio Engine @ 22 kHz Sample Rate', 
-             fontsize=16, fontweight='bold', y=0.995)
+fig.suptitle('Figure 1: Comprehensive Filter Frequency Response Analysis\nAudio Engine DSP Filter Characteristics - Page 1: Filter Responses\nSTM32 Audio Engine @ 22 kHz Sample Rate', 
+             fontsize=14, fontweight='bold', y=0.998)
 
 # Save the first figure
 output_file = BASE_DIR / 'filter_characteristics_enhanced.png'

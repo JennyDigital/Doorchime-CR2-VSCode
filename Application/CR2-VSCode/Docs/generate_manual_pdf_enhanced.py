@@ -95,7 +95,7 @@ def create_styles():
         fontSize=18,
         textColor=COLOR_HEADING,
         spaceAfter=12,
-        spaceBefore=20,
+        spaceBefore=24,
         fontName='Helvetica-Bold',
         keepWithNext=True
     ))
@@ -106,7 +106,7 @@ def create_styles():
         fontSize=14,
         textColor=COLOR_HEADING,
         spaceAfter=10,
-        spaceBefore=16,
+        spaceBefore=20,
         fontName='Helvetica-Bold',
         keepWithNext=True
     ))
@@ -117,7 +117,7 @@ def create_styles():
         fontSize=12,
         textColor=COLOR_TEXT,
         spaceAfter=8,
-        spaceBefore=12,
+        spaceBefore=16,
         fontName='Helvetica-Bold',
         keepWithNext=True
     ))
@@ -452,6 +452,10 @@ def build_pdf_content(sections, styles):
         if 'Table of Contents' in title or 'table of contents' in title.lower():
             continue
         
+        # Add page break before Architecture section
+        if title == 'Architecture' and level == 2:
+            story.append(PageBreak())
+        
         # Add heading
         style_name = ['CustomHeading1', 'CustomHeading2', 'CustomHeading3'][min(level-1, 2)]
         story.append(Paragraph(title, styles[style_name]))
@@ -538,9 +542,9 @@ def build_pdf_content(sections, styles):
                                 width = drawing.width if isinstance(drawing.width, (int, float)) else (drawing.width[0] if isinstance(drawing.width, list) and drawing.width else 600)
                                 height = drawing.height if isinstance(drawing.height, (int, float)) else (drawing.height[0] if isinstance(drawing.height, list) and drawing.height else 700)
                                 
-                                # Scale to fit page
-                                target_width = 14*cm
-                                target_height = 18*cm  # Allow taller diagrams
+                                # Scale to fit page (increase vertical space for block diagram)
+                                target_width = 13*cm
+                                target_height = 16*cm  # Reduced to fit on same page as heading
                                 scale_x = target_width / width
                                 scale_y = target_height / height
                                 scale = min(scale_x, scale_y)
@@ -548,7 +552,15 @@ def build_pdf_content(sections, styles):
                                 drawing.width = width * scale
                                 drawing.height = height * scale
                                 drawing.scale(scale, scale)
-                                story.append(drawing)
+                                
+                                # Center the diagram by wrapping in a table
+                                from reportlab.platypus import KeepTogether, Table as TablePlat
+                                centered_table = TablePlat([[drawing]], colWidths=[None])
+                                centered_table.setStyle(TableStyle([
+                                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                                ]))
+                                story.append(KeepTogether([centered_table]))
                         else:
                             # Handle PNG/JPG
                             img = Image(img_path, width=15*cm, height=15*cm, kind='proportional')
@@ -558,26 +570,17 @@ def build_pdf_content(sections, styles):
                 except Exception as e:
                     print(f"Warning: Could not load image {img_path}: {e}")
         
-        # Add filter graph on full page
-        if 'Filter Configuration' in title and level == 2:
+        # Add filter graph at end of Filter Configuration section
+        if 'Air Effect' in title and 'High-Shelf' in title and level == 3:
             try:
-                # Page break before graph for full-page presentation
+                # Page break to give graph its own page
                 story.append(PageBreak())
+                story.append(Spacer(1, 0.3*cm))
                 
-                # Title/caption at top of page
-                story.append(Spacer(1, 0.5*cm))
-                story.append(Paragraph(
-                    "<b>Figure 1: Comprehensive Filter Frequency Response Analysis</b>",
-                    ParagraphStyle('caption', parent=styles['CustomBody'],
-                                 fontSize=12, alignment=TA_CENTER, 
-                                 textColor=HexColor('#0366d6'), spaceAfter=0.8*cm)
-                ))
-                
-                # Full-page image (maximizes label readability)
+                # Full-page image with embedded caption
                 # A4 with 2cm margins leaves 17cm width and 25.7cm height
-                # Reserve 2cm for caption/spacing = 23.7cm available for image
                 img = Image(str(BASE_DIR / 'filter_characteristics_enhanced.png'), 
-                          width=18*cm, height=23*cm)
+                          width=17*cm, height=22*cm)
                 story.append(img)
                 
                 # Page break after to separate from next section
