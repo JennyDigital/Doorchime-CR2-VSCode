@@ -171,7 +171,7 @@ int main(void)
 
   // FilterConfig_TypeDef filter_cfg;
 
-  filter_cfg.enable_16bit_biquad_lpf      = 1;
+  filter_cfg.enable_16bit_biquad_lpf      = 0;
   filter_cfg.enable_8bit_lpf              = 1;
   filter_cfg.enable_soft_dc_filter_16bit  = 1;
   filter_cfg.enable_soft_clipping         = 1;
@@ -229,8 +229,8 @@ int main(void)
     // WaitForSampleEnd();
     // PlaySample( dreamy22k, DREAMY22K_SZ,
     //     I2S_AUDIOFREQ_22K, 16, Mode_mono, LPF_Medium );
-    PlaySample( mind_the_door, MIND_THE_DOOR_SZ,
-        I2S_AUDIOFREQ_22K, 16, Mode_mono, LPF_Medium ); 
+    // PlaySample( mind_the_door, MIND_THE_DOOR_SZ,
+    //     I2S_AUDIOFREQ_22K, 16, Mode_mono, LPF_Medium ); 
     //  PlaySample( harmony8b, HARMONY8B_SZ,
     //     I2S_AUDIOFREQ_11K, 8, Mode_mono, LPF_VerySoft );
     // WaitForSampleEnd();
@@ -246,6 +246,8 @@ int main(void)
     // PlaySample( guitar_riff22k, GUITAR_RIFF22K_SZ,
     //      I2S_AUDIOFREQ_22K, 16, Mode_mono, LPF_Medium );
     // WaitForSampleEnd();
+    PlaySample( dramatic_organ11k, DRAMATIC_ORGAN11K_SZ,
+        I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_VerySoft );
 
     // HAL_Delay( 1000 );
     // PausePlayback();
@@ -597,8 +599,11 @@ uint8_t GetTriggerOption( void )
  */
 void ShutDownAudio( void )
 {
-      // Allow DMA buffer to fully drain and MAX98357A to output final samples
-    HAL_Delay( 150 );
+    // Calculate delay needed to drain the DMA buffer based on playback speed
+    // Buffer drain time = (PB_BUFF_SZ / I2S_PlaybackSpeed) * 1000 ms
+    extern uint32_t I2S_PlaybackSpeed;
+    uint32_t buffer_drain_ms = (PB_BUFF_SZ * 1000 + I2S_PlaybackSpeed - 1) / I2S_PlaybackSpeed;
+    HAL_Delay( buffer_drain_ms );
     
     // Stop I2S DMA transmission
     HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );
