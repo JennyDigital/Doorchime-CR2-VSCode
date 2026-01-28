@@ -48,7 +48,7 @@ The Audio Engine is a reusable, embedded DSP audio playback system designed for 
 
 ### 1. Initialize the Audio Engine
 
-The audio engine does **not** require an explicit init function. Instead, set up hardware callbacks and configure filters:
+You **must** call `AudioEngine_Init()` to set up the audio engine with the required hardware callbacks. This function initializes all filter state and validates that the necessary hardware interface functions are provided:
 
 ```c
 #include "audio_engine.h"
@@ -56,10 +56,16 @@ The audio engine does **not** require an explicit init function. Instead, set up
 // Step 1: I2S2 must be initialized via CubeMX
 // (This is done automatically in MX_I2S2_Init())
 
-// Step 2: Set up hardware interface callbacks
-AudioEngine_DACSwitch = DAC_MasterSwitch;      // GPIO control for amplifier on/off
-AudioEngine_ReadVolume = ReadVolume;           // Read volume setting (0-2 levels)
-AudioEngine_I2SInit = MX_I2S2_Init;            // Re-init I2S if needed
+// Step 2: Initialize the audio engine with hardware callbacks
+PB_StatusTypeDef status = AudioEngine_Init(
+    DAC_MasterSwitch,       // Function to control amplifier on/off
+    ReadVolume,             // Function to read volume setting
+    MX_I2S2_Init            // Function to re-initialize I2S if needed
+);
+
+if( status != PB_Idle ) {
+    // Handle initialization error
+}
 
 // Step 3: Configure filters (optional, defaults are pre-set)
 SetLpf16BitLevel(LPF_Soft);                    // Set filter aggressiveness
@@ -261,12 +267,75 @@ typedef struct {
 
 Before playing audio, ensure:
 1. **I2S2 is configured** in CubeMX (22 kHz, 16-bit, DMA enabled)
-2. **Hardware callbacks are set** in main initialization
-3. **Filters are configured** to desired settings
+2. **`AudioEngine_Init()` is called** with function pointers for:
+   - DAC on/off control
+   - Volume reading
+   - I2S re-initialization
+3. **Filters are configured** to desired settings (optional; defaults are applied by `AudioEngine_Init()`)
 
-No explicit `AudioEngine_Init()` call is required—the audio engine uses global state that is pre-initialized when the module loads.
+Calling `AudioEngine_Init()` is **required** before any audio playback. It initializes the filter state, validates hardware callbacks, and sets up default filter configuration.
 
 #### Playback Control
+
+##### `AudioEngine_Init()`
+Initialize the audio engine with required hardware callbacks.
+
+```c
+PB_StatusTypeDef AudioEngine_Init(
+    DAC_SwitchFunc dac_switch,
+    ReadVolumeFunc read_volume,
+    I2S_InitFunc i2s_init
+);
+```
+
+**Parameters:**
+- `dac_switch`: Function pointer for controlling amplifier on/off (GPIO control)
+- `read_volume`: Function pointer for reading current volume level
+- `i2s_init`: Function pointer for I2S peripheral re-initialization
+
+**Returns:**
+- `PB_Idle` if initialization successful
+- `PB_Error` if any function pointer is NULL
+
+**Important Notes:**
+- **Must be called once** before any call to `PlaySample()` or other playback functions
+- Initializes all filter state variables and resets playback status
+- Sets up default filter configuration (can be overridden with `SetFilterConfig()`)
+- Validates that all required hardware callbacks are provided
+- Does not start audio playback itself
+
+**Example:**
+```c
+#include "audio_engine.h"
+
+// Define these functions in your application
+void DAC_MasterSwitch(uint8_t state) {
+    if (state) {
+        HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_SET);   // Enable amplifier
+    } else {
+        HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_RESET);  // Disable amplifier
+    }
+}
+
+uint8_t ReadVolume(void) {
+    // Return volume level 0-2
+    return volume_setting;
+}
+
+// In main.c initialization:
+PB_StatusTypeDef status = AudioEngine_Init(
+    DAC_MasterSwitch,
+    ReadVolume,
+    MX_I2S2_Init
+);
+
+if (status != PB_Idle) {
+    printf("Audio engine initialization failed!\n");
+    return;
+}
+
+// Now safe to call PlaySample()
+```
 
 ##### `PlaySample()`
 Start playback of an audio sample.

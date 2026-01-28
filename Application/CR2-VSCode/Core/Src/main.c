@@ -24,7 +24,7 @@
   * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
   * SOFTWARE.
   *****************************************************************************
-  *
+  */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -256,9 +256,10 @@ int main(void)
     // PlaySample( guitar_riff22k, GUITAR_RIFF22K_SZ,
     //      I2S_AUDIOFREQ_22K, 16, Mode_mono, LPF_Medium );
     // WaitForSampleEnd();
-    PlaySample( dramatic_organ11k, DRAMATIC_ORGAN11K_SZ,
-        I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_Firm );
-
+    // PlaySample( dramatic_organ11k, DRAMATIC_ORGAN11K_SZ,
+    //     I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_Firm );
+    PlaySample( theremin_quartet11k, THEREMIN_QUARTET11K_SZ,
+        I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_VerySoft );
     // HAL_Delay( 1000 );
     // PausePlayback();
     // HAL_Delay( 2000 );
