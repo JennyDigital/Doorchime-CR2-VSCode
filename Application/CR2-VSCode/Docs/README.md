@@ -93,10 +93,11 @@ SetFilterConfig(&cfg);
 The 16-bit path uses a **second-order biquad filter** where higher α values provide stronger filtering (opposite to the 8-bit one-pole architecture).
 
 | Level | Alpha | Characteristics |
-|-------|-------|-----------------|
+|-------|-------|------------------|
 | **Very Soft** | 0.625 | Lightest filtering / brightest tone |
 | **Soft** | ~0.80 | Gentle filtering (recommended default) |
 | **Medium** | 0.875 | Balanced filtering |
+| **Firm** | ~0.92 | Firm filtering |
 | **Aggressive** | ~0.97 | Strongest filtering / darkest tone |
 
 **Recommended Input Levels:**
@@ -108,6 +109,7 @@ The biquad's feedback can cause overshoot. To avoid clipping:
 | **Very Soft** | 75–85% of full scale (±24,500 to ±27,750) | Minimal overshoot |
 | **Soft** | 70–80% of full scale (±22,937 to ±26,214) | **Recommended** |
 | **Medium** | 70–75% of full scale (±22,937 to ±24,500) | Increasing feedback |
+| **Firm** | 65–72% of full scale (±21,299 to ±23,592) | Higher feedback, more headroom needed |
 | **Aggressive** | 60–70% of full scale (±19,660 to ±22,937) | Conservative headroom essential |
 
 > **Tip**: Use **70–80% of full scale** as a safe starting point for most applications.
@@ -121,6 +123,7 @@ The 8-bit path uses a **first-order one-pole filter** to avoid instability on qu
 | **Very Soft** | 0.9375 | ~3200 Hz | Minimal filtering |
 | **Soft** | 0.875 | ~2800 Hz | Gentle filtering |
 | **Medium** | 0.75 | ~2300 Hz | Balanced |
+| **Firm** | 0.6875 | ~2000 Hz | Firm filtering |
 | **Aggressive** | 0.625 | ~1800 Hz | Strong filtering |
 
 **Why Different Ranges?**

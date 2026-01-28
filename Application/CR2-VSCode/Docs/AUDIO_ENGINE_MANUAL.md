@@ -213,10 +213,11 @@ Low-pass filter aggressiveness level for biquad filters.
 
 ```c
 typedef enum {
-  LPF_VerySoft,      // Minimal filtering (α ≈ 0.97)
-  LPF_Soft,          // Gentle filtering (α = 0.875)
-  LPF_Medium,        // Balanced filtering (α ≈ 0.80)
-  LPF_Aggressive     // Strong filtering (α = 0.625)
+  LPF_VerySoft,      // Minimal filtering (α = 0.625)
+  LPF_Soft,          // Gentle filtering (α ≈ 0.80)
+  LPF_Medium,        // Balanced filtering (α = 0.875)
+  LPF_Firm,          // Firm filtering (α ≈ 0.92)
+  LPF_Aggressive     // Strong filtering (α ≈ 0.97)
 } LPF_Level;
 ```
 
@@ -424,7 +425,7 @@ void SetLpf16BitLevel(LPF_Level level);
 ```
 
 **Parameters:**
-- `level`: LPF_VerySoft, LPF_Soft, LPF_Medium, or LPF_Aggressive
+- `level`: LPF_VerySoft, LPF_Soft, LPF_Medium, LPF_Firm, or LPF_Aggressive
 
 **Example:**
 ```c
@@ -594,10 +595,11 @@ Use **70–80% of full scale (±23,000)** as a safe starting point. If using LPF
 | **Very Soft** | 0.9375 | ~3200 Hz |
 | **Soft** | 0.875 | ~2800 Hz |
 | **Medium** | 0.75 | ~2300 Hz |
+| **Firm** | 0.6875 | ~2000 Hz |
 | **Aggressive** | 0.625 | ~1800 Hz |
 
 **Note on Range Differences:**  
-The 16-bit biquad (α: 0.625 → 0.97) and 8-bit one-pole (α: 0.625 → 0.9375) do *not* span the same range. This is intentional: the biquad's wider range is safe for 16-bit data, while the one-pole's narrower range prevents instability on 8-bit input. Both filters provide LPF_VerySoft, LPF_Soft, LPF_Medium, and LPF_Aggressive presets for user consistency, but their underlying coefficients differ.
+The 16-bit biquad (α: 0.625 → 0.97) and 8-bit one-pole (α: 0.625 → 0.9375) do *not* span the same range. This is intentional: the biquad's wider range is safe for 16-bit data, while the one-pole's narrower range prevents instability on 8-bit input. Both filters provide LPF_VerySoft, LPF_Soft, LPF_Medium, LPF_Firm, and LPF_Aggressive presets for user consistency, but their underlying coefficients differ.
 
 ### DC Blocking Filter
 

@@ -20,12 +20,15 @@ SOFT_DC_FILTER_ALPHA = 65216 / 65536  # 0.995
 LPF_16BIT_VERY_SOFT = 40960 / 65536  # 0.625 - lightest filtering
 LPF_16BIT_SOFT = 52429 / 65536  # ~0.80 - gentle filtering
 LPF_16BIT_MEDIUM = 57344 / 65536  # 0.875 - balanced filtering
+LPF_16BIT_FIRM = 60416 / 65536  # ~0.92 - firm filtering
 LPF_16BIT_AGGRESSIVE = 63488 / 65536  # ~0.97 - strongest filtering
+LPF_16BIT_ALPHA = LPF_16BIT_SOFT  # Default alpha for testing
 
 # 8-bit LPF levels
 LPF_VERY_SOFT = 61440 / 65536  # 0.9375
 LPF_SOFT = 57344 / 65536  # 0.875
 LPF_MEDIUM = 49152 / 65536  # 0.75
+LPF_FIRM = 45056 / 65536  # 0.6875
 LPF_AGGRESSIVE = 40960 / 65536  # 0.625
 
 # Air Effect (High-Shelf Brightening Filter)
@@ -215,11 +218,13 @@ ax2 = fig.add_subplot(gs[0, 1])
 freq_16vs, mag_16vs, _ = lpf_16bit_biquad_response(LPF_16BIT_VERY_SOFT)
 freq_16s, mag_16s, _ = lpf_16bit_biquad_response(LPF_16BIT_SOFT)
 freq_16m, mag_16m, _ = lpf_16bit_biquad_response(LPF_16BIT_MEDIUM)
+freq_16f, mag_16f, _ = lpf_16bit_biquad_response(LPF_16BIT_FIRM)
 freq_16a, mag_16a, _ = lpf_16bit_biquad_response(LPF_16BIT_AGGRESSIVE)
 
 ax2.semilogx(freq_16vs, mag_16vs, 'c-', linewidth=2, label=f'Very Soft (α={LPF_16BIT_VERY_SOFT:.4f})')
 ax2.semilogx(freq_16s, mag_16s, 'g-', linewidth=2, label=f'Soft (α={LPF_16BIT_SOFT:.4f})')
 ax2.semilogx(freq_16m, mag_16m, 'orange', linewidth=2, label=f'Medium (α={LPF_16BIT_MEDIUM:.2f})')
+ax2.semilogx(freq_16f, mag_16f, 'y-', linewidth=2, label=f'Firm (α={LPF_16BIT_FIRM:.4f})')
 ax2.semilogx(freq_16a, mag_16a, 'r-', linewidth=2, label=f'Aggressive (α={LPF_16BIT_AGGRESSIVE:.3f})')
 ax2.grid(True, alpha=0.3, which='both')
 ax2.set_xlabel('Frequency (Hz)')
@@ -234,11 +239,13 @@ ax3 = fig.add_subplot(gs[1, 0])
 freq_vs, mag_vs = lpf_8bit_response(LPF_VERY_SOFT)
 freq_s, mag_s = lpf_8bit_response(LPF_SOFT)
 freq_m, mag_m = lpf_8bit_response(LPF_MEDIUM)
+freq_f, mag_f = lpf_8bit_response(LPF_FIRM)
 freq_a, mag_a = lpf_8bit_response(LPF_AGGRESSIVE)
 
 ax3.semilogx(freq_vs, mag_vs, 'c-', linewidth=2, label=f'Very Soft (α={LPF_VERY_SOFT:.4f})')
 ax3.semilogx(freq_s, mag_s, 'b-', linewidth=2, label=f'Soft (α={LPF_SOFT:.4f})')
 ax3.semilogx(freq_m, mag_m, 'orange', linewidth=2, label=f'Medium (α={LPF_MEDIUM:.2f})')
+ax3.semilogx(freq_f, mag_f, 'y-', linewidth=2, label=f'Firm (α={LPF_FIRM:.4f})')
 ax3.semilogx(freq_a, mag_a, 'r-', linewidth=2, label=f'Aggressive (α={LPF_AGGRESSIVE:.3f})')
 ax3.grid(True, alpha=0.3, which='both')
 ax3.set_xlabel('Frequency (Hz)')
@@ -289,11 +296,13 @@ ax6 = fig.add_subplot(gs[3, 0])
 freq_16vs, _, phase_16vs = lpf_16bit_biquad_response(LPF_16BIT_VERY_SOFT)
 freq_16s, _, phase_16s = lpf_16bit_biquad_response(LPF_16BIT_SOFT)
 freq_16m, _, phase_16m = lpf_16bit_biquad_response(LPF_16BIT_MEDIUM)
+freq_16f, _, phase_16f = lpf_16bit_biquad_response(LPF_16BIT_FIRM)
 freq_16a, _, phase_16a = lpf_16bit_biquad_response(LPF_16BIT_AGGRESSIVE)
 
 ax6.semilogx(freq_16vs, np.degrees(phase_16vs), 'c-', linewidth=2, label='Very Soft')
 ax6.semilogx(freq_16s, np.degrees(phase_16s), 'g-', linewidth=2, label='Soft')
 ax6.semilogx(freq_16m, np.degrees(phase_16m), 'orange', linewidth=2, label='Medium')
+ax6.semilogx(freq_16f, np.degrees(phase_16f), 'y-', linewidth=2, label='Firm')
 ax6.semilogx(freq_16a, np.degrees(phase_16a), 'r-', linewidth=2, label='Aggressive')
 ax6.grid(True, alpha=0.3, which='both')
 ax6.set_xlabel('Frequency (Hz)')
@@ -340,6 +349,7 @@ ax_summary.axis('off')
 cutoff_8vs = find_cutoff_frequency(*lpf_8bit_response(LPF_VERY_SOFT))
 cutoff_8s = find_cutoff_frequency(*lpf_8bit_response(LPF_SOFT))
 cutoff_8m = find_cutoff_frequency(*lpf_8bit_response(LPF_MEDIUM))
+cutoff_8f = find_cutoff_frequency(*lpf_8bit_response(LPF_FIRM))
 cutoff_8a = find_cutoff_frequency(*lpf_8bit_response(LPF_AGGRESSIVE))
 
 freq_temp, mag_temp, _ = lpf_16bit_biquad_response(LPF_16BIT_VERY_SOFT)
@@ -348,6 +358,8 @@ freq_temp, mag_temp, _ = lpf_16bit_biquad_response(LPF_16BIT_SOFT)
 cutoff_16s = find_cutoff_frequency(freq_temp, mag_temp)
 freq_temp, mag_temp, _ = lpf_16bit_biquad_response(LPF_16BIT_MEDIUM)
 cutoff_16m = find_cutoff_frequency(freq_temp, mag_temp)
+freq_temp, mag_temp, _ = lpf_16bit_biquad_response(LPF_16BIT_FIRM)
+cutoff_16f = find_cutoff_frequency(freq_temp, mag_temp)
 freq_temp, mag_temp, _ = lpf_16bit_biquad_response(LPF_16BIT_AGGRESSIVE)
 cutoff_16a = find_cutoff_frequency(freq_temp, mag_temp)
 
@@ -363,6 +375,7 @@ Level          Alpha    -3dB Cutoff Frequency      % of Sample Rate
 Very Soft      0.9375   {cutoff_8vs:6.0f} Hz                   {cutoff_8vs/FS*100:5.2f}%
 Soft           0.8750   {cutoff_8s:6.0f} Hz                   {cutoff_8s/FS*100:5.2f}%
 Medium         0.7500   {cutoff_8m:6.0f} Hz                   {cutoff_8m/FS*100:5.2f}%
+Firm           0.6875   {cutoff_8f:6.0f} Hz                   {cutoff_8f/FS*100:5.2f}%
 Aggressive     0.6250   {cutoff_8a:6.0f} Hz                   {cutoff_8a/FS*100:5.2f}%
 
 ═══════════════════════════════════════════════════════════════════════════════
@@ -374,6 +387,7 @@ Level          Alpha    -3dB Cutoff Frequency      % of Sample Rate
 Very Soft      0.6250   {cutoff_16vs:6.0f} Hz                   {cutoff_16vs/FS*100:5.2f}%
 Soft           0.8000   {cutoff_16s:6.0f} Hz                   {cutoff_16s/FS*100:5.2f}%
 Medium         0.8750   {cutoff_16m:6.0f} Hz                   {cutoff_16m/FS*100:5.2f}%
+Firm           0.9200   {cutoff_16f:6.0f} Hz                   {cutoff_16f/FS*100:5.2f}%
 Aggressive     0.9700   {cutoff_16a:6.0f} Hz                   {cutoff_16a/FS*100:5.2f}%
 
 ═══════════════════════════════════════════════════════════════════════════════

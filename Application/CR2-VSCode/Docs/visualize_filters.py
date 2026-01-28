@@ -21,12 +21,15 @@ SOFT_DC_FILTER_ALPHA = 65216 / 65536  # 0.995
 LPF_16BIT_VERY_SOFT = 40960 / 65536  # 0.625 - lightest filtering
 LPF_16BIT_SOFT = 52429 / 65536  # ~0.80 - gentle filtering
 LPF_16BIT_MEDIUM = 57344 / 65536  # 0.875 - balanced filtering
+LPF_16BIT_FIRM = 60416 / 65536  # ~0.92 - firm filtering
 LPF_16BIT_AGGRESSIVE = 63488 / 65536  # ~0.97 - strongest filtering
+LPF_16BIT_ALPHA = LPF_16BIT_SOFT  # Default alpha for testing (from audio_engine.h)
 
 # 8-bit LPF levels (one-pole filter, narrower range for stability)
 LPF_VERY_SOFT = 61440 / 65536  # 0.9375
 LPF_SOFT = 57344 / 65536  # 0.875
 LPF_MEDIUM = 49152 / 65536  # 0.75
+LPF_FIRM = 45056 / 65536  # 0.6875
 LPF_AGGRESSIVE = 40960 / 65536  # 0.625
 
 # Sampling frequency
@@ -147,13 +150,21 @@ ax1.set_ylim([-40, 5])
 
 # Plot 2: 16-bit Biquad LPF
 ax2 = fig.add_subplot(gs[0, 1])
-freq_16bit, mag_16bit = lpf_16bit_biquad_response(LPF_16BIT_ALPHA)
+freq_vs, mag_vs = lpf_16bit_biquad_response(LPF_16BIT_VERY_SOFT)
+freq_s, mag_s = lpf_16bit_biquad_response(LPF_16BIT_SOFT)
+freq_m, mag_m = lpf_16bit_biquad_response(LPF_16BIT_MEDIUM)
+freq_f, mag_f = lpf_16bit_biquad_response(LPF_16BIT_FIRM)
+freq_a, mag_a = lpf_16bit_biquad_response(LPF_16BIT_AGGRESSIVE)
 
-ax2.semilogx(freq_16bit, mag_16bit, 'g-', linewidth=2, label=f'16-bit Biquad (α={LPF_16BIT_ALPHA:.4f})')
+ax2.semilogx(freq_vs, mag_vs, 'c-', linewidth=2, label=f'Very Soft (α={LPF_16BIT_VERY_SOFT:.4f})')
+ax2.semilogx(freq_s, mag_s, 'b-', linewidth=2, label=f'Soft (α={LPF_16BIT_SOFT:.4f})')
+ax2.semilogx(freq_m, mag_m, 'orange', linewidth=2, label=f'Medium (α={LPF_16BIT_MEDIUM:.4f})')
+ax2.semilogx(freq_f, mag_f, 'y-', linewidth=2, label=f'Firm (α={LPF_16BIT_FIRM:.4f})')
+ax2.semilogx(freq_a, mag_a, 'r-', linewidth=2, label=f'Aggressive (α={LPF_16BIT_AGGRESSIVE:.4f})')
 ax2.grid(True, alpha=0.3, which='both')
 ax2.set_xlabel('Frequency (Hz)')
 ax2.set_ylabel('Magnitude (dB)')
-ax2.set_title('16-bit Biquad Low-Pass Filter')
+ax2.set_title('16-bit Biquad Low-Pass Filter (Various Levels)')
 ax2.legend()
 ax2.set_ylim([-60, 5])
 
@@ -162,11 +173,13 @@ ax3 = fig.add_subplot(gs[1, 0])
 freq_vs, mag_vs = lpf_8bit_response(LPF_VERY_SOFT)
 freq_s, mag_s = lpf_8bit_response(LPF_SOFT)
 freq_m, mag_m = lpf_8bit_response(LPF_MEDIUM)
+freq_f, mag_f = lpf_8bit_response(LPF_FIRM)
 freq_a, mag_a = lpf_8bit_response(LPF_AGGRESSIVE)
 
 ax3.semilogx(freq_vs, mag_vs, 'c-', linewidth=2, label=f'Very Soft (α={LPF_VERY_SOFT:.4f})')
 ax3.semilogx(freq_s, mag_s, 'b-', linewidth=2, label=f'Soft (α={LPF_SOFT:.4f})')
 ax3.semilogx(freq_m, mag_m, 'orange', linewidth=2, label=f'Medium (α={LPF_MEDIUM:.2f})')
+ax3.semilogx(freq_f, mag_f, 'y-', linewidth=2, label=f'Firm (α={LPF_FIRM:.4f})')
 ax3.semilogx(freq_a, mag_a, 'r-', linewidth=2, label=f'Aggressive (α={LPF_AGGRESSIVE:.3f})')
 ax3.grid(True, alpha=0.3, which='both')
 ax3.set_xlabel('Frequency (Hz)')
