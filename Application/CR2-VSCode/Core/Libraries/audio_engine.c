@@ -362,7 +362,7 @@ void SetLpfMakeupGain8Bit( float gain )
 /** Set 16-bit LPF filter level
   * 
   * @brief Sets the aggressiveness level for the 16-bit biquad low-pass filter.
-  * @param: level - Filter level (LPF_VerySoft, LPF_Soft, LPF_Medium, LPF_Aggressive).
+  * @param: level - Filter level (LPF_VerySoft, LPF_Soft, LPF_Medium, LPF_Firm, LPF_Aggressive).
   * @retval: none
   */
 void SetLpf16BitLevel( LPF_Level level )
@@ -378,6 +378,9 @@ void SetLpf16BitLevel( LPF_Level level )
       break;
     case LPF_Medium:
       lpf_16bit_alpha = LPF_16BIT_MEDIUM;
+      break;
+    case LPF_Firm:
+      lpf_16bit_alpha = LPF_16BIT_FIRM;
       break;
     case LPF_Aggressive:
       lpf_16bit_alpha = LPF_16BIT_AGGRESSIVE;

@@ -247,7 +247,7 @@ int main(void)
     //      I2S_AUDIOFREQ_22K, 16, Mode_mono, LPF_Medium );
     // WaitForSampleEnd();
     PlaySample( dramatic_organ11k, DRAMATIC_ORGAN11K_SZ,
-        I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_VerySoft );
+        I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_Firm );
 
     // HAL_Delay( 1000 );
     // PausePlayback();

@@ -59,6 +59,7 @@ extern "C" {
 #define LPF_16BIT_VERY_SOFT   40960    // 0.625 - light filtering / highest cutoff
 #define LPF_16BIT_SOFT        52429    // ~0.80 - gentle filtering
 #define LPF_16BIT_MEDIUM      57344    // 0.875 - balanced filtering
+#define LPF_16BIT_FIRM        60416    // ~0.92 - firm filtering
 #define LPF_16BIT_AGGRESSIVE  63488    // ~0.97 - strong filtering / lowest cutoff
 
 /* Number of cycles to warm up biquad filter state */
@@ -72,6 +73,7 @@ extern "C" {
 #define LPF_VERY_SOFT         61440    // 0.9375 - very gentle filtering
 #define LPF_SOFT              57344    // 0.875 - gentle filtering
 #define LPF_MEDIUM            49152    // 0.75 - balanced filtering
+#define LPF_FIRM              45056    // 0.6875 - firm filtering
 #define LPF_AGGRESSIVE        40960    // 0.625 - strong filtering
 
 /* Noise gate configuration */
@@ -101,6 +103,7 @@ typedef enum {
   LPF_VerySoft,
   LPF_Soft,
   LPF_Medium,
+  LPF_Firm,
   LPF_Aggressive
 } LPF_Level;
 
