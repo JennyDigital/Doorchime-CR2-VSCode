@@ -789,9 +789,14 @@ int16_t ApplyLowPassFilter16Bit( int16_t input, volatile int32_t *x1, volatile i
     case LPF_Medium:
       alpha = LPF_16BIT_MEDIUM;
       break;
+    case LPF_Firm:
+      alpha = LPF_16BIT_FIRM;
+      break;
     case LPF_Aggressive:
+      alpha = LPF_16BIT_AGGRESSIVE;
+      break;
     default:
-      alpha = LPF_16BIT_AGGRESSIVE; // Keep aggressive end unchanged
+      alpha = LPF_16BIT_SOFT;
       break;
   }
   
