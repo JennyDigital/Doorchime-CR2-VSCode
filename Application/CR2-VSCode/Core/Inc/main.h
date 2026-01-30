@@ -99,6 +99,7 @@ void Error_Handler(void);
 //#define TEST_CYCLING
 #define FORCE_TRIGGER_OPT
 //#define LOCK_BUILD
+#define NO_SLEEP_MODE
 
 // Volume special config
 #define VOL_SCALING           16

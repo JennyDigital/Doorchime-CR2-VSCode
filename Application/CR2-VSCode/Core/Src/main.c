@@ -35,6 +35,9 @@
 #include <stdint.h>
 //#include "stm32g474xx.h"
 //#include "stm32g4xx_hal.h"
+#include "stm32g4xx_hal_adc_ex.h"
+#include "stm32g4xx_hal_tim_ex.h"
+#include "stm32g4xx_hal_tim.h"
 #include "audio_engine.h"
 #include "lock.h"
 
@@ -174,8 +177,13 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
+  MX_ADC1_Init();
+  MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
 
+  HAL_ADC_Start_IT( &hadc1 );          // Start ADC in interrupt mode
+  HAL_TIM_Base_Start( &htim7 );   // Start TIM7 for ADC triggering
+  
   /* Initialize audio engine with hardware interface functions */
   if( AudioEngine_Init( DAC_MasterSwitch, ReadVolume, MX_I2S2_Init ) != PB_Idle ) {
     Error_Handler();
@@ -685,6 +693,7 @@ inline void WaitForTrigger( uint8_t trig_to_wait_for )
     }
     if( trig_status == trig_to_wait_for ) return;
 
+#ifndef NO_SLEEP_MODE
   /* Prep for sleep mode */
     LPSystemClock_Config();                     // Reduce clock speed for low power sleep
     HAL_SuspendTick();                          // Stop SysTick interrupts to prevent wakeups
@@ -702,6 +711,7 @@ inline void WaitForTrigger( uint8_t trig_to_wait_for )
     HAL_PWREx_DisableLowPowerRunMode();
     SystemClock_Config();
     HAL_ResumeTick();
+#endif
   }
 }
 
