@@ -709,12 +709,12 @@ inline void WaitForTrigger( uint8_t trig_to_wait_for )
     HAL_PWR_EnterSLEEPMode( PWR_LOWPOWERREGULATOR_ON, PWR_SLEEPENTRY_WFI );
 
     /* Rise from your slumber mighty microcontroller! */
-    __HAL_GPIO_EXTI_CLEAR_IT( TRIGGER_Pin );   // Clear EXTI pending bit
+    __HAL_GPIO_EXTI_CLEAR_IT( TRIGGER_Pin );    // Clear EXTI pending bit
     HAL_PWREx_DisableLowPowerRunMode();
     SystemClock_Config();
     HAL_ResumeTick();
-    HAL_TIM_Base_Start( &htim7 );    // Restart TIM7 for ADC triggering
-    HAL_ADC_Start_IT( &hadc1 );          // Restart ADC in interrupt mode
+    HAL_ADC_Start_IT( &hadc1 );                 // Restart ADC in interrupt mode
+    HAL_TIM_Base_Start( &htim7 );               // Restart TIM7 for ADC triggering
 #endif
   }
 }
