@@ -199,6 +199,7 @@ PB_StatusTypeDef    PlaySample                  (
 PB_StatusTypeDef    WaitForSampleEnd            ( void );
 PB_StatusTypeDef    PausePlayback               ( void );
 PB_StatusTypeDef    ResumePlayback              ( void );
+void                ShutDownAudio               ( void );
 
 /* Hardware interface functions (to be implemented by application) */
 void ShutDownAudio( void );

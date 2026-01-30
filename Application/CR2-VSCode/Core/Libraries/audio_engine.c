@@ -1047,7 +1047,8 @@ void SetPlaybackSpeed( uint32_t speed )
 
 /* ============================================================================
  * DMA Callbacks
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** Common DMA callback processing logic
   *
@@ -1144,7 +1145,8 @@ void AdvanceSamplePointer( void )
 
 /* ============================================================================
  * Chunk Processing
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** Transfers a chunk of 16-bit samples to the DMA playback buffer and processes them
   *
@@ -1282,7 +1284,8 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
 
 /* ============================================================================
  * Playback Control Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** Initiates playback of your specified sample
   *
@@ -1382,7 +1385,7 @@ PB_StatusTypeDef PlaySample (
   fadeout_samples_remaining = sample_set_sz;
   fadein_samples_remaining  = fadein_samples;
   
-  // Pre-fill the first half of the buffer with processed samples before starting DMA
+  // Pre-fill the buffer with processed samples before starting DMA
   // This ensures the fade-in is applied from the very first sample that plays
   half_to_fill = FIRST;
   if( pb_mode == 16 ) {
@@ -1536,4 +1539,20 @@ static inline int16_t ApplyVolumeSetting( int16_t sample, uint8_t volume_setting
   int32_t sample32 = (int32_t) sample;
 
   return  (int16_t)( sample32 ) * volume_setting / 255;
+}
+
+void ShutDownAudio( void )
+{
+    // Calculate delay needed to drain the DMA buffer based on playback speed
+    extern uint32_t I2S_PlaybackSpeed;
+    uint32_t buffer_drain_ms = (PB_BUFF_SZ * 1000 + I2S_PlaybackSpeed - 1) / I2S_PlaybackSpeed;
+    HAL_Delay( buffer_drain_ms );
+
+    // Stop I2S DMA transmission
+    HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );
+
+    // Shutdown the DAC (if function pointer is set)
+    if (AudioEngine_DACSwitch) {
+        AudioEngine_DACSwitch(DAC_OFF);
+    }
 }

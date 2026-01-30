@@ -112,6 +112,8 @@ volatile  uint16_t        trig_timeout_counter          = 0;
 volatile  uint8_t         trig_status                   = TRIGGER_CLR;
 volatile  uint16_t        adc_raw                       = 0;
 
+/* Master volume scaling factor (default 16) */
+static uint8_t vol_scaling = 16;
 
 // External variables from audio_engine
 extern FilterConfig_TypeDef filter_cfg;
@@ -136,7 +138,7 @@ static  void    MX_TIM7_Init            ( void );
         void                WaitForTrigger              ( uint8_t trig_to_wait_for );
         uint8_t             GetTriggerOption            ( void );
         void                LPSystemClock_Config        ( void );
-        void                ShutDownAudio               ( void );
+      // ...existing code...
 
 /* USER CODE END PFP */
 
@@ -315,6 +317,7 @@ int main(void)
   /* USER CODE END 3 */
 }
 
+
 /**
   * @brief System Clock Configuration, Sets the system clock to 150 MHz
   * @retval None
@@ -423,6 +426,7 @@ static void MX_I2S2_Init( void )
 
 }
 
+
 /**
   * Enable DMA controller clock
   */
@@ -486,6 +490,7 @@ static void MX_GPIO_Init( void )
 
   /* USER CODE END MX_GPIO_Init_2 */
 }
+
 
 /**
   * @brief TIM7 Initialization Function
@@ -576,6 +581,7 @@ static void MX_ADC1_Init(void)
     Error_Handler();
   }
 
+
   /** Configure Regular Channel
   */
   sConfig.Channel = ADC_CHANNEL_10;
@@ -594,6 +600,7 @@ static void MX_ADC1_Init(void)
 
 }
 
+
 /* USER CODE BEGIN 4 */
 
 /** Changes NSD_MODE_Pin pin to control the DAC between on and Shutdown
@@ -610,8 +617,6 @@ void DAC_MasterSwitch( GPIO_PinState setting )
   HAL_Delay( 10 );
 }
 
-/* Master volume scaling factor (default 16) */
-static uint8_t vol_scaling = 16;
 
 /** Set the master volume scaling factor.
   *
@@ -639,6 +644,7 @@ uint8_t GetVolScaling(void)
 {
     return vol_scaling;
 }
+
 
 /** Read the master volume level for playback.
   *
@@ -740,26 +746,13 @@ uint8_t GetTriggerOption( void )
 #endif
 }
 
+
 /* Shuts down audio playback and DAC 
  * 
  * @params: none
  * @retval: none
  */
-void ShutDownAudio( void )
-{
-    // Calculate delay needed to drain the DMA buffer based on playback speed
-    // Buffer drain time = (PB_BUFF_SZ / I2S_PlaybackSpeed) * 1000 ms
-    extern uint32_t I2S_PlaybackSpeed;
-    uint32_t buffer_drain_ms = (PB_BUFF_SZ * 1000 + I2S_PlaybackSpeed - 1) / I2S_PlaybackSpeed;
-    HAL_Delay( buffer_drain_ms );
-    
-    // Stop I2S DMA transmission
-    HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );
-    
-    // Shutdown the DAC and either loop back of shutdown to save power.
-    //
-    DAC_MasterSwitch( DAC_OFF );
-}
+// ...existing code...
 
 
 /** Systick IRQ including trigger handling
