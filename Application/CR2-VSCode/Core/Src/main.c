@@ -33,6 +33,7 @@
 /* USER CODE BEGIN Includes */
 //
 #include <stdint.h>
+#include <math.h>
 //#include "stm32g474xx.h"
 //#include "stm32g4xx_hal.h"
 #include "stm32g4xx_hal_adc_ex.h"
@@ -111,6 +112,7 @@ volatile  uint16_t        trig_timeout_counter          = 0;
 volatile  uint8_t         trig_status                   = TRIGGER_CLR;
 volatile  uint16_t        adc_raw                       = 0;
 
+
 // External variables from audio_engine
 extern FilterConfig_TypeDef filter_cfg;
 
@@ -157,6 +159,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+
 
   HAL_Init();
 
@@ -502,7 +505,7 @@ static void MX_TIM7_Init(void)
 
   /* USER CODE END TIM7_Init 1 */
   htim7.Instance = TIM7;
-  htim7.Init.Prescaler = 300-1;
+  htim7.Init.Prescaler = 150-1;
   htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim7.Init.Period = 39999;
   htim7.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -645,21 +648,23 @@ uint8_t GetVolScaling(void)
   */
 uint8_t ReadVolume( void )
 {
-    uint8_t v = 
-    (
-        ( ( (OPT3_GPIO_Port->IDR & OPT3_Pin) != 0 ) << 2 ) |
-        ( ( (OPT2_GPIO_Port->IDR & OPT2_Pin) != 0 ) << 1 ) |
-        ( ( (OPT1_GPIO_Port->IDR & OPT1_Pin) != 0 ) << 0 )
-    );
+  #ifdef VOLUME_INPUT_DIGITAL
+    // Use digital GPIOs for volume (3 bits, 1-8)
+    uint8_t v =
+      ( ( (OPT3_GPIO_Port->IDR & OPT3_Pin) != 0 ) << 2 ) |
+      ( ( (OPT2_GPIO_Port->IDR & OPT2_Pin) != 0 ) << 1 ) |
+      ( ( (OPT1_GPIO_Port->IDR & OPT1_Pin) != 0 ) << 0 );
 
-    /* volume divisor is 1..8 so add 1 to the 3-bit value to make range 1..8 */
-    v = (uint8_t) ( ( v + 1 ) * vol_scaling) ;
+    // Map to 1-128 for output
+    v = 192 - ( v * 16 );
+    return v ? v : 1; // Ensure minimum volume of 1
+  #else
+    // Use 12-bit ADC value (0-4095) for linear volume
+    uint16_t lin = adc_raw / 16;  // Scale down and keep below maximum
 
-    /* Clamp to reasonable maximum to prevent excessive attenuation */
-    if( v > 255 ) v = 255;
-
-    /* never return 0 even if vol_scaling is mis-set */
-    return v ? v : 1;
+    if( lin > 220 ) lin = 220; // Cap maximum volume
+    return lin ? lin : 1;
+  #endif
 } 
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)

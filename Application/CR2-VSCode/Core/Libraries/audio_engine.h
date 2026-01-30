@@ -62,7 +62,7 @@ extern "C" {
 #define SECOND                1U
 
 /* Volume configuration */
-#define VOL_MULT              8       // Volume multiplication factor for integer math. Maximum volume is approx 8.
+#define VOL_MULT              12       // Volume multiplication factor for integer math. Maximum volume is approx 8.
 
 /* Fade configuration */
 #define FADEOUT_SAMPLES       2048U    // About 100ms at 22kHz

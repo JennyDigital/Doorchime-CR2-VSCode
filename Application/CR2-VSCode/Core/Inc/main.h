@@ -104,6 +104,9 @@ void Error_Handler(void);
 // Volume special config
 #define VOL_SCALING           16
 
+// Uncomment to use digital GPIOs for volume instead of ADC
+#define VOLUME_INPUT_DIGITAL
+
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

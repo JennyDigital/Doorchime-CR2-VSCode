@@ -38,11 +38,13 @@
 #include "audio_engine.h"
 #include <math.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <string.h>
 
 /* Forward declarations for internal helper functions */
-static inline void    UpdateFadeCounters  ( uint32_t samples_processed );
-static inline int32_t ComputeSoftClipCurve( int32_t excess, int32_t range );
+static inline void      UpdateFadeCounters  ( uint32_t samples_processed );
+static inline int32_t   ComputeSoftClipCurve( int32_t excess, int32_t range );
+static inline int16_t   ApplyVolumeSetting  ( int16_t sample, uint8_t volume_setting );
 
 /* External variables that need to be defined by the application */
 extern I2S_HandleTypeDef AUDIO_ENGINE_I2S_HANDLE;
@@ -1175,7 +1177,8 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
       leftsample = MIDPOINT_S16;                                                           // Pad with silence if at end 
     }
     else {
-      leftsample = ( (int16_t) (*input) / vol_div ) * VOL_MULT;                            // Left channel
+      leftsample = ApplyVolumeSetting( *input, vol_div );                                              // Apply volume setting
+      //leftsample = ( (int16_t) (*input) / vol_div ) * VOL_MULT;                            // Left channel
       leftsample = ApplyFilterChain16Bit( leftsample, 1 );         // Apply complete filter chain
     }
     input++;
@@ -1186,7 +1189,7 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
         rightsample = MIDPOINT_S16;                                                        // Pad with silence if at end
       }
       else { 
-        rightsample = ( (int16_t) (*input) / vol_div ) * VOL_MULT;                         // Right channel
+        rightsample = ApplyVolumeSetting( *input, vol_div );                         // Right channel
         rightsample = ApplyFilterChain16Bit( rightsample, 0 );     // Apply complete filter chain
       }   // End of right channel processing
       input++;
@@ -1501,4 +1504,17 @@ PB_StatusTypeDef ResumePlayback( void )
   fadein_samples_remaining = pause_fadein_samples;
   
   return PB_Playing;
+}
+
+/** Apply volume setting to sample
+  * 
+  * @param: sample - Signed 16-bit audio sample
+  * @param: volume_setting - Volume division factor (1 to 255)
+  * @retval: int16_t - Volume-adjusted signed 16-bit audio sample
+  */
+static inline int16_t ApplyVolumeSetting( int16_t sample, uint8_t volume_setting )
+{
+  int32_t sample32 = (int32_t) sample;
+
+  return  (int16_t)( sample32 ) * volume_setting / 255;
 }
