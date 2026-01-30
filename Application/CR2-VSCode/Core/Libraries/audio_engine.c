@@ -1244,7 +1244,8 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
       /* Convert unsigned 8-bit (0..255) -> signed 16-bit with dithering */
       uint8_t sample8 = *input;
       leftsample = Apply8BitDithering( sample8 );                    /* Left channel with dithering */
-      leftsample = ( leftsample * VOL_MULT ) / vol_div;              /* Scale for volume (multiply before divide) */
+      leftsample = ApplyVolumeSetting( leftsample, vol_div );
+      //leftsample = ( leftsample * VOL_MULT ) / vol_div;              /* Scale for volume (multiply before divide) */
       leftsample = ApplyFilterChain8Bit( leftsample, 1 );            /* Apply complete filter chain */
     }
     input++;
@@ -1258,7 +1259,8 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
         /* Convert unsigned 8-bit (0..255) -> signed 16-bit with dithering */
         uint8_t sample8 = *input;
         rightsample = Apply8BitDithering( sample8 );                 /* Right channel with dithering */
-        rightsample = ( rightsample * VOL_MULT ) / vol_div;          /* Scale for volume (multiply before divide) */
+        rightsample = ApplyVolumeSetting( rightsample, vol_div );
+        //rightsample = ( rightsample * VOL_MULT ) / vol_div;          /* Scale for volume (multiply before divide) */
         rightsample = ApplyFilterChain8Bit( rightsample, 0 );        /* Apply complete filter chain */
       }
       input++;
@@ -1383,12 +1385,24 @@ PB_StatusTypeDef PlaySample (
       return PB_Error;
     }
     pb_p16 += p_advance;
+
+    half_to_fill = SECOND;
+        if( ProcessNextWaveChunk( (int16_t *) pb_p16 ) != PB_Playing ) {
+      return PB_Error;
+    }
+    pb_p16 += p_advance;
+    half_to_fill = FIRST;
   }
   else if( pb_mode == 8 ) {
     if( ProcessNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PB_Playing ) {
       return PB_Error;
     }
+    half_to_fill = SECOND;
+    if( ProcessNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PB_Playing ) {
+      return PB_Error;
+    }
     pb_p8 += p_advance;
+    half_to_fill = FIRST;
   }
   
   // Start playback of the recording
