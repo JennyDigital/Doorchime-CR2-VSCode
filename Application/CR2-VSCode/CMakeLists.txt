@@ -55,7 +55,6 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     ./Core/Inc/sound_headers
     ./Core/Inc
     ./Core/Libraries
-
 )
 
 # Add project symbols (macros)
