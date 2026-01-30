@@ -695,6 +695,8 @@ inline void WaitForTrigger( uint8_t trig_to_wait_for )
 
 #ifndef NO_SLEEP_MODE
   /* Prep for sleep mode */
+    HAL_TIM_Base_Stop( &htim7 );                // Stop TIM7 to prevent ADC triggers during sleep
+    HAL_ADC_Stop_IT( &hadc1 );                  // Stop ADC in interrupt mode
     LPSystemClock_Config();                     // Reduce clock speed for low power sleep
     HAL_SuspendTick();                          // Stop SysTick interrupts to prevent wakeups
     __HAL_GPIO_EXTI_CLEAR_IT( TRIGGER_Pin );    // Clear EXTI pending bit
@@ -711,6 +713,8 @@ inline void WaitForTrigger( uint8_t trig_to_wait_for )
     HAL_PWREx_DisableLowPowerRunMode();
     SystemClock_Config();
     HAL_ResumeTick();
+    HAL_TIM_Base_Start( &htim7 );    // Restart TIM7 for ADC triggering
+    HAL_ADC_Start_IT( &hadc1 );          // Restart ADC in interrupt mode
 #endif
   }
 }
