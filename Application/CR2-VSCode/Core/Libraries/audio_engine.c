@@ -223,12 +223,12 @@ PB_StatusTypeDef AudioEngine_Init( DAC_SwitchFunc dac_switch,
   RESET_ALL_FILTER_STATE();
   
   /* Reset playback state variables */
-  pb_state = PB_Idle;
-  pb_mode = 0;
+  pb_state                  = PB_Idle;
+  pb_mode                   = 0;
   fadeout_samples_remaining = 0;
-  fadein_samples_remaining = 0;
-  paused_sample_ptr = NULL;
-  vol_div = 1;
+  fadein_samples_remaining  = 0;
+  paused_sample_ptr         = NULL;
+  vol_div                   = 1;
   
   /* Reset dither state to non-zero seed */
   dither_state = 12345;
@@ -294,7 +294,7 @@ void SetAirEffectGainQ16( uint32_t gain_q16 )
 /** Air Effect runtime control: get current shelf boost gain (Q16) */
 uint32_t GetAirEffectGainQ16( void )
 {
-  return (uint32_t)air_effect_shelf_gain_q16;
+  return (uint32_t) air_effect_shelf_gain_q16;
 }
 
 /** Air Effect runtime control: set shelf boost using dB
