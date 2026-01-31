@@ -123,11 +123,13 @@ typedef enum {
 
 /* Low-pass filter aggressiveness type */
 typedef enum {
+  LPF_Off,
   LPF_VerySoft,
   LPF_Soft,
   LPF_Medium,
   LPF_Firm,
-  LPF_Aggressive
+  LPF_Aggressive,
+  LPF_Custom
 } LPF_Level;
 
 /* Air Effect (High-Shelf Brightening) Filter */
@@ -137,14 +139,16 @@ typedef enum {
 
 /* Filter chain runtime configuration */
 typedef struct {
-  uint8_t enable_16bit_biquad_lpf;
-  uint8_t enable_soft_dc_filter_16bit;
-  uint8_t enable_8bit_lpf;
-  uint8_t enable_noise_gate;
-  uint8_t enable_soft_clipping;
-  uint8_t enable_air_effect;             // High-shelf brightening filter
-  uint32_t lpf_makeup_gain_q16;  // Q16 gain applied after LPF
-  LPF_Level lpf_16bit_level;     // Filter level for 16-bit biquad LPF
+  uint8_t enable_16bit_biquad_lpf;          // Biquad low-pass filter for 16-bit samples
+  uint8_t enable_soft_dc_filter_16bit;      // Soft DC blocking filter for 16-bit samples
+  uint8_t enable_8bit_lpf;                  // Biquad low-pass filter for 8-bit samples
+  uint8_t enable_noise_gate;                // Noise gate. Removes low-level noise.
+  uint8_t enable_soft_clipping;             // Soft clipping.
+  uint8_t enable_air_effect;                // High-shelf brightening filter
+  uint32_t lpf_makeup_gain_q16;             // Q16 gain applied after LPF
+  LPF_Level lpf_16bit_level;                // Filter level for 16-bit biquad LPF
+  uint16_t lpf_16bit_custom_alpha;          // Q16 alpha for custom 16-bit LPF
+  LPF_Level lpf_8bit_level;                 // Filter level for 8-bit LPF
 } FilterConfig_TypeDef;
 
 /* Global audio engine state exposed for hardware initialization */
@@ -167,39 +171,44 @@ extern ReadVolumeFunc AudioEngine_ReadVolume;
 extern I2S_InitFunc   AudioEngine_I2SInit;
 
 /* Audio engine initialization */
-PB_StatusTypeDef    AudioEngine_Init            ( DAC_SwitchFunc dac_switch,
-                                                  ReadVolumeFunc read_volume,
-                                                  I2S_InitFunc i2s_init );
+PB_StatusTypeDef    AudioEngine_Init                  ( DAC_SwitchFunc dac_switch,
+                                                        ReadVolumeFunc read_volume,
+                                                        I2S_InitFunc i2s_init );
 
 /* Filter configuration functions */
-void                SetFilterConfig             ( const FilterConfig_TypeDef *cfg );
-void                GetFilterConfig             ( FilterConfig_TypeDef *cfg );
-void                SetLpfMakeupGain8Bit        ( float gain );
-void                SetLpf16BitLevel            ( LPF_Level level );
+void                SetFilterConfig                   ( const FilterConfig_TypeDef *cfg );
+void                GetFilterConfig                   ( FilterConfig_TypeDef *cfg );
+void                SetLpfMakeupGain8Bit              ( float gain );
+void                SetLpf8BitLevel                   ( LPF_Level level );
+LPF_Level           GetLpf8BitLevel                   ( void );
+void                SetLpf16BitLevel                  ( LPF_Level level );
+void                SetLpf16BitCustomAlpha            ( uint16_t alpha );
+uint16_t            CalcLpf16BitAlphaFromCutoff       ( float cutoff_hz, float sample_rate_hz );
+
+uint16_t            GetLpf16BitCustomAlphaFromCutoff  ( float cutoff_hz );
 
 /* Fade time configuration functions */
-void                SetFadeInTime               ( float seconds );
-float               GetFadeInTime               ( void );
-void                SetFadeOutTime              ( float seconds );
-float               GetFadeOutTime              ( void );
-void                SetPauseFadeTime            ( float seconds );
-float               GetPauseFadeTime            ( void );
-void                SetResumeFadeTime           ( float seconds );
-float               GetResumeFadeTime           ( void );
+void                SetFadeInTime                     ( float seconds );
+float               GetFadeInTime                     ( void );
+void                SetFadeOutTime                    ( float seconds );
+float               GetFadeOutTime                    ( void );
+void                SetPauseFadeTime                  ( float seconds );
+float               GetPauseFadeTime                  ( void );
+void                SetResumeFadeTime                 ( float seconds );
+float               GetResumeFadeTime                 ( void );
 
 /* Playback control functions */
-PB_StatusTypeDef    PlaySample                  (
-                                                  const void *sample_to_play,
-                                                  uint32_t sample_set_sz,
-                                                  uint32_t playback_speed,
-                                                  uint8_t sample_depth,
-                                                  PB_ModeTypeDef mode,
-                                                  LPF_Level lpf_level
-                                                );
-PB_StatusTypeDef    WaitForSampleEnd            ( void );
-PB_StatusTypeDef    PausePlayback               ( void );
-PB_StatusTypeDef    ResumePlayback              ( void );
-void                ShutDownAudio               ( void );
+PB_StatusTypeDef    PlaySample                        ( 
+                                                        const void *sample_to_play, 
+                                                        uint32_t sample_set_sz, 
+                                                        uint32_t playback_speed, 
+                                                        uint8_t sample_depth, 
+                                                        PB_ModeTypeDef mode 
+                                                      ); 
+PB_StatusTypeDef    WaitForSampleEnd                  ( void );
+PB_StatusTypeDef    PausePlayback                     ( void );
+PB_StatusTypeDef    ResumePlayback                    ( void );
+void                ShutDownAudio                     ( void );
 
 /* Hardware interface functions (to be implemented by application) */
 void ShutDownAudio( void );
@@ -269,14 +278,13 @@ PB_StatusTypeDef     ProcessNextWaveChunk       ( int16_t * chunk_p );
 PB_StatusTypeDef     ProcessNextWaveChunk_8_bit ( uint8_t * chunk_p );
 
 /* Playback control functions */
-PB_StatusTypeDef    PlaySample                  (
-                                                  const void *sample_to_play,
-                                                  uint32_t sample_set_sz,
-                                                  uint32_t playback_speed,
-                                                  uint8_t sample_depth,
-                                                  PB_ModeTypeDef mode,
-                                                  LPF_Level lpf_level
-                                                );
+PB_StatusTypeDef    PlaySample                  ( 
+                                                  const void *sample_to_play, 
+                                                  uint32_t sample_set_sz, 
+                                                  uint32_t playback_speed, 
+                                                  uint8_t sample_depth, 
+                                                  PB_ModeTypeDef mode 
+                                                ); 
 PB_StatusTypeDef    WaitForSampleEnd            ( void );
 PB_StatusTypeDef    PausePlayback               ( void );
 PB_StatusTypeDef    ResumePlayback              ( void );

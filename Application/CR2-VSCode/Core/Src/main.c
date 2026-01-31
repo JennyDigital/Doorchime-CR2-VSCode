@@ -202,8 +202,8 @@ int main(void)
   HAL_Delay( 150 );
 
   // FilterConfig_TypeDef filter_cfg;
-
-  filter_cfg.enable_16bit_biquad_lpf      = 0;
+  filter_cfg.enable_noise_gate            = 0;  // Noise gate disabled by default; enable as needed
+  filter_cfg.enable_16bit_biquad_lpf      = 1;
   filter_cfg.enable_8bit_lpf              = 1;
   filter_cfg.enable_soft_dc_filter_16bit  = 1;
   filter_cfg.enable_soft_clipping         = 1;
@@ -275,13 +275,26 @@ int main(void)
     //  I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_Medium );
     // WaitForSampleEnd();
 
-    // PlaySample( guitar_riff22k, GUITAR_RIFF22K_SZ,
-    //      I2S_AUDIOFREQ_22K, 16, Mode_mono, LPF_Medium );
-    // WaitForSampleEnd();
+    SetLpf16BitLevel( LPF_Custom );
+
+    SetLpf16BitCustomAlpha( GetLpf16BitCustomAlphaFromCutoff( 200.0f ) );
+    PlaySample( guitar_riff22k, GUITAR_RIFF22K_SZ,
+         I2S_AUDIOFREQ_22K, 16, Mode_mono );
+    WaitForSampleEnd();
+
+    SetLpf16BitLevel( LPF_Medium );
+    PlaySample( guitar_riff22k, GUITAR_RIFF22K_SZ,
+         I2S_AUDIOFREQ_22K, 16, Mode_mono );
+    WaitForSampleEnd();
+
+    SetLpf16BitLevel( LPF_Off );
+    PlaySample( guitar_riff22k, GUITAR_RIFF22K_SZ,
+         I2S_AUDIOFREQ_22K, 16, Mode_mono );
+    WaitForSampleEnd();
     // PlaySample( dramatic_organ11k, DRAMATIC_ORGAN11K_SZ,
     //     I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_Firm );
-    PlaySample( theremin_quartet11k, THEREMIN_QUARTET11K_SZ,
-        I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_VerySoft );
+    // PlaySample( theremin_quartet11k, THEREMIN_QUARTET11K_SZ,
+    //     I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_VerySoft );
     // HAL_Delay( 1000 );
     // PausePlayback();
     // HAL_Delay( 2000 );

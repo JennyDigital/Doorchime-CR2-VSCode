@@ -62,7 +62,7 @@ volatile uint8_t vol_div;
 int16_t pb_buffer[PB_BUFF_SZ] = {0};
 
 /* Filter configuration (runtime-tunable) */
-FilterConfig_TypeDef filter_cfg = {
+volatile FilterConfig_TypeDef filter_cfg = {
   .enable_16bit_biquad_lpf      = 1,
   .enable_soft_dc_filter_16bit  = 1,
   .enable_8bit_lpf              = 1,
@@ -70,7 +70,8 @@ FilterConfig_TypeDef filter_cfg = {
   .enable_soft_clipping         = 1,
   .enable_air_effect            = 0,
   .lpf_makeup_gain_q16          = LPF_MAKEUP_GAIN_Q16,
-  .lpf_16bit_level              = LPF_Soft,
+  .lpf_16bit_level              = LPF_Custom,
+  .lpf_16bit_custom_alpha       = LPF_16BIT_SOFT
 };
 
 /* Playback state variables */
@@ -122,7 +123,7 @@ volatile  int32_t         lpf_8bit_y2_right           = 0;
           uint16_t        lpf_8bit_alpha              = LPF_MEDIUM;
 
 /* Biquad filter state for 16-bit samples */
-          uint16_t        lpf_16bit_alpha             = LPF_16BIT_SOFT;
+volatile  uint16_t        lpf_16bit_alpha             = LPF_16BIT_SOFT;
 
 volatile  int32_t         lpf_16bit_x1_left           = 0;
 volatile  int32_t         lpf_16bit_x2_left           = 0;
@@ -281,6 +282,36 @@ void GetFilterConfig( FilterConfig_TypeDef *cfg )
   }
 }
 
+/** Set the aggressiveness level for the 8-bit low-pass filter.
+  * 
+  * @brief Sets the filter level for the 8-bit biquad low-pass filter.
+  * @param: level - Filter level (LPF_VerySoft, LPF_Soft, LPF_Medium, LPF_Firm, LPF_Aggressive, LPF_Custom).
+  * @retval: none
+  */
+void SetLpf8BitLevel( LPF_Level level )
+{
+  if( level == LPF_Off ) {
+    filter_cfg.enable_8bit_lpf = 0;
+  } else {
+    filter_cfg.enable_8bit_lpf = 1;
+    if( level > LPF_Custom ) { // Prevent invalid off state
+      level = LPF_VerySoft;
+    }
+  }
+  filter_cfg.lpf_8bit_level = level;
+}
+
+
+
+/* Get the 8-bit low-pass filter aggressiveness level 
+ * @param: none
+ * @retval: current filter level
+ */
+LPF_Level GetLpf8BitLevel(void)
+{
+  return filter_cfg.lpf_8bit_level;
+}
+
 
 /** Air Effect runtime control: set shelf boost gain (Q16)
   * Clamps to AIR_EFFECT_SHELF_GAIN_MAX to avoid extreme boosts.
@@ -395,6 +426,39 @@ void SetLpfMakeupGain8Bit( float gain )
 }
 
 
+/**
+ * @brief Calculate Q16 alpha for 16-bit LPF from -3dB cutoff and sample rate
+ *
+ * 1-pole IIR: alpha = exp(-2*pi*fc/fs)
+ * For biquad, this is a good starting point for the smoothing factor.
+ *
+ * @param cutoff_hz - Desired -3dB cutoff frequency in Hz
+ * @param sample_rate_hz - Sample rate in Hz
+ * @return Q16 alpha coefficient for SetLpf16BitCustomAlpha
+ */
+uint16_t CalcLpf16BitAlphaFromCutoff( float cutoff_hz, float sample_rate_hz )
+{
+  /* Validate input parameters */
+  if( cutoff_hz <= 0.0f || sample_rate_hz <= 0.0f ) { return 0; }
+
+  float alpha_f = expf( -2.0f * 3.14159265359f * cutoff_hz / sample_rate_hz );
+  if( alpha_f < 0.0f ) alpha_f = 0.0f;
+  if( alpha_f > 0.99998f ) alpha_f = 0.99998f; // avoid overflow
+  return (uint16_t)( alpha_f * 65536.0f + 0.5f );
+}
+
+
+/**
+ * @brief Get Q16 alpha for 16-bit LPF custom mode from -3dB cutoff and current sample rate
+ * @param cutoff_hz - Desired -3dB cutoff frequency in Hz
+ * @return Q16 alpha coefficient
+ */
+uint16_t GetLpf16BitCustomAlphaFromCutoff( float cutoff_hz )
+{
+  return CalcLpf16BitAlphaFromCutoff( cutoff_hz, (float)I2S_PlaybackSpeed );
+}
+
+
 /** Set 16-bit LPF filter level
   * 
   * @brief Sets the aggressiveness level for the 16-bit biquad low-pass filter.
@@ -404,32 +468,45 @@ void SetLpfMakeupGain8Bit( float gain )
 void SetLpf16BitLevel( LPF_Level level )
 {
   filter_cfg.lpf_16bit_level = level;
-  
   switch( level ) {
+    case LPF_Off:
+      filter_cfg.enable_16bit_biquad_lpf = 0;
+      break;
     case LPF_VerySoft:
       lpf_16bit_alpha = LPF_16BIT_VERY_SOFT;
       break;
-
     case LPF_Soft:
       lpf_16bit_alpha = LPF_16BIT_SOFT;
       break;
-
     case LPF_Medium:
       lpf_16bit_alpha = LPF_16BIT_MEDIUM;
       break;
-
     case LPF_Firm:
       lpf_16bit_alpha = LPF_16BIT_FIRM;
       break;
-
     case LPF_Aggressive:
       lpf_16bit_alpha = LPF_16BIT_AGGRESSIVE;
       break;
-
+    case LPF_Custom:
+      lpf_16bit_alpha = filter_cfg.lpf_16bit_custom_alpha;
+      break;
     default:
       lpf_16bit_alpha = LPF_16BIT_SOFT;
+      filter_cfg.lpf_16bit_level = LPF_Soft;
       break;
   }
+
+  if( level != LPF_Off ) {
+      filter_cfg.enable_16bit_biquad_lpf = 1;
+  }
+}
+
+void SetLpf16BitCustomAlpha( uint16_t alpha )
+{
+    filter_cfg.lpf_16bit_custom_alpha = alpha;
+    if( filter_cfg.lpf_16bit_level == LPF_Custom ) {
+      lpf_16bit_alpha = filter_cfg.lpf_16bit_custom_alpha;
+    }
 }
 
 
@@ -808,39 +885,12 @@ int16_t ApplySoftDCFilter16Bit( volatile int16_t input, volatile int32_t *prev_i
 int16_t ApplyLowPassFilter16Bit( int16_t input, volatile int32_t *x1, volatile int32_t *x2, 
                                  volatile int32_t *y1, volatile int32_t *y2 )
 {
-  uint32_t alpha;
-  switch( filter_cfg.lpf_16bit_level ) {
-    case LPF_VerySoft:
-      alpha = LPF_16BIT_VERY_SOFT;
-      break;
-
-    case LPF_Soft:
-      alpha = LPF_16BIT_SOFT;
-      break;
-
-    case LPF_Medium:
-      alpha = LPF_16BIT_MEDIUM;
-      break;
-
-    case LPF_Firm:
-      alpha = LPF_16BIT_FIRM;
-      break;
-
-    case LPF_Aggressive:
-      alpha = LPF_16BIT_AGGRESSIVE;
-      break;
-      
-    default:
-      alpha = LPF_16BIT_SOFT;
-      break;
-  }
-  
+  uint32_t alpha = lpf_16bit_alpha;
   int32_t b0 = ((65536 - alpha) * (65536 - alpha)) >> 17;
   int32_t b1 = b0 << 1;
   int32_t b2 = b0;
   int32_t a1 = -(alpha << 1);
   int32_t a2 = (alpha * alpha) >> 16;
-  
   /* Use 64-bit accumulation to avoid overflow on aggressive coefficients */
   int64_t acc = ((int64_t)b0 * input) +
                 ((int64_t)b1 * (*x1)) +
@@ -848,15 +898,12 @@ int16_t ApplyLowPassFilter16Bit( int16_t input, volatile int32_t *x1, volatile i
                 ((int64_t)a1 * (*y1)) -
                 ((int64_t)a2 * (*y2));
   int32_t output = (int32_t)(acc >> 16);
-  
   *x2 = *x1;
   *x1 = input;
   *y2 = *y1;
   *y1 = output;
-  
   if ( output > 32767 )   output = 32767;
   if ( output < -32768 )  output = -32768;
-  
   return (int16_t)output;
 }
 
@@ -1322,13 +1369,12 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
   *
   */
 PB_StatusTypeDef PlaySample (  
-                              const void *sample_to_play,
-                              uint32_t sample_set_sz,
-                              uint32_t playback_speed,
-                              uint8_t sample_depth,
-                              PB_ModeTypeDef mode,
-                              LPF_Level lpf_level
-                            )
+                              const void *sample_to_play, 
+                              uint32_t sample_set_sz, 
+                              uint32_t playback_speed, 
+                              uint8_t sample_depth, 
+                              PB_ModeTypeDef mode 
+                            ) 
 {
   // Parameter sanity checks
   //
@@ -1338,8 +1384,8 @@ PB_StatusTypeDef PlaySample (
       sample_to_play  == NULL
     ) { return PB_Error; }
 
-  // Set low-pass filter alpha coefficient based on requested level
-  lpf_8bit_alpha = GetLpf8BitAlpha( lpf_level );
+  // Set low-pass filter alpha coefficient based on filter config
+  lpf_8bit_alpha = GetLpf8BitAlpha( filter_cfg.lpf_8bit_level );
   
   if( mode == Mode_stereo ) {                             // Pointer advance amount for stereo/mono mode.
      p_advance = CHUNK_SZ;                                // Two channels worth of samples per chunk
@@ -1571,6 +1617,9 @@ void ShutDownAudio( void )
 static inline uint16_t GetLpf8BitAlpha( LPF_Level lpf_level )
 {
     switch (lpf_level) {
+        case LPF_Custom:
+            return filter_cfg.lpf_16bit_custom_alpha;
+            
         case LPF_VerySoft:
             return LPF_VERY_SOFT;
 
