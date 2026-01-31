@@ -693,10 +693,10 @@ void HAL_ADC_ConvCpltCallback( ADC_HandleTypeDef *hadc )
  * Waits until the trigger signal is received.
  *
  * params: none
- * reval: none
+ * retval: none
  *
  */
-inline void WaitForTrigger( uint8_t trig_to_wait_for )
+void WaitForTrigger( uint8_t trig_to_wait_for )
 {
   while( 1 ) {
     trig_timeout_flag = 0;

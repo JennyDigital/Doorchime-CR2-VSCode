@@ -99,13 +99,10 @@ void Error_Handler(void);
 //#define TEST_CYCLING
 #define FORCE_TRIGGER_OPT
 //#define LOCK_BUILD
-#define NO_SLEEP_MODE
+//#define NO_SLEEP_MODE
 
 // Volume special config
 #define VOL_SCALING           16
-
-// Uncomment to use digital GPIOs for volume instead of ADC
-#define VOLUME_INPUT_DIGITAL
 
 /* USER CODE END Private defines */
 

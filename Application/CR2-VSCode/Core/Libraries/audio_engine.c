@@ -36,16 +36,60 @@
   */
 
 #include "audio_engine.h"
-#include <math.h>
+#include <math.h>           // Some of our filter calculations need math functions
 #include <stddef.h>
-#include <stdint.h>
-#include <string.h>
+#include <stdint.h>         // We like things predictable in these here ports.
+#include <string.h>         // Needed for memset
 
 /* Forward declarations for internal helper functions */
-static inline void      UpdateFadeCounters  ( uint32_t samples_processed );
-static inline int32_t   ComputeSoftClipCurve( int32_t excess, int32_t range );
-static inline int16_t   ApplyVolumeSetting  ( int16_t sample, uint8_t volume_setting );
-static inline uint16_t  GetLpf8BitAlpha     ( LPF_Level lpf_level );
+/* Forward declarations for internal helper functions */
+
+// Fade and volume helpers
+static inline   void      UpdateFadeCounters          ( uint32_t samples_processed );
+static          int16_t   ApplyFadeIn                 ( int16_t sample );
+static          int16_t   ApplyFadeOut                ( int16_t sample );
+static inline   int16_t   ApplyVolumeSetting          ( int16_t sample, uint8_t volume_setting );
+
+// Noise reduction and gating
+static          int16_t   ApplyNoiseGate              ( int16_t sample );
+
+// Clipping
+static          int16_t   ApplySoftClipping           ( int16_t sample );
+static inline   int32_t   ComputeSoftClipCurve        ( int32_t excess, int32_t range );
+
+// DC blocking filters
+static          int16_t   ApplyDCBlockingFilter       (
+                                                        volatile int16_t input,
+                                                        volatile int32_t *prev_input,
+                                                        volatile int32_t *prev_output
+                                                      );
+static          int16_t   ApplySoftDCFilter16Bit      (
+                                                        volatile int16_t input,
+                                                        volatile int32_t *prev_input,
+                                                        volatile int32_t *prev_output
+                                                      );
+static          int16_t   ApplySoftDCFilter16Bit      (
+                                                        volatile int16_t input,
+                                                        volatile int32_t *prev_input,
+                                                        volatile int32_t *prev_output
+                                                      );
+
+// Filtering
+static          int16_t   Apply8BitDithering          ( uint8_t sample8 );
+static inline   uint16_t  GetLpf8BitAlpha             ( LPF_Level lpf_level );
+static          int16_t   ApplyLowPassFilter16Bit     ( 
+                                                        int16_t input,
+                                                        volatile int32_t *x1,
+                                                        volatile int32_t *x2,
+                                                        volatile int32_t *y1,
+                                                        volatile int32_t *y2
+                                                      );
+static          int16_t   ApplyLowPassFilter8Bit      (
+                                                        int16_t sample,
+                                                        volatile int32_t *y1
+                                                      );
+static          int16_t   ApplyFilterChain16Bit       ( int16_t sample, uint8_t is_left_channel );
+static          int16_t   ApplyFilterChain8Bit        ( int16_t sample, uint8_t is_left_channel );
 
 /* External variables that need to be defined by the application */
 extern I2S_HandleTypeDef AUDIO_ENGINE_I2S_HANDLE;
@@ -707,7 +751,7 @@ uint32_t GetPlaybackSpeed( void )
   * @param: sample8 - Unsigned 8-bit audio sample
   * @retval: int16_t - Signed 16-bit dithered audio sample
   */
-int16_t Apply8BitDithering( uint8_t sample8 )
+static int16_t Apply8BitDithering( uint8_t sample8 )
 {
   // Convert unsigned 8-bit (0..255) to signed 16-bit
   int16_t sample16  = (int16_t)( sample8 - 128 ) << 8;
@@ -731,7 +775,7 @@ int16_t Apply8BitDithering( uint8_t sample8 )
   * @param: y2 - Pointer to previous output samples
   * @retval: int16_t - Filtered signed 16-bit audio sample
   */
-int16_t ApplyLowPassFilter8Bit( int16_t sample, volatile int32_t *y1 )
+static int16_t ApplyLowPassFilter8Bit( int16_t sample, volatile int32_t *y1 )
 {
   int32_t alpha = lpf_8bit_alpha;
   int32_t one_minus_alpha = 65536 - alpha;
@@ -751,7 +795,7 @@ int16_t ApplyLowPassFilter8Bit( int16_t sample, volatile int32_t *y1 )
   * @param: sample - Signed 16-bit audio sample
   * @retval: int16_t - Faded-in signed 16-bit audio sample
   */
-int16_t ApplyFadeIn( int16_t sample ) 
+static int16_t ApplyFadeIn( int16_t sample ) 
 {
   if( fadein_samples_remaining > 0 ) {
     int32_t progress    = fadein_samples - fadein_samples_remaining;
@@ -775,7 +819,7 @@ int16_t ApplyFadeIn( int16_t sample )
   * @param: sample - Signed 16-bit audio sample
   * @retval: int16_t - Faded-out signed 16-bit audio sample
   */
-int16_t ApplyFadeOut( int16_t sample )
+static int16_t ApplyFadeOut( int16_t sample )
 {
   if( fadeout_samples_remaining > 0 && fadeout_samples_remaining <= fadeout_samples ) {
 
@@ -798,7 +842,7 @@ int16_t ApplyFadeOut( int16_t sample )
   * @param: sample - Signed 16-bit audio sample
   * @retval: int16_t - Noise-gated signed 16-bit audio sample
   */
-int16_t ApplyNoiseGate( int16_t sample )
+static int16_t ApplyNoiseGate( int16_t sample )
 {
   int16_t abs_sample = ( sample < 0 ) ? -sample : sample;
   if( abs_sample < NOISE_GATE_THRESHOLD ) {
@@ -869,7 +913,7 @@ static inline int32_t ComputeSoftClipCurve( int32_t excess, int32_t range )
   * @param: sample - Signed 16-bit audio sample
   * @retval: int16_t - Soft-clipped signed 16-bit audio sample
   */
-int16_t ApplySoftClipping( int16_t sample )
+static int16_t ApplySoftClipping( int16_t sample )
 {
   const int32_t threshold = 28000;
   const int32_t max_val   = 32767;
@@ -903,7 +947,7 @@ int16_t ApplySoftClipping( int16_t sample )
   * @param: prev_output - Pointer to previous output sample
   * @retval: int16_t - DC-blocked signed 16-bit audio sample
   */
-int16_t ApplyDCBlockingFilter( volatile int16_t input, volatile int32_t *prev_input, volatile int32_t *prev_output )
+static int16_t ApplyDCBlockingFilter( volatile int16_t input, volatile int32_t *prev_input, volatile int32_t *prev_output )
 {
   int32_t output = input - *prev_input + 
                    ( ( *prev_output * DC_FILTER_ALPHA ) >> DC_FILTER_SHIFT );
@@ -925,7 +969,7 @@ int16_t ApplyDCBlockingFilter( volatile int16_t input, volatile int32_t *prev_in
   * @param: prev_output - Pointer to previous output sample
   * @retval: int16_t - Soft DC-filtered signed 16-bit audio sample
   */
-int16_t ApplySoftDCFilter16Bit( volatile int16_t input, volatile int32_t *prev_input, volatile int32_t *prev_output )
+static int16_t ApplySoftDCFilter16Bit( volatile int16_t input, volatile int32_t *prev_input, volatile int32_t *prev_output )
 {
   int32_t output = input - *prev_input + 
                    ( ( *prev_output * SOFT_DC_FILTER_ALPHA ) >> DC_FILTER_SHIFT );
@@ -947,8 +991,7 @@ int16_t ApplySoftDCFilter16Bit( volatile int16_t input, volatile int32_t *prev_i
   * @param: y1, y2 - Pointers to previous output samples
   * @retval: int16_t - Filtered signed 16-bit audio sample
   */
-int16_t ApplyLowPassFilter16Bit( int16_t input, volatile int32_t *x1, volatile int32_t *x2, 
-                                 volatile int32_t *y1, volatile int32_t *y2 )
+static int16_t ApplyLowPassFilter16Bit( int16_t input, volatile int32_t *x1, volatile int32_t *x2, volatile int32_t *y1, volatile int32_t *y2 )
 {
   uint32_t alpha = lpf_16bit_alpha;
   int32_t b0 = ((65536 - alpha) * (65536 - alpha)) >> 17;
@@ -983,7 +1026,7 @@ int16_t ApplyLowPassFilter16Bit( int16_t input, volatile int32_t *x1, volatile i
   * @param: y1 - Pointer to previous output sample
   * @retval: int16_t - Filtered signed 16-bit audio sample
   */
-int16_t ApplyAirEffect( int16_t input, volatile int32_t *x1, volatile int32_t *y1 )
+static int16_t ApplyAirEffect( int16_t input, volatile int32_t *x1, volatile int32_t *y1 )
 {
   // Air effect uses high-shelf filter to brighten treble
   int32_t alpha               = AIR_EFFECT_CUTOFF;              // ~0.75
@@ -1019,7 +1062,7 @@ int16_t ApplyAirEffect( int16_t input, volatile int32_t *x1, volatile int32_t *y
   * @param: is_left_channel - 1 if left channel, 0 if right channel
   * @retval: int16_t - Processed signed 16-bit audio sample
   */
-int16_t ApplyFilterChain16Bit( int16_t sample, uint8_t is_left_channel )
+static int16_t ApplyFilterChain16Bit( int16_t sample, uint8_t is_left_channel )
 {
   if( filter_cfg.enable_16bit_biquad_lpf ) {
     if( is_left_channel ) {
@@ -1074,7 +1117,7 @@ int16_t ApplyFilterChain16Bit( int16_t sample, uint8_t is_left_channel )
   * @param: is_left_channel - 1 if left channel, 0 if right channel
   * @retval: int16_t - Processed signed 16-bit audio sample
   */
-int16_t ApplyFilterChain8Bit( int16_t sample, uint8_t is_left_channel )
+static int16_t ApplyFilterChain8Bit( int16_t sample, uint8_t is_left_channel )
 {
   if( filter_cfg.enable_8bit_lpf ) {
     if( is_left_channel ) {
@@ -1319,7 +1362,6 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
     }
     else {
       leftsample = ApplyVolumeSetting( *input, vol_div );                     // Apply volume setting
-      //leftsample = ( (int16_t) (*input) / vol_div ) * VOL_MULT;             // Left channel
       leftsample = ApplyFilterChain16Bit( leftsample, 1 );                    // Apply complete filter chain
     }
     input++;
@@ -1386,7 +1428,6 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
       uint8_t sample8 = *input;
       leftsample = Apply8BitDithering( sample8 );                     /* Left channel with dithering */
       leftsample = ApplyVolumeSetting( leftsample, vol_div );
-      //leftsample = ( leftsample * VOL_MULT ) / vol_div;             /* Scale for volume (multiply before divide) */
       leftsample = ApplyFilterChain8Bit( leftsample, 1 );             /* Apply complete filter chain */
     }
     input++;
@@ -1401,7 +1442,6 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
         uint8_t sample8 = *input;
         rightsample = Apply8BitDithering( sample8 );                  /* Right channel with dithering */
         rightsample = ApplyVolumeSetting( rightsample, vol_div );
-        //rightsample = ( rightsample * VOL_MULT ) / vol_div;         /* Scale for volume (multiply before divide) */
         rightsample = ApplyFilterChain8Bit( rightsample, 0 );         /* Apply complete filter chain */
       }
       input++;

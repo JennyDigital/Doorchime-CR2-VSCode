@@ -61,8 +61,8 @@ extern "C" {
 #define FIRST                 0U
 #define SECOND                1U
 
-/* Volume configuration */
-#define VOL_MULT              12       // Volume multiplication factor for integer math. Maximum volume is approx 8.
+// Uncomment to use digital GPIOs for volume instead of ADC
+#define VOLUME_INPUT_DIGITAL
 
 /* Fade configuration */
 #define FADEOUT_SAMPLES       2048U    // About 100ms at 22kHz
@@ -223,33 +223,6 @@ PB_StatusTypeDef    ProcessNextWaveChunk        ( int16_t *chunk_p );
 PB_StatusTypeDef    ProcessNextWaveChunk_8_bit  ( uint8_t *chunk_p );
 void                AdvanceSamplePointer        ( void );
 
-/* DSP filter functions */
-int16_t             Apply8BitDithering          ( uint8_t sample8 );
-int16_t             ApplyLowPassFilter16Bit     ( int16_t input,
-                                                  volatile int32_t *x1,
-                                                  volatile int32_t *x2,
-                                                  volatile int32_t *y1,
-                                                  volatile int32_t *y2
-                                                );
-int16_t             ApplyLowPassFilter8Bit      (
-                                                  int16_t sample,
-                                                  volatile int32_t *y1
-                                                );
-int16_t             ApplyFadeIn                 ( int16_t sample );
-int16_t             ApplyFadeOut                ( int16_t sample );
-int16_t             ApplyNoiseGate              ( int16_t sample );
-int16_t             ApplySoftClipping           ( int16_t sample );
-int16_t             ApplyDCBlockingFilter       ( 
-                                                  volatile int16_t input,
-                                                  volatile int32_t *prev_input,
-                                                  volatile int32_t *prev_output
-                                                );
-int16_t             ApplyAirEffect              (
-                                                  int16_t input,
-                                                  volatile int32_t *x1,
-                                                  volatile int32_t *y1
-                                                );
-
 /* Air Effect runtime control */
 void                 SetAirEffectGainQ16        ( uint32_t gain_q16 );
 uint32_t             GetAirEffectGainQ16        ( void );
@@ -260,18 +233,7 @@ uint8_t              CycleAirEffectPresetDb     ( void );
 uint8_t              GetAirEffectPresetIndex    ( void );
 uint8_t              GetAirEffectPresetCount    ( void );
 float                GetAirEffectPresetDb       ( uint8_t preset_index );
-int16_t              ApplySoftDCFilter16Bit     (
-                                                  volatile int16_t input,
-                                                  volatile int32_t *prev_input,
-                                                  volatile int32_t *prev_output
-                                                );
-int16_t              ApplySoftDCFilter16Bit     (
-                                                  volatile int16_t input,
-                                                  volatile int32_t *prev_input,
-                                                  volatile int32_t *prev_output
-                                                );
-int16_t              ApplyFilterChain16Bit      ( int16_t sample, uint8_t is_left_channel );
-int16_t              ApplyFilterChain8Bit       ( int16_t sample, uint8_t is_left_channel );
+
 
 /* Hardware callbacks (to be called from I2S DMA callbacks) */
 void                 HAL_I2S_TxHalfCpltCallback ( I2S_HandleTypeDef *hi2s );
