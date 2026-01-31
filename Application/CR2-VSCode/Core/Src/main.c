@@ -211,6 +211,7 @@ int main(void)
 
   SetLpfMakeupGain8Bit( 1.1f );           // Slight attenuation to prevent clipping after LPF
   SetLpf16BitLevel(LPF_VerySoft);
+  SetSoftClipping( 1 );            // Enable soft clipping
   SetFilterConfig( &filter_cfg );
 
   // Set initial Air Effect boost in dB (runtime adjustable)
@@ -303,7 +304,7 @@ int main(void)
 
     ShutDownAudio();
 
-    // Handle ppermanent stop if auto-trigger is disabled
+    // Handle permanent stop if auto-trigger is disabled
     // Otherwise wait for trigger signal.
     // Wake from interrupt on TRIGGER pin.
     //

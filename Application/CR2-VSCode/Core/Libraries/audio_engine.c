@@ -282,6 +282,31 @@ void GetFilterConfig( FilterConfig_TypeDef *cfg )
   }
 }
 
+
+/** Set whether or not to use soft clipping
+  *
+  * @brief Enables or disables the soft clipping filter.
+  * @param: enabled - Non-zero to enable, zero to disable.
+  * @retval: none
+  */
+void SetSoftClipping( uint8_t enabled )
+{
+  filter_cfg.enable_soft_clipping = enabled ? 1 : 0;
+}
+
+
+/** Get whether or not soft clipping is enabled
+  *
+  * @brief Retrieves the current state of the soft clipping filter.
+  * @param: none
+  * @retval: non-zero if enabled, zero if disabled.
+  */
+uint8_t GetSoftClippingState( void )
+{
+  return filter_cfg.enable_soft_clipping;
+}
+
+
 /** Set the aggressiveness level for the 8-bit low-pass filter.
   * 
   * @brief Sets the filter level for the 8-bit biquad low-pass filter.
@@ -302,7 +327,6 @@ void SetLpf8BitLevel( LPF_Level level )
 }
 
 
-
 /* Get the 8-bit low-pass filter aggressiveness level 
  * @param: none
  * @retval: current filter level
@@ -315,6 +339,8 @@ LPF_Level GetLpf8BitLevel(void)
 
 /** Air Effect runtime control: set shelf boost gain (Q16)
   * Clamps to AIR_EFFECT_SHELF_GAIN_MAX to avoid extreme boosts.
+  * @param: gain_q16 - Desired shelf gain in Q16 format
+  * @retval: none
   */
 void SetAirEffectGainQ16( uint32_t gain_q16 )
 {
@@ -325,7 +351,9 @@ void SetAirEffectGainQ16( uint32_t gain_q16 )
 }
 
 
-/** Air Effect runtime control: get current shelf boost gain (Q16) */
+/** Air Effect runtime control: get current shelf boost gain (Q16)
+  * @retval: current shelf gain in Q16
+  */
 uint32_t GetAirEffectGainQ16( void )
 {
   return (uint32_t) air_effect_shelf_gain_q16;
@@ -335,6 +363,8 @@ uint32_t GetAirEffectGainQ16( void )
 /** Air Effect runtime control: set shelf boost using dB
   * Converts desired high-frequency boost (at ω=π) to internal G (Q16).
   * Formula: Hπ = 10^(db/20), G = (Hπ*(2-α) - α) / (2*(1-α))
+  * @param: db - Desired boost in dB
+  * @retval: none
   */
 void SetAirEffectGainDb( float db )
 {
@@ -351,7 +381,10 @@ void SetAirEffectGainDb( float db )
 }
 
 
-/** Air Effect runtime control: get current shelf boost in dB (at ω=π) */
+/** Air Effect runtime control: get current shelf boost in dB (at ω=π)
+  * Formula: Hπ = (α + 2(1-α)G) / (2-α), db = 20*log10(Hπ)
+  * @retval: current boost in dB
+  */
 float GetAirEffectGainDb( void )
 {
   const float alpha               = (float) AIR_EFFECT_CUTOFF / 65536.0f;
@@ -362,7 +395,10 @@ float GetAirEffectGainDb( void )
 }
 
 
-/** Air Effect preset selection by index */
+/** Air Effect preset selection by index
+  * @param: preset_index - Index of desired preset
+  * @retval: none
+  */
 void SetAirEffectPresetDb( uint8_t preset_index )
 {
   if( preset_index >= AIR_EFFECT_PRESET_COUNT ) {
@@ -373,7 +409,9 @@ void SetAirEffectPresetDb( uint8_t preset_index )
 }
 
 
-/** Cycle to the next Air Effect preset. Returns the new preset index. */
+/** Cycle to the next Air Effect preset. Returns the new preset index.
+  * @retval: new preset index
+  */
 uint8_t CycleAirEffectPresetDb( void )
 {
   uint8_t next = (uint8_t)( air_effect_preset_idx + 1 );
@@ -385,20 +423,27 @@ uint8_t CycleAirEffectPresetDb( void )
 }
 
 
-/** Get the current Air Effect preset index */
+/** Get the current Air Effect preset index
+  * @retval: current preset index
+  */
 uint8_t GetAirEffectPresetIndex( void )
 {
   return air_effect_preset_idx;
 }
 
 
-/** Get the number of available Air Effect presets */
+/** Get the number of available Air Effect presets
+ * @retval: preset count
+  */
 uint8_t GetAirEffectPresetCount( void )
 {
   return AIR_EFFECT_PRESET_COUNT;
 }
 
-/** Get the dB value of a preset (clamps to current if OOB) */
+/** Get the dB value of a preset (clamps to current if OOB)
+  * @param: preset_index - Index of desired preset
+  * @retval: dB value of the preset
+  */
 float GetAirEffectPresetDb( uint8_t preset_index )
 {
   if( preset_index  >=  AIR_EFFECT_PRESET_COUNT ) {
