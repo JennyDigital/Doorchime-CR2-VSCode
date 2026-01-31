@@ -45,6 +45,7 @@
 static inline void      UpdateFadeCounters  ( uint32_t samples_processed );
 static inline int32_t   ComputeSoftClipCurve( int32_t excess, int32_t range );
 static inline int16_t   ApplyVolumeSetting  ( int16_t sample, uint8_t volume_setting );
+static inline uint16_t  GetLpf8BitAlpha     ( LPF_Level lpf_level );
 
 /* External variables that need to be defined by the application */
 extern I2S_HandleTypeDef AUDIO_ENGINE_I2S_HANDLE;
@@ -246,8 +247,8 @@ PB_StatusTypeDef AudioEngine_Init( DAC_SwitchFunc dac_switch,
   return PB_Idle;  // Success - ready to play but not currently playing
 }
 
-/* ===== Filter Configuration Functions ===== */
 
+/* ===== Filter Configuration Functions ===== */
 
 /** Setup filter configuration 
   * 
@@ -280,6 +281,7 @@ void GetFilterConfig( FilterConfig_TypeDef *cfg )
   }
 }
 
+
 /** Air Effect runtime control: set shelf boost gain (Q16)
   * Clamps to AIR_EFFECT_SHELF_GAIN_MAX to avoid extreme boosts.
   */
@@ -291,11 +293,13 @@ void SetAirEffectGainQ16( uint32_t gain_q16 )
   air_effect_shelf_gain_q16 = (int32_t)gain_q16;
 }
 
+
 /** Air Effect runtime control: get current shelf boost gain (Q16) */
 uint32_t GetAirEffectGainQ16( void )
 {
   return (uint32_t) air_effect_shelf_gain_q16;
 }
+
 
 /** Air Effect runtime control: set shelf boost using dB
   * Converts desired high-frequency boost (at ω=π) to internal G (Q16).
@@ -315,6 +319,7 @@ void SetAirEffectGainDb( float db )
   SetAirEffectGainQ16( gain_q16 );
 }
 
+
 /** Air Effect runtime control: get current shelf boost in dB (at ω=π) */
 float GetAirEffectGainDb( void )
 {
@@ -325,6 +330,7 @@ float GetAirEffectGainDb( void )
   return 20.0f * log10f( Hpi );
 }
 
+
 /** Air Effect preset selection by index */
 void SetAirEffectPresetDb( uint8_t preset_index )
 {
@@ -334,6 +340,7 @@ void SetAirEffectPresetDb( uint8_t preset_index )
   air_effect_preset_idx = preset_index;
   SetAirEffectGainDb( air_effect_presets_db[preset_index] );
 }
+
 
 /** Cycle to the next Air Effect preset. Returns the new preset index. */
 uint8_t CycleAirEffectPresetDb( void )
@@ -346,11 +353,13 @@ uint8_t CycleAirEffectPresetDb( void )
   return air_effect_preset_idx;
 }
 
+
 /** Get the current Air Effect preset index */
 uint8_t GetAirEffectPresetIndex( void )
 {
   return air_effect_preset_idx;
 }
+
 
 /** Get the number of available Air Effect presets */
 uint8_t GetAirEffectPresetCount( void )
@@ -1065,6 +1074,7 @@ void SetPlaybackSpeed( uint32_t speed )
   I2S_PlaybackSpeed = speed;
 }
 
+
 /* ============================================================================
  * DMA Callbacks
  * ============================================================================
@@ -1162,6 +1172,7 @@ void AdvanceSamplePointer( void )
     }
   } 
 }
+
 
 /* ============================================================================
  * Chunk Processing
@@ -1302,6 +1313,7 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
   return PB_Playing;
 }
 
+
 /* ============================================================================
  * Playback Control Functions
  * ============================================================================
@@ -1336,29 +1348,8 @@ PB_StatusTypeDef PlaySample (
     ) { return PB_Error; }
 
   // Set low-pass filter alpha coefficient based on requested level
-  switch( lpf_level ) {
-    case LPF_VerySoft:
-      lpf_8bit_alpha = LPF_VERY_SOFT;
-      break;
-
-    case LPF_Soft:
-      lpf_8bit_alpha = LPF_SOFT;
-      break;
-
-    case LPF_Medium:
-    default:
-      lpf_8bit_alpha = LPF_MEDIUM;
-      break;
-
-      case LPF_Firm:
-      lpf_8bit_alpha = LPF_FIRM;
-      break;
-
-    case LPF_Aggressive:
-      lpf_8bit_alpha = LPF_AGGRESSIVE;
-      break;
-  }
-
+  lpf_8bit_alpha = GetLpf8BitAlpha( lpf_level );
+  
   if( mode == Mode_stereo ) {                             // Pointer advance amount for stereo/mono mode.
      p_advance = CHUNK_SZ;                                // Two channels worth of samples per chunk
      channels  = Mode_stereo;
@@ -1368,7 +1359,7 @@ PB_StatusTypeDef PlaySample (
     channels   = Mode_mono;     
   }
 
-  I2S_PlaybackSpeed = playback_speed;                     // Turn the DAC on in readyness and initialize I2S with the requested sample rate.
+  I2S_PlaybackSpeed = playback_speed;                     // Set our playback speed.
   
   // Recalculate fade sample counts based on new playback speed
   fadein_samples = (uint32_t)( fadein_time_seconds * (float)I2S_PlaybackSpeed + 0.5f);
@@ -1380,13 +1371,13 @@ PB_StatusTypeDef PlaySample (
   pause_fadein_samples = (uint32_t)(pause_fadein_time_seconds * (float)I2S_PlaybackSpeed + 0.5f);
   if( pause_fadein_samples == 0 ) pause_fadein_samples = 1;
   
-  if( AudioEngine_I2SInit ) {
+  if( AudioEngine_I2SInit ) {                           // Initialize I2S peripheral with our chosen sample rate.
     AudioEngine_I2SInit();
   }
 
-  HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );       // Ensure there is no currently playing sound before starting the current one and turn on the DAC  
-  if( AudioEngine_DACSwitch ) {
-    AudioEngine_DACSwitch( DAC_ON );              // starting the current one and turn on the DAC
+  HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );          // Ensure there is no currently playing sound before starting a new one.
+  if( AudioEngine_DACSwitch ) {                         // starting a new one.
+    AudioEngine_DACSwitch( DAC_ON );                    // Turn on the DAC in readiness.
   }
   
   // Reset all filter state for new sample
@@ -1398,12 +1389,12 @@ PB_StatusTypeDef PlaySample (
     WarmupBiquadFilter16Bit( first_sample );
   }
   
-  if( sample_depth == 16 ) {            // Initialize 16-bit sample playback pointers
+  if( sample_depth == 16 ) {            // For 16-bit, initialize 16-bit sample playback pointers
     pb_p16    = (uint16_t *) sample_to_play;
     pb_end16  = pb_p16 + sample_set_sz;
     pb_mode   = 16;
   }
-  else if( sample_depth == 8 ) {        // Initialize 8-bit sample playback pointers
+  else if( sample_depth == 8 ) {        // For 8-bit, initialize 8-bit sample playback pointers
     pb_p8     = (uint8_t *) sample_to_play;
     pb_end8   = pb_p8 + sample_set_sz;
     pb_mode   = 8;
@@ -1525,6 +1516,7 @@ PB_StatusTypeDef ResumePlayback( void )
     AudioEngine_DACSwitch( DAC_ON );
   }
   
+
   /* Clear buffer to prevent full-volume glitch at resume */
   memset( pb_buffer, MIDPOINT_S16, sizeof( pb_buffer ) );
   
@@ -1537,6 +1529,7 @@ PB_StatusTypeDef ResumePlayback( void )
     }
   }
   
+
   /* Resume playback from where it was paused */
   pb_state = PB_Playing;
   
@@ -1546,6 +1539,7 @@ PB_StatusTypeDef ResumePlayback( void )
   
   return PB_Playing;
 }
+
 
 /** Apply volume setting to sample
   * 
@@ -1560,6 +1554,7 @@ static inline int16_t ApplyVolumeSetting( int16_t sample, uint8_t volume_setting
   return  (int16_t)( sample32 ) * volume_setting / 255;
 }
 
+
 void ShutDownAudio( void )
 {
     // Calculate delay needed to drain the DMA buffer based on playback speed
@@ -1573,5 +1568,32 @@ void ShutDownAudio( void )
     // Shutdown the DAC (if function pointer is set)
     if ( AudioEngine_DACSwitch ) {
         AudioEngine_DACSwitch( DAC_OFF );
+    }
+}
+
+
+/* Return the selected alpha value
+*
+* @param: LPF_Level lpf_level - Desired low-pass filter level
+* @retval: uint16_t - Corresponding alpha coefficient for 8-bit LPF
+*/
+static inline uint16_t GetLpf8BitAlpha( LPF_Level lpf_level )
+{
+    switch (lpf_level) {
+        case LPF_VerySoft:
+            return LPF_VERY_SOFT;
+
+        case LPF_Soft:
+            return LPF_SOFT;
+
+        case LPF_Firm:
+            return LPF_FIRM;
+            
+        case LPF_Aggressive:
+            return LPF_AGGRESSIVE;
+
+        case LPF_Medium:
+        default:
+            return LPF_MEDIUM;
     }
 }
