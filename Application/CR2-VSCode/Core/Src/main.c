@@ -391,7 +391,7 @@ void LPSystemClock_Config( void )
   {
     Error_Handler();
   }
-  HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE2);
+  HAL_PWREx_ControlVoltageScaling( PWR_REGULATOR_VOLTAGE_SCALE2 );
   HAL_PWREx_EnableLowPowerRunMode();
 }
 
@@ -513,18 +513,18 @@ static void MX_TIM7_Init(void)
   /* USER CODE BEGIN TIM7_Init 1 */
 
   /* USER CODE END TIM7_Init 1 */
-  htim7.Instance = TIM7;
-  htim7.Init.Prescaler = 150-1;
-  htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim7.Init.Period = 39999;
-  htim7.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_Base_Init(&htim7) != HAL_OK)
+  htim7.Instance                  = TIM7;
+  htim7.Init.Prescaler            = 150-1;
+  htim7.Init.CounterMode          = TIM_COUNTERMODE_UP;
+  htim7.Init.Period               = 39999;
+  htim7.Init.AutoReloadPreload    = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim7)   != HAL_OK)
   {
     Error_Handler();
   }
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim7, &sMasterConfig) != HAL_OK)
+  sMasterConfig.MasterSlaveMode     = TIM_MASTERSLAVEMODE_DISABLE;
+  if( HAL_TIMEx_MasterConfigSynchronization( &htim7, &sMasterConfig ) != HAL_OK )
   {
     Error_Handler();
   }
@@ -540,7 +540,7 @@ static void MX_TIM7_Init(void)
   * @param None
   * @retval None
   */
-static void MX_ADC1_Init(void)
+static void MX_ADC1_Init( void )
 {
 
   /* USER CODE BEGIN ADC1_Init 0 */
@@ -556,23 +556,23 @@ static void MX_ADC1_Init(void)
 
   /** Common config
   */
-  hadc1.Instance = ADC1;
-  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
-  hadc1.Init.Resolution = ADC_RESOLUTION_12B;
-  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc1.Init.GainCompensation = 0;
-  hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
-  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
-  hadc1.Init.LowPowerAutoWait = DISABLE;
-  hadc1.Init.ContinuousConvMode = DISABLE;
-  hadc1.Init.NbrOfConversion = 1;
-  hadc1.Init.DiscontinuousConvMode = DISABLE;
-  hadc1.Init.ExternalTrigConv = ADC_EXTERNALTRIG_T7_TRGO;
-  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_RISING;
-  hadc1.Init.DMAContinuousRequests = DISABLE;
-  hadc1.Init.Overrun = ADC_OVR_DATA_PRESERVED;
-  hadc1.Init.OversamplingMode = DISABLE;
-  if (HAL_ADC_Init(&hadc1) != HAL_OK)
+  hadc1.Instance                      = ADC1;
+  hadc1.Init.ClockPrescaler           = ADC_CLOCK_SYNC_PCLK_DIV4;
+  hadc1.Init.Resolution               = ADC_RESOLUTION_12B;
+  hadc1.Init.DataAlign                = ADC_DATAALIGN_RIGHT;
+  hadc1.Init.GainCompensation         = 0;
+  hadc1.Init.ScanConvMode             = ADC_SCAN_DISABLE;
+  hadc1.Init.EOCSelection             = ADC_EOC_SINGLE_CONV;
+  hadc1.Init.LowPowerAutoWait         = DISABLE;
+  hadc1.Init.ContinuousConvMode       = DISABLE;
+  hadc1.Init.NbrOfConversion          = 1;
+  hadc1.Init.DiscontinuousConvMode    = DISABLE;
+  hadc1.Init.ExternalTrigConv         = ADC_EXTERNALTRIG_T7_TRGO;
+  hadc1.Init.ExternalTrigConvEdge     = ADC_EXTERNALTRIGCONVEDGE_RISING;
+  hadc1.Init.DMAContinuousRequests    = DISABLE;
+  hadc1.Init.Overrun                  = ADC_OVR_DATA_PRESERVED;
+  hadc1.Init.OversamplingMode         = DISABLE;
+  if( HAL_ADC_Init( &hadc1 ) != HAL_OK )
   {
     Error_Handler();
   }
@@ -580,7 +580,7 @@ static void MX_ADC1_Init(void)
   /** Configure the ADC multi-mode
   */
   multimode.Mode = ADC_MODE_INDEPENDENT;
-  if (HAL_ADCEx_MultiModeConfigChannel(&hadc1, &multimode) != HAL_OK)
+  if( HAL_ADCEx_MultiModeConfigChannel( &hadc1, &multimode ) != HAL_OK )
   {
     Error_Handler();
   }
@@ -588,13 +588,13 @@ static void MX_ADC1_Init(void)
 
   /** Configure Regular Channel
   */
-  sConfig.Channel = ADC_CHANNEL_10;
-  sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_2CYCLES_5;
-  sConfig.SingleDiff = ADC_SINGLE_ENDED;
-  sConfig.OffsetNumber = ADC_OFFSET_NONE;
-  sConfig.Offset = 0;
-  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  sConfig.Channel       = ADC_CHANNEL_10;
+  sConfig.Rank          = ADC_REGULAR_RANK_1;
+  sConfig.SamplingTime  = ADC_SAMPLETIME_2CYCLES_5;
+  sConfig.SingleDiff    = ADC_SINGLE_ENDED;
+  sConfig.OffsetNumber  = ADC_OFFSET_NONE;
+  sConfig.Offset        = 0;
+  if( HAL_ADC_ConfigChannel( &hadc1, &sConfig ) != HAL_OK )
   {
     Error_Handler();
   }
@@ -615,7 +615,7 @@ static void MX_ADC1_Init(void)
 void DAC_MasterSwitch( GPIO_PinState setting )
 {
   /* Change the setting */
-  HAL_GPIO_WritePin(NSD_MODE_GPIO_Port, NSD_MODE_Pin, setting );
+  HAL_GPIO_WritePin( NSD_MODE_GPIO_Port, NSD_MODE_Pin, setting );
   
   /* Wait 10mS no allow the MAX98357A to settle */
   HAL_Delay( 10 );
@@ -632,7 +632,7 @@ void DAC_MasterSwitch( GPIO_PinState setting )
   * retval: none
   *
   */
-void SetVolScaling(uint8_t scaling)
+void SetVolScaling( uint8_t scaling )
 {
     /* Safety: ensure scaling is never 0 */
     vol_scaling = scaling ? scaling : 16;
@@ -644,7 +644,7 @@ void SetVolScaling(uint8_t scaling)
   * retval: uint8_t - Current scaling factor
   *
   */
-uint8_t GetVolScaling(void)
+uint8_t GetVolScaling( void )
 {
     return vol_scaling;
 }
@@ -677,7 +677,7 @@ uint8_t ReadVolume( void )
   #endif
 } 
 
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
+void HAL_ADC_ConvCpltCallback( ADC_HandleTypeDef *hadc )
 {
   /* Prevent unused argument(s) compilation warning */
   UNUSED(hadc);
@@ -768,13 +768,14 @@ void HAL_IncTick( void )
 {
   uwTick += uwTickFreq;
 
-  if( ( TRIGGER_GPIO_Port->IDR & TRIGGER_Pin ) != 0 ) {
+  if( TRIGGER_GPIO_Port->IDR & TRIGGER_Pin ) {    // Trigger is high, so increase counter.
     if( trig_counter < TC_MAX ) trig_counter++;
   }
-  else {
+  else {                                          // Trigger is low, so decrease counter.
     if ( trig_counter > 0 ) trig_counter--;
   }
 
+  /* Handle trigger status with hysteresis */
   if( trig_counter < TC_LOW_THRESHOLD )   trig_status = TRIGGER_CLR;
   if( trig_counter > TC_HIGH_THRESHOLD )  trig_status = TRIGGER_SET;
 }

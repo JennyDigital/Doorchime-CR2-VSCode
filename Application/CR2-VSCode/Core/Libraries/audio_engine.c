@@ -144,9 +144,9 @@ volatile  int32_t         air_effect_y1_right         = 0;
 volatile  int32_t         air_effect_shelf_gain_q16   = AIR_EFFECT_SHELF_GAIN;
 
 /* Air Effect preset table (dB) */
-static const float        air_effect_presets_db[]      = { 1.0f, 2.0f, 3.0f };
+static const float        air_effect_presets_db[]     = { 1.0f, 2.0f, 3.0f };
 #define AIR_EFFECT_PRESET_COUNT ( (uint8_t)( sizeof(air_effect_presets_db) / sizeof(air_effect_presets_db[0]) ) )
-static volatile uint8_t   air_effect_preset_idx        = 1; // default +2 dB
+static volatile uint8_t   air_effect_preset_idx       = 1; // default +2 dB
 
 /* Pause/resume state tracking */
 volatile  PB_StatusTypeDef pb_paused_state            = PB_Idle;
@@ -234,14 +234,14 @@ PB_StatusTypeDef AudioEngine_Init( DAC_SwitchFunc dac_switch,
   dither_state = 12345;
   
   /* Initialize default filter configuration */
-  filter_cfg.enable_16bit_biquad_lpf = 1;
-  filter_cfg.enable_soft_dc_filter_16bit = 1;
-  filter_cfg.enable_8bit_lpf = 1;
-  filter_cfg.enable_noise_gate = 0;
-  filter_cfg.enable_soft_clipping = 1;
-  filter_cfg.enable_air_effect = 0;
-  filter_cfg.lpf_makeup_gain_q16 = LPF_MAKEUP_GAIN_Q16;
-  filter_cfg.lpf_16bit_level = LPF_Soft;
+  filter_cfg.enable_16bit_biquad_lpf        = 1;
+  filter_cfg.enable_soft_dc_filter_16bit    = 1;
+  filter_cfg.enable_8bit_lpf                = 1;
+  filter_cfg.enable_noise_gate              = 0;
+  filter_cfg.enable_soft_clipping           = 1;
+  filter_cfg.enable_air_effect              = 0;
+  filter_cfg.lpf_makeup_gain_q16            = LPF_MAKEUP_GAIN_Q16;
+  filter_cfg.lpf_16bit_level                = LPF_Soft;
   
   return PB_Idle;  // Success - ready to play but not currently playing
 }
@@ -303,23 +303,25 @@ uint32_t GetAirEffectGainQ16( void )
   */
 void SetAirEffectGainDb( float db )
 {
-  const float alpha = (float)AIR_EFFECT_CUTOFF / 65536.0f;
-  const float one_minus_alpha = 1.0f - alpha;
-  const float Hpi = powf(10.0f, db / 20.0f);
-  float G = (Hpi * (2.0f - alpha) - alpha) / (2.0f * one_minus_alpha);
+  const float alpha               = (float)AIR_EFFECT_CUTOFF / 65536.0f;
+  const float one_minus_alpha     = 1.0f - alpha;
+  const float Hpi                 = powf( 10.0f, db / 20.0f );
+  float G                         = (Hpi * ( 2.0f - alpha ) - alpha ) / ( 2.0f * one_minus_alpha );
   if( G < 0.0f ) G = 0.0f;
-  uint32_t gain_q16 = (uint32_t)(G * 65536.0f + 0.5f);
-  if( gain_q16 > AIR_EFFECT_SHELF_GAIN_MAX ) gain_q16 = AIR_EFFECT_SHELF_GAIN_MAX;
+  uint32_t gain_q16               = (uint32_t)(G * 65536.0f + 0.5f);
+  if( gain_q16 > AIR_EFFECT_SHELF_GAIN_MAX ) {
+    gain_q16                      = AIR_EFFECT_SHELF_GAIN_MAX;
+  }
   SetAirEffectGainQ16( gain_q16 );
 }
 
 /** Air Effect runtime control: get current shelf boost in dB (at ω=π) */
 float GetAirEffectGainDb( void )
 {
-  const float alpha = (float)AIR_EFFECT_CUTOFF / 65536.0f;
-  const float one_minus_alpha = 1.0f - alpha;
-  const float G = (float)air_effect_shelf_gain_q16 / 65536.0f;
-  const float Hpi = (alpha + 2.0f * one_minus_alpha * G) / (2.0f - alpha);
+  const float alpha               = (float) AIR_EFFECT_CUTOFF / 65536.0f;
+  const float one_minus_alpha     = 1.0f - alpha;
+  const float G                   = (float) air_effect_shelf_gain_q16 / 65536.0f;
+  const float Hpi                 = ( alpha + 2.0f * one_minus_alpha * G ) / ( 2.0f - alpha );
   return 20.0f * log10f( Hpi );
 }
 
@@ -359,8 +361,8 @@ uint8_t GetAirEffectPresetCount( void )
 /** Get the dB value of a preset (clamps to current if OOB) */
 float GetAirEffectPresetDb( uint8_t preset_index )
 {
-  if( preset_index >= AIR_EFFECT_PRESET_COUNT ) {
-    preset_index = air_effect_preset_idx;
+  if( preset_index  >=  AIR_EFFECT_PRESET_COUNT ) {
+    preset_index    =   air_effect_preset_idx;
   }
   return air_effect_presets_db[preset_index];
 }
@@ -398,18 +400,23 @@ void SetLpf16BitLevel( LPF_Level level )
     case LPF_VerySoft:
       lpf_16bit_alpha = LPF_16BIT_VERY_SOFT;
       break;
+
     case LPF_Soft:
       lpf_16bit_alpha = LPF_16BIT_SOFT;
       break;
+
     case LPF_Medium:
       lpf_16bit_alpha = LPF_16BIT_MEDIUM;
       break;
+
     case LPF_Firm:
       lpf_16bit_alpha = LPF_16BIT_FIRM;
       break;
+
     case LPF_Aggressive:
       lpf_16bit_alpha = LPF_16BIT_AGGRESSIVE;
       break;
+
     default:
       lpf_16bit_alpha = LPF_16BIT_SOFT;
       break;
@@ -427,8 +434,8 @@ static uint32_t FadeTimeToSamples( float seconds )
 {
   if( seconds < 0.001f ) seconds = 0.001f;
   if( seconds > 5.0f ) seconds = 5.0f;
-  uint32_t samples = (uint32_t)(seconds * (float)I2S_PlaybackSpeed + 0.5f);
-  return (samples == 0) ? 1 : samples;
+  uint32_t samples = (uint32_t) ( seconds * (float) I2S_PlaybackSpeed + 0.5f );
+  return ( samples == 0 ) ? 1 : samples;
 }
 
 
@@ -441,7 +448,7 @@ static uint32_t FadeTimeToSamples( float seconds )
 void SetFadeInTime( float seconds )
 {
   fadein_time_seconds = seconds;
-  fadein_samples = FadeTimeToSamples( seconds );
+  fadein_samples      = FadeTimeToSamples( seconds );
 }
 
 
@@ -465,7 +472,7 @@ float GetFadeInTime( void )
 void SetFadeOutTime( float seconds )
 {
   fadeout_time_seconds = seconds;
-  fadeout_samples = FadeTimeToSamples( seconds );
+  fadeout_samples      = FadeTimeToSamples( seconds );
 }
 
 
@@ -489,7 +496,7 @@ float GetFadeOutTime( void )
 void SetPauseFadeTime( float seconds )
 {
   pause_fadeout_time_seconds = seconds;
-  pause_fadeout_samples = FadeTimeToSamples( seconds );
+  pause_fadeout_samples      = FadeTimeToSamples( seconds );
 }
 
 
@@ -513,7 +520,7 @@ float GetPauseFadeTime( void )
 void SetResumeFadeTime( float seconds )
 {
   pause_fadein_time_seconds = seconds;
-  pause_fadein_samples = FadeTimeToSamples( seconds );
+  pause_fadein_samples      = FadeTimeToSamples( seconds );
 }
 
 
@@ -541,16 +548,16 @@ float GetResumeFadeTime( void )
 int16_t Apply8BitDithering( uint8_t sample8 )
 {
   // Convert unsigned 8-bit (0..255) to signed 16-bit
-  int16_t sample16 = (int16_t)( sample8 - 128 ) << 8;
+  int16_t sample16  = (int16_t)( sample8 - 128 ) << 8;
   
   // Generate TPDF (Triangular Probability Density Function) dither
-  dither_state = dither_state * 1103515245U + 12345U;
-  int32_t rand1 = (dither_state >> 16) & 0xFF;
+  dither_state      = dither_state * 1103515245U + 12345U;
+  int32_t rand1     = ( dither_state >> 16 ) & 0xFF;
   
-  dither_state = dither_state * 1103515245U + 12345U;
-  int32_t rand2 = (dither_state >> 16) & 0xFF;
+  dither_state      = dither_state * 1103515245U + 12345U;
+  int32_t rand2     = ( dither_state >> 16 ) & 0xFF;
   
-  int16_t dither = (int16_t)((rand1 - rand2) >> 6);
+  int16_t dither    = (int16_t)( ( rand1 - rand2 ) >> 6 );
   
   return sample16 + dither;
 }
@@ -570,11 +577,11 @@ int16_t ApplyLowPassFilter8Bit( int16_t sample,
   int32_t alpha = lpf_8bit_alpha;
   int32_t one_minus_alpha = 65536 - alpha;
   
-  int32_t output = ((alpha * sample) >> 16) + 
-                   ((one_minus_alpha * (*y1)) >> 16);
+  int32_t output = ( ( alpha * sample) >> 16 ) + 
+                   ( ( one_minus_alpha * ( *y1 ) ) >> 16 );
 
   // Apply makeup gain
-  output = (output * (int32_t)filter_cfg.lpf_makeup_gain_q16) >> 16;
+  output = ( output * (int32_t)filter_cfg.lpf_makeup_gain_q16 ) >> 16;
   
   *y1 = output;
   
@@ -593,13 +600,16 @@ int16_t ApplyLowPassFilter8Bit( int16_t sample,
 int16_t ApplyFadeIn( int16_t sample ) 
 {
   if( fadein_samples_remaining > 0 ) {
-    int32_t progress = fadein_samples - fadein_samples_remaining;
+    int32_t progress    = fadein_samples - fadein_samples_remaining;
+
     // Use 64-bit intermediate to prevent overflow when squaring progress
-    int64_t fade_mult = ((int64_t)progress * (int64_t)progress) / fadein_samples;
-    int64_t result = ((int64_t)sample * fade_mult) / fadein_samples;
+    int64_t fade_mult   = ( (int64_t)progress * (int64_t)progress ) / fadein_samples;
+    int64_t result      = ( (int64_t)sample * fade_mult ) / fadein_samples;
+
     // Clamp to valid 16-bit range
-    if( result > 32767 ) result = 32767;
+    if( result > 32767 )  result = 32767;
     if( result < -32768 ) result = -32768;
+
     return (int16_t)result;
   }
   return sample;
@@ -614,12 +624,15 @@ int16_t ApplyFadeIn( int16_t sample )
 int16_t ApplyFadeOut( int16_t sample )
 {
   if( fadeout_samples_remaining > 0 && fadeout_samples_remaining <= fadeout_samples ) {
+
     // Use 64-bit intermediate to prevent overflow when squaring fadeout_samples_remaining
-    int64_t fade_mult = ((int64_t)fadeout_samples_remaining * (int64_t)fadeout_samples_remaining) / fadeout_samples;
-    int64_t result = ((int64_t)sample * fade_mult) / fadeout_samples;
+    int64_t fade_mult   = ( (int64_t)fadeout_samples_remaining * (int64_t)fadeout_samples_remaining ) / fadeout_samples;
+    int64_t result      = ( (int64_t)sample * fade_mult ) / fadeout_samples;
+
     // Clamp to valid 16-bit range
-    if( result > 32767 ) result = 32767;
+    if( result > 32767 )  result = 32767;
     if( result < -32768 ) result = -32768;
+
     return (int16_t)result;
   }
   return sample;
@@ -633,7 +646,7 @@ int16_t ApplyFadeOut( int16_t sample )
   */
 int16_t ApplyNoiseGate( int16_t sample )
 {
-  int16_t abs_sample = (sample < 0) ? -sample : sample;
+  int16_t abs_sample = ( sample < 0 ) ? -sample : sample;
   if( abs_sample < NOISE_GATE_THRESHOLD ) {
     return 0;
   }
@@ -652,7 +665,8 @@ static inline void UpdateFadeCounters( uint32_t samples_processed )
                                fadein_samples_remaining - samples_processed : 0;
   }
   if( fadeout_samples_remaining > 0 ) {
-    fadeout_samples_remaining--;
+    fadeout_samples_remaining = ( fadeout_samples_remaining > samples_processed ) ? 
+                                fadeout_samples_remaining - samples_processed : 0;
   }
 }
 
@@ -686,9 +700,10 @@ static inline int32_t ComputeSoftClipCurve( int32_t excess, int32_t range )
 {
   int32_t x = excess * 65536 / range;
   if( x > 65536 ) x = 65536;
-  int32_t x2 = (x * x) >> 16;
-  int32_t x3 = (x2 * x) >> 16;
-  return ((3 * x2) >> 1) - ((2 * x3) >> 1);
+  int32_t x2 = ( x * x ) >> 16;
+  int32_t x3 = ( x2 * x ) >> 16;
+
+  return ( ( 3 * x2 ) >> 1 ) - ( ( 2 * x3 ) >> 1 );
 }
 
 
@@ -700,25 +715,25 @@ static inline int32_t ComputeSoftClipCurve( int32_t excess, int32_t range )
 int16_t ApplySoftClipping( int16_t sample )
 {
   const int32_t threshold = 28000;
-  const int32_t max_val = 32767;
+  const int32_t max_val   = 32767;
   
   int32_t s = sample;
   
   if( s > threshold ) {
-    int32_t excess = s - threshold;
-    int32_t range = max_val - threshold;
-    int32_t curve = ComputeSoftClipCurve( excess, range );
-    s = threshold + ((range * curve) >> 16);
+    int32_t excess   = s - threshold;
+    int32_t range    = max_val - threshold;
+    int32_t curve    = ComputeSoftClipCurve( excess, range );
+    s                = threshold + ( ( range * curve ) >> 16 );
   }
   else if( s < -threshold ) {
-    int32_t excess = -threshold - s;
-    int32_t range = max_val - threshold;
-    int32_t curve = ComputeSoftClipCurve( excess, range );
-    s = -threshold - ((range * curve) >> 16);
+    int32_t excess   = -threshold - s;
+    int32_t range    = max_val - threshold;
+    int32_t curve    = ComputeSoftClipCurve( excess, range );
+    s                = -threshold - ( ( range * curve ) >> 16 );
   }
   
-  if( s > max_val ) s = max_val;
-  if( s < -max_val ) s = -max_val;
+  if( s > max_val )   s = max_val;
+  if( s < -max_val )  s = -max_val;
   
   return (int16_t) s;
 }
@@ -783,18 +798,23 @@ int16_t ApplyLowPassFilter16Bit( int16_t input, volatile int32_t *x1, volatile i
     case LPF_VerySoft:
       alpha = LPF_16BIT_VERY_SOFT;
       break;
+
     case LPF_Soft:
       alpha = LPF_16BIT_SOFT;
       break;
+
     case LPF_Medium:
       alpha = LPF_16BIT_MEDIUM;
       break;
+
     case LPF_Firm:
       alpha = LPF_16BIT_FIRM;
       break;
+
     case LPF_Aggressive:
       alpha = LPF_16BIT_AGGRESSIVE;
       break;
+      
     default:
       alpha = LPF_16BIT_SOFT;
       break;
@@ -839,22 +859,22 @@ int16_t ApplyLowPassFilter16Bit( int16_t input, volatile int32_t *x1, volatile i
 int16_t ApplyAirEffect( int16_t input, volatile int32_t *x1, volatile int32_t *y1 )
 {
   // Air effect uses high-shelf filter to brighten treble
-  int32_t alpha = AIR_EFFECT_CUTOFF;       // ~0.75
-  int32_t one_minus_alpha = 65536 - alpha; // ~0.25
-  int32_t shelf_gain = air_effect_shelf_gain_q16; // runtime-adjustable boost
+  int32_t alpha               = AIR_EFFECT_CUTOFF;              // ~0.75
+  int32_t one_minus_alpha     = 65536 - alpha;                  // ~0.25
+  int32_t shelf_gain          = air_effect_shelf_gain_q16;      // runtime-adjustable boost
   
   // High-pass portion: amplify high frequencies
   // Use 64-bit intermediates to prevent overflow when multiplying Q16 terms
-  int32_t high_freq = (int32_t)input - *x1;
-  int64_t air_boost64 = (((int64_t)high_freq * (int64_t)one_minus_alpha) >> 16);
-  air_boost64 = ((air_boost64 * (int64_t)shelf_gain) >> 16);
-  int32_t air_boost = (int32_t)air_boost64;
+  int32_t high_freq           = (int32_t)input - *x1;
+  int64_t air_boost64         = ( ( (int64_t)high_freq * (int64_t)one_minus_alpha ) >> 16 );
+  air_boost64                 = ( ( air_boost64 * (int64_t)shelf_gain ) >> 16 );
+  int32_t air_boost           = (int32_t)air_boost64;
   
   // Output = low-pass + high-pass boost
-  int64_t out64 = (((int64_t)alpha * (int64_t)input) >> 16) +
-                  ((((int64_t)(65536 - alpha) * (int64_t)(*y1)) >> 16)) +
+  int64_t out64   = ( ( (int64_t)alpha * (int64_t)input ) >> 16 ) +
+                  ( ( ( (int64_t)(65536 - alpha) * (int64_t)(*y1) ) >> 16 ) ) +
                   (int64_t)air_boost;
-  int32_t output = (int32_t)out64;
+  int32_t output  = (int32_t)out64;
   
   *x1 = input;
   *y1 = output;
@@ -1167,8 +1187,8 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
 
   vol_div = AudioEngine_ReadVolume();
   vol_div = vol_div ? vol_div : 1;
-  input = chunk_p;      // Source sample pointer
-  output = ( half_to_fill == SECOND ) ? (pb_buffer + CHUNK_SZ ) : pb_buffer;
+  input   = chunk_p;      // Source sample pointer
+  output  = ( half_to_fill == SECOND ) ? (pb_buffer + CHUNK_SZ ) : pb_buffer;
 
   // Transfer mono audio (scaled for volume) into the stereo buffer.
   // This is done both to eliminate the need for a second resistor
@@ -1180,28 +1200,28 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
   //
   for( uint16_t i = 0; i < HALFCHUNK_SZ; i++ )
   {
-    if( (uint16_t *) input >=  pb_end16 ) {                                                // Check for end of sample data
-      leftsample = MIDPOINT_S16;                                                           // Pad with silence if at end 
+    if( (uint16_t *) input >=  pb_end16 ) {                                   // Check for end of sample data
+      leftsample = MIDPOINT_S16;                                              // Pad with silence if at end 
     }
     else {
-      leftsample = ApplyVolumeSetting( *input, vol_div );                                              // Apply volume setting
-      //leftsample = ( (int16_t) (*input) / vol_div ) * VOL_MULT;                            // Left channel
-      leftsample = ApplyFilterChain16Bit( leftsample, 1 );         // Apply complete filter chain
+      leftsample = ApplyVolumeSetting( *input, vol_div );                     // Apply volume setting
+      //leftsample = ( (int16_t) (*input) / vol_div ) * VOL_MULT;             // Left channel
+      leftsample = ApplyFilterChain16Bit( leftsample, 1 );                    // Apply complete filter chain
     }
     input++;
 
-    if( channels == Mode_mono ) { rightsample = leftsample; }                              // Right channel is the same as left.
+    if( channels == Mode_mono ) { rightsample = leftsample; }                 // Right channel is the same as left.
     else {
-      if( (uint16_t *) input >=  pb_end16 ) {                                              // Check for end of sample data
-        rightsample = MIDPOINT_S16;                                                        // Pad with silence if at end
+      if( (uint16_t *) input >=  pb_end16 ) {                                 // Check for end of sample data
+        rightsample = MIDPOINT_S16;                                           // Pad with silence if at end
       }
       else { 
-        rightsample = ApplyVolumeSetting( *input, vol_div );                         // Right channel
-        rightsample = ApplyFilterChain16Bit( rightsample, 0 );     // Apply complete filter chain
+        rightsample = ApplyVolumeSetting( *input, vol_div );                  // Right channel
+        rightsample = ApplyFilterChain16Bit( rightsample, 0 );                // Apply complete filter chain
       }   // End of right channel processing
       input++;
     }
-    *output = leftsample;  output++;                                                       // Write samples to output buffer
+    *output = leftsample;  output++;                                          // Write samples to output buffer
     *output = rightsample; output++;
     
     // Update fade counters based on samples processed
@@ -1244,35 +1264,35 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
   //
   for( uint16_t i = 0; i < HALFCHUNK_SZ; i++ )
   {
-    if( (uint8_t *) input >=  pb_end8 ) {                        /* Check for end of sample data */
-      leftsample = MIDPOINT_S16;                                 /* Pad with silence if at end */
+    if( (uint8_t *) input >=  pb_end8 ) {                             /* Check for end of sample data */
+      leftsample = MIDPOINT_S16;                                      /* Pad with silence if at end */
     }
     else {
       /* Convert unsigned 8-bit (0..255) -> signed 16-bit with dithering */
       uint8_t sample8 = *input;
-      leftsample = Apply8BitDithering( sample8 );                    /* Left channel with dithering */
+      leftsample = Apply8BitDithering( sample8 );                     /* Left channel with dithering */
       leftsample = ApplyVolumeSetting( leftsample, vol_div );
-      //leftsample = ( leftsample * VOL_MULT ) / vol_div;              /* Scale for volume (multiply before divide) */
-      leftsample = ApplyFilterChain8Bit( leftsample, 1 );            /* Apply complete filter chain */
+      //leftsample = ( leftsample * VOL_MULT ) / vol_div;             /* Scale for volume (multiply before divide) */
+      leftsample = ApplyFilterChain8Bit( leftsample, 1 );             /* Apply complete filter chain */
     }
     input++;
 
-    if( channels == Mode_mono ) { rightsample = leftsample; }   // Right channel is the same as left.
+    if( channels == Mode_mono ) { rightsample = leftsample; }         // Right channel is the same as left.
     else {    
-      if( (uint8_t *) input >=  pb_end8 ) {                      /* Check for end of sample data */
-        rightsample = MIDPOINT_S16;                              /* Pad with silence if at end */
+      if( (uint8_t *) input >=  pb_end8 ) {                           /* Check for end of sample data */
+        rightsample = MIDPOINT_S16;                                   /* Pad with silence if at end */
       }
       else {               
         /* Convert unsigned 8-bit (0..255) -> signed 16-bit with dithering */
         uint8_t sample8 = *input;
-        rightsample = Apply8BitDithering( sample8 );                 /* Right channel with dithering */
+        rightsample = Apply8BitDithering( sample8 );                  /* Right channel with dithering */
         rightsample = ApplyVolumeSetting( rightsample, vol_div );
-        //rightsample = ( rightsample * VOL_MULT ) / vol_div;          /* Scale for volume (multiply before divide) */
-        rightsample = ApplyFilterChain8Bit( rightsample, 0 );        /* Apply complete filter chain */
+        //rightsample = ( rightsample * VOL_MULT ) / vol_div;         /* Scale for volume (multiply before divide) */
+        rightsample = ApplyFilterChain8Bit( rightsample, 0 );         /* Apply complete filter chain */
       }
       input++;
     }
-    *output = leftsample;  output++;                              /* Transfer samples to output buffer */
+    *output = leftsample;  output++;                                  /* Transfer samples to output buffer */
     *output = rightsample; output++;
     
     // Update fade counters based on samples processed
@@ -1320,15 +1340,22 @@ PB_StatusTypeDef PlaySample (
     case LPF_VerySoft:
       lpf_8bit_alpha = LPF_VERY_SOFT;
       break;
+
     case LPF_Soft:
       lpf_8bit_alpha = LPF_SOFT;
       break;
-    case LPF_Aggressive:
-      lpf_8bit_alpha = LPF_AGGRESSIVE;
-      break;
+
     case LPF_Medium:
     default:
       lpf_8bit_alpha = LPF_MEDIUM;
+      break;
+
+      case LPF_Firm:
+      lpf_8bit_alpha = LPF_FIRM;
+      break;
+
+    case LPF_Aggressive:
+      lpf_8bit_alpha = LPF_AGGRESSIVE;
       break;
   }
 
@@ -1372,14 +1399,14 @@ PB_StatusTypeDef PlaySample (
   }
   
   if( sample_depth == 16 ) {            // Initialize 16-bit sample playback pointers
-    pb_p16 = (uint16_t *) sample_to_play;
-    pb_end16 = pb_p16 + sample_set_sz;
-    pb_mode = 16;
+    pb_p16    = (uint16_t *) sample_to_play;
+    pb_end16  = pb_p16 + sample_set_sz;
+    pb_mode   = 16;
   }
   else if( sample_depth == 8 ) {        // Initialize 8-bit sample playback pointers
-    pb_p8 = (uint8_t *) sample_to_play;
-    pb_end8 = pb_p8 + sample_set_sz;
-    pb_mode = 8;
+    pb_p8     = (uint8_t *) sample_to_play;
+    pb_end8   = pb_p8 + sample_set_sz;
+    pb_mode   = 8;
   }
   // Initialize fade counters
   fadeout_samples_remaining = sample_set_sz;
@@ -1389,26 +1416,18 @@ PB_StatusTypeDef PlaySample (
   // This ensures the fade-in is applied from the very first sample that plays
   half_to_fill = FIRST;
   if( pb_mode == 16 ) {
-    if( ProcessNextWaveChunk( (int16_t *) pb_p16 ) != PB_Playing ) {
-      return PB_Error;
-    }
+    if( ProcessNextWaveChunk( (int16_t *) pb_p16 ) != PB_Playing ) { return PB_Error; }
     pb_p16 += p_advance;
 
     half_to_fill = SECOND;
-        if( ProcessNextWaveChunk( (int16_t *) pb_p16 ) != PB_Playing ) {
-      return PB_Error;
-    }
+        if( ProcessNextWaveChunk( (int16_t *) pb_p16 ) != PB_Playing ) { return PB_Error; }
     pb_p16 += p_advance;
     half_to_fill = FIRST;
   }
   else if( pb_mode == 8 ) {
-    if( ProcessNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PB_Playing ) {
-      return PB_Error;
-    }
+    if( ProcessNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PB_Playing ) { return PB_Error; }
     half_to_fill = SECOND;
-    if( ProcessNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PB_Playing ) {
-      return PB_Error;
-    }
+    if( ProcessNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PB_Playing ) { return PB_Error; }
     pb_p8 += p_advance;
     half_to_fill = FIRST;
   }
@@ -1507,7 +1526,7 @@ PB_StatusTypeDef ResumePlayback( void )
   }
   
   /* Clear buffer to prevent full-volume glitch at resume */
-  memset(pb_buffer, MIDPOINT_S16, sizeof(pb_buffer));
+  memset( pb_buffer, MIDPOINT_S16, sizeof( pb_buffer ) );
   
   /* Restore playback position from where it was paused */
   if( paused_sample_ptr != NULL ) {
@@ -1523,7 +1542,7 @@ PB_StatusTypeDef ResumePlayback( void )
   
   /* Reset fade-out counter and initiate smooth fade-in */
   fadeout_samples_remaining = 0;
-  fadein_samples_remaining = pause_fadein_samples;
+  fadein_samples_remaining  = pause_fadein_samples;
   
   return PB_Playing;
 }
@@ -1545,14 +1564,14 @@ void ShutDownAudio( void )
 {
     // Calculate delay needed to drain the DMA buffer based on playback speed
     extern uint32_t I2S_PlaybackSpeed;
-    uint32_t buffer_drain_ms = (PB_BUFF_SZ * 1000 + I2S_PlaybackSpeed - 1) / I2S_PlaybackSpeed;
+    uint32_t buffer_drain_ms = ( PB_BUFF_SZ * 1000 + I2S_PlaybackSpeed - 1 ) / I2S_PlaybackSpeed;
     HAL_Delay( buffer_drain_ms );
 
     // Stop I2S DMA transmission
     HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );
 
     // Shutdown the DAC (if function pointer is set)
-    if (AudioEngine_DACSwitch) {
-        AudioEngine_DACSwitch(DAC_OFF);
+    if ( AudioEngine_DACSwitch ) {
+        AudioEngine_DACSwitch( DAC_OFF );
     }
 }
