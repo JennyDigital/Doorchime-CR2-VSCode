@@ -217,12 +217,9 @@ int16_t             ApplyLowPassFilter16Bit     ( int16_t input,
                                                   volatile int32_t *y1,
                                                   volatile int32_t *y2
                                                 );
-int16_t             ApplyLowPassFilter8Bit      ( 
+int16_t             ApplyLowPassFilter8Bit      (
                                                   int16_t sample,
-                                                  volatile int32_t *x1,
-                                                  volatile int32_t *x2,
-                                                  volatile int32_t *y1,
-                                                  volatile int32_t *y2
+                                                  volatile int32_t *y1
                                                 );
 int16_t             ApplyFadeIn                 ( int16_t sample );
 int16_t             ApplyFadeOut                ( int16_t sample );

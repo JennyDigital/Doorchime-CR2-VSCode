@@ -224,12 +224,12 @@ PB_StatusTypeDef AudioEngine_Init( DAC_SwitchFunc dac_switch,
   RESET_ALL_FILTER_STATE();
   
   /* Reset playback state variables */
-  pb_state                  = PB_Idle;
-  pb_mode                   = 0;
-  fadeout_samples_remaining = 0;
-  fadein_samples_remaining  = 0;
-  paused_sample_ptr         = NULL;
-  vol_div                   = 1;
+  pb_state                                  = PB_Idle;
+  pb_mode                                   = 0;
+  fadeout_samples_remaining                 = 0;
+  fadein_samples_remaining                  = 0;
+  paused_sample_ptr                         = NULL;
+  vol_div                                   = 1;
   
   /* Reset dither state to non-zero seed */
   dither_state = 12345;
@@ -544,6 +544,17 @@ float GetResumeFadeTime( void )
 }
 
 
+/** Get the current playback speed
+  * 
+  * @param: none
+  * @retval: uint32_t - Current playback speed in Hz
+  */
+uint32_t GetPlaybackSpeed( void )
+{
+    return I2S_PlaybackSpeed;
+}
+
+
 /* ===== DSP Filter Functions ===== */
 
 
@@ -575,28 +586,20 @@ int16_t Apply8BitDithering( uint8_t sample8 )
 /** Apply low-pass biquad filter to 8-bit sample
   * 
   * @param: sample - Signed 16-bit audio sample (from 8-bit input)
-  * @param: x1, x2 - Pointers to previous input samples
-  * @param: y1, y2 - Pointers to previous output samples
+  * @param: y2 - Pointer to previous output samples
   * @retval: int16_t - Filtered signed 16-bit audio sample
   */
-int16_t ApplyLowPassFilter8Bit( int16_t sample, 
-                                volatile int32_t *x1, volatile int32_t *x2,
-                                volatile int32_t *y1, volatile int32_t *y2 )
+int16_t ApplyLowPassFilter8Bit( int16_t sample, volatile int32_t *y1 )
 {
   int32_t alpha = lpf_8bit_alpha;
   int32_t one_minus_alpha = 65536 - alpha;
-  
   int32_t output = ( ( alpha * sample) >> 16 ) + 
                    ( ( one_minus_alpha * ( *y1 ) ) >> 16 );
-
   // Apply makeup gain
   output = ( output * (int32_t)filter_cfg.lpf_makeup_gain_q16 ) >> 16;
-  
   *y1 = output;
-  
   if( output > 32767 )  output = 32767;
   if( output < -32768 ) output = -32768;
-  
   return (int16_t) output;
 }
 
@@ -657,7 +660,10 @@ int16_t ApplyNoiseGate( int16_t sample )
 {
   int16_t abs_sample = ( sample < 0 ) ? -sample : sample;
   if( abs_sample < NOISE_GATE_THRESHOLD ) {
-    return 0;
+    // Soft gate: attenuate signal using fixed-point integer math (Q15)
+    // Example: 0.1 attenuation = 3277 (0.1 * 32768)
+    const int16_t attenuation_q15 = 3277; // ~0.1 in Q15
+    return (int16_t)((sample * attenuation_q15) >> 15);
   }
   return sample;
 }
@@ -960,13 +966,9 @@ int16_t ApplyFilterChain8Bit( int16_t sample, uint8_t is_left_channel )
 {
   if( filter_cfg.enable_8bit_lpf ) {
     if( is_left_channel ) {
-      sample = ApplyLowPassFilter8Bit( sample, 
-                                       &lpf_8bit_x1_left, &lpf_8bit_x2_left,
-                                       &lpf_8bit_y1_left, &lpf_8bit_y2_left );
+      sample = ApplyLowPassFilter8Bit( sample, &lpf_8bit_y1_left );
     } else {
-      sample = ApplyLowPassFilter8Bit( sample,
-                                       &lpf_8bit_x1_right, &lpf_8bit_x2_right,
-                                       &lpf_8bit_y1_right, &lpf_8bit_y2_right );
+      sample = ApplyLowPassFilter8Bit( sample, &lpf_8bit_y1_right );
     }
   }
   
@@ -1050,17 +1052,6 @@ uint8_t GetHalfToFill( void )
 void SetHalfToFill( uint8_t half )
 {
   half_to_fill = half;
-}
-
-
-/** Get current playback speed
-  * 
-  * @param: none
-  * @retval: uint32_t - Current playback speed in Hz
-  */
-uint32_t GetPlaybackSpeed( void )
-{
-  return I2S_PlaybackSpeed;
 }
 
 
@@ -1446,7 +1437,7 @@ PB_StatusTypeDef WaitForSampleEnd( void )
   // Cleanup: Stop DMA transmission now that we're out of the callback context
   // This prevents the I2S_WaitFlagStateUntilTimeout hang that occurs when
   // stopping from within the DMA callback
-  if( pb_state == PB_Idle ) {
+  if( pb_state != PB_Playing ) {
     HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );
   }
   
