@@ -271,27 +271,16 @@ int main(void)
     //   I2S_AUDIOFREQ_16K, 16, Mode_mono, LPF_VerySoft );
     // WaitForSampleEnd();
 
-    // PlaySample( tt_arrival, TT_ARRIVAL_SZ, I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_VerySoft );
+    SetLpf16BitLevel( LPF_Off );
+    SetSoftClippingEnable( 1 );
+  
+    // PlaySample( tt_arrival, TT_ARRIVAL_SZ, I2S_AUDIOFREQ_11K, 16, Mode_mono );
+    PlaySample( dalby_tritone16b16k, DALBY_TRITONE16B16K_SZ,
+      I2S_AUDIOFREQ_16K, 16, Mode_mono );
+    WaitForSampleEnd();
     // PlaySample( KillBill11k, KILLBILL11K_SZ,
     //  I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_Medium );
     // WaitForSampleEnd();
-
-    SetLpf16BitLevel( LPF_Custom );
-
-    SetLpf16BitCustomAlpha( GetLpf16BitCustomAlphaFromCutoff( 200.0f ) );
-    PlaySample( guitar_riff22k, GUITAR_RIFF22K_SZ,
-         I2S_AUDIOFREQ_22K, 16, Mode_mono );
-    WaitForSampleEnd();
-
-    SetLpf16BitLevel( LPF_Medium );
-    PlaySample( guitar_riff22k, GUITAR_RIFF22K_SZ,
-         I2S_AUDIOFREQ_22K, 16, Mode_mono );
-    WaitForSampleEnd();
-
-    SetLpf16BitLevel( LPF_Off );
-    PlaySample( guitar_riff22k, GUITAR_RIFF22K_SZ,
-         I2S_AUDIOFREQ_22K, 16, Mode_mono );
-    WaitForSampleEnd();
     // PlaySample( dramatic_organ11k, DRAMATIC_ORGAN11K_SZ,
     //     I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_Firm );
     // PlaySample( theremin_quartet11k, THEREMIN_QUARTET11K_SZ,
@@ -300,7 +289,6 @@ int main(void)
     // PausePlayback();
     // HAL_Delay( 2000 );
     // ResumePlayback();
-    WaitForSampleEnd();
 
     ShutDownAudio();
 
@@ -691,6 +679,7 @@ uint8_t ReadVolume( void )
   #endif
 } 
 
+/* ADC Conversion Complete Callback */
 void HAL_ADC_ConvCpltCallback( ADC_HandleTypeDef *hadc )
 {
   /* Prevent unused argument(s) compilation warning */
