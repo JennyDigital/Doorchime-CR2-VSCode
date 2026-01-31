@@ -79,6 +79,10 @@
 #include "handpan_c16b.h"
 #include "guitar_harmony2.h"
 #include "into_suffering22k1c.h"
+#include "doors_closing.h"
+#include "doors_closing11k.h"
+#include "doors_opening.h"
+#include "doors_opening11k.h"
 
 /* USER CODE END Includes */
 
@@ -124,12 +128,12 @@ extern FilterConfig_TypeDef filter_cfg;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
-        void    SystemClock_Config      ( void );
-static  void    MX_GPIO_Init            ( void );
-static  void    MX_DMA_Init             ( void );
-static  void    MX_I2S2_Init            ( void );                                     // Used in audio_engine
-static  void    MX_ADC1_Init            ( void );
-static  void    MX_TIM7_Init            ( void );
+        void                SystemClock_Config          ( void );
+static  void                MX_GPIO_Init                ( void );
+static  void                MX_DMA_Init                 ( void );
+static  void                MX_I2S2_Init                ( void );                                     // Used in audio_engine
+static  void                MX_ADC1_Init                ( void );
+static  void                MX_TIM7_Init                ( void );
 /* USER CODE BEGIN PFP */
 
 // Hardware-specific function prototypes
@@ -186,8 +190,8 @@ int main(void)
   MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
 
-  HAL_ADC_Start_IT( &hadc1 );          // Start ADC in interrupt mode
-  HAL_TIM_Base_Start( &htim7 );   // Start TIM7 for ADC triggering
+  HAL_ADC_Start_IT( &hadc1 );         // Start ADC in interrupt mode
+  HAL_TIM_Base_Start( &htim7 );       // Start TIM7 for ADC triggering
   
   /* Initialize audio engine with hardware interface functions */
   if( AudioEngine_Init( DAC_MasterSwitch, ReadVolume, MX_I2S2_Init ) != PB_Idle ) {
@@ -205,18 +209,18 @@ int main(void)
   filter_cfg.enable_soft_clipping         = 1;
   filter_cfg.enable_air_effect            = 0;  // Air effect (high-shelf brightening) disabled by default; enable as needed
 
-  SetLpfMakeupGain8Bit( 1.1f );  // Slight attenuation to prevent clipping after LPF
+  SetLpfMakeupGain8Bit( 1.1f );           // Slight attenuation to prevent clipping after LPF
   SetLpf16BitLevel(LPF_VerySoft);
   SetFilterConfig( &filter_cfg );
 
   // Set initial Air Effect boost in dB (runtime adjustable)
-  SetAirEffectPresetDb( 2 ); // default +3 dB preset
+  SetAirEffectPresetDb( 2 );       // default +3 dB preset
 
   // Set fade times
-  SetFadeInTime( 0.1f );        // 100 ms fade-in
-  SetFadeOutTime( 0.1f );       // 100 ms fade-out
-  SetPauseFadeTime( 0.1f );     // 100 ms pause fade-out
-  SetResumeFadeTime( 0.1f );    // 100 ms resume fade-in
+  SetFadeInTime( 0.1f );                // 100 ms fade-in
+  SetFadeOutTime( 0.1f );               // 100 ms fade-out
+  SetPauseFadeTime( 0.1f );             // 100 ms pause fade-out
+  SetResumeFadeTime( 0.1f );            // 100 ms resume fade-in
 
   /* USER CODE END 2 */
 
