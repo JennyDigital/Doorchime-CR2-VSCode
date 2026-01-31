@@ -289,7 +289,7 @@ void GetFilterConfig( FilterConfig_TypeDef *cfg )
   * @param: enabled - Non-zero to enable, zero to disable.
   * @retval: none
   */
-void SetSoftClipping( uint8_t enabled )
+void SetSoftClippingEnable( uint8_t enabled )
 {
   filter_cfg.enable_soft_clipping = enabled ? 1 : 0;
 }
@@ -301,7 +301,7 @@ void SetSoftClipping( uint8_t enabled )
   * @param: none
   * @retval: non-zero if enabled, zero if disabled.
   */
-uint8_t GetSoftClippingState( void )
+uint8_t GetSoftClippingEnable( void )
 {
   return filter_cfg.enable_soft_clipping;
 }
@@ -334,6 +334,26 @@ void SetLpf8BitLevel( LPF_Level level )
 LPF_Level GetLpf8BitLevel(void)
 {
   return filter_cfg.lpf_8bit_level;
+}
+
+
+/** Sets whether to use the air effect or not
+  * @param: enabled - Non-zero to enable, zero to disable.
+  * @retval: none
+  */
+void SetAirEffectEnable( uint8_t enabled )
+{
+  filter_cfg.enable_air_effect = enabled ? 1 : 0;
+}
+
+
+/** Gets the state of the air effect enable flag
+  * @param: none
+  * @retval: non-zero if enabled, zero if disabled.
+  */
+uint8_t GetAirEffectEnable( void )
+{
+  return filter_cfg.enable_air_effect;
 }
 
 

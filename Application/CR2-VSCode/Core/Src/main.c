@@ -211,12 +211,12 @@ int main(void)
 
   SetLpfMakeupGain8Bit( 1.1f );           // Slight attenuation to prevent clipping after LPF
   SetLpf16BitLevel(LPF_VerySoft);
-  SetSoftClipping( 1 );            // Enable soft clipping
+  SetSoftClippingEnable( 1 );            // Enable soft clipping
   SetFilterConfig( &filter_cfg );
 
   // Set initial Air Effect boost in dB (runtime adjustable)
   SetAirEffectPresetDb( 2 );       // default +3 dB preset
-
+  
   // Set fade times
   SetFadeInTime( 0.1f );                // 100 ms fade-in
   SetFadeOutTime( 0.1f );               // 100 ms fade-out

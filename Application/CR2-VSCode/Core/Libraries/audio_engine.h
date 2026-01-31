@@ -179,9 +179,11 @@ PB_StatusTypeDef    AudioEngine_Init                  ( DAC_SwitchFunc dac_switc
 void                SetFilterConfig                   ( const FilterConfig_TypeDef *cfg );
 void                GetFilterConfig                   ( FilterConfig_TypeDef *cfg );
 void                SetLpfMakeupGain8Bit              ( float gain );
-void                SetSoftClipping                   ( uint8_t enabled );
-uint8_t             GetSoftClippingState              ( void );
-// ...existing code...
+void                SetAirEffectEnable                ( uint8_t enabled );
+uint8_t             GetAirEffectEnable                ( void );
+void                SetSoftClippingEnable             ( uint8_t enabled );
+uint8_t             GetSoftClippingEnable             ( void );
+
 void                SetLpf8BitLevel                   ( LPF_Level level );
 LPF_Level           GetLpf8BitLevel                   ( void );
 void                SetLpf16BitLevel                  ( LPF_Level level );
