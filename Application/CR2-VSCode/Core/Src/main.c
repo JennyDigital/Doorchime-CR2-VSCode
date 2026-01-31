@@ -132,8 +132,10 @@ extern FilterConfig_TypeDef filter_cfg;
 static  void                MX_GPIO_Init                ( void );
 static  void                MX_DMA_Init                 ( void );
 static  void                MX_I2S2_Init                ( void );                                     // Used in audio_engine
+#ifndef VOLUME_INPUT_DIGITAL
 static  void                MX_ADC1_Init                ( void );
 static  void                MX_TIM7_Init                ( void );
+#endif
 /* USER CODE BEGIN PFP */
 
 // Hardware-specific function prototypes
@@ -186,12 +188,16 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
+  #ifndef VOLUME_INPUT_DIGITAL
   MX_ADC1_Init();
   MX_TIM7_Init();
+  #endif
   /* USER CODE BEGIN 2 */
 
+  #ifndef VOLUME_INPUT_DIGITAL
   HAL_ADC_Start_IT( &hadc1 );         // Start ADC in interrupt mode
   HAL_TIM_Base_Start( &htim7 );       // Start TIM7 for ADC triggering
+  #endif
   
   /* Initialize audio engine with hardware interface functions */
   if( AudioEngine_Init( DAC_MasterSwitch, ReadVolume, MX_I2S2_Init ) != PB_Idle ) {
@@ -498,6 +504,7 @@ static void MX_GPIO_Init( void )
 }
 
 
+#ifndef VOLUME_INPUT_DIGITAL
 /**
   * @brief TIM7 Initialization Function
   * @param None
@@ -535,8 +542,10 @@ static void MX_TIM7_Init(void)
   /* USER CODE END TIM7_Init 2 */
 
 }
+#endif
 
 
+#ifndef VOLUME_INPUT_DIGITAL
 /**
   * @brief ADC1 Initialization Function
   * @param None
@@ -605,6 +614,7 @@ static void MX_ADC1_Init( void )
   /* USER CODE END ADC1_Init 2 */
 
 }
+#endif
 
 
 /* USER CODE BEGIN 4 */
@@ -713,11 +723,16 @@ void WaitForTrigger( uint8_t trig_to_wait_for )
 
 #ifndef NO_SLEEP_MODE
   /* Prep for sleep mode */
+#ifndef VOLUME_INPUT_DIGITAL
     HAL_TIM_Base_Stop( &htim7 );                // Stop TIM7 to prevent ADC triggers during sleep
     HAL_ADC_Stop_IT( &hadc1 );                  // Stop ADC in interrupt mode
+#endif
     LPSystemClock_Config();                     // Reduce clock speed for low power sleep
     HAL_SuspendTick();                          // Stop SysTick interrupts to prevent wakeups
     __HAL_GPIO_EXTI_CLEAR_IT( TRIGGER_Pin );    // Clear EXTI pending bit
+#ifndef VOLUME_INPUT_DIGITAL
+    __HAL_TIM_CLEAR_IT( &htim7, TIM_IT_UPDATE );
+#endif
     
     /* Memory barrier to ensure all writes complete before sleep */
     __DSB();
@@ -728,11 +743,16 @@ void WaitForTrigger( uint8_t trig_to_wait_for )
 
     /* Rise from your slumber mighty microcontroller! */
     __HAL_GPIO_EXTI_CLEAR_IT( TRIGGER_Pin );    // Clear EXTI pending bit
+#ifndef VOLUME_INPUT_DIGITAL
+    __HAL_TIM_CLEAR_IT( &htim7, TIM_IT_UPDATE );
+#endif
     HAL_PWREx_DisableLowPowerRunMode();
     SystemClock_Config();
     HAL_ResumeTick();
+#ifndef VOLUME_INPUT_DIGITAL
     HAL_ADC_Start_IT( &hadc1 );                 // Restart ADC in interrupt mode
     HAL_TIM_Base_Start( &htim7 );               // Restart TIM7 for ADC triggering
+#endif  
 #endif
   }
 }

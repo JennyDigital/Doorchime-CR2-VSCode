@@ -215,7 +215,7 @@ void DMA1_Channel1_IRQHandler(void)
   /* USER CODE END DMA1_Channel1_IRQn 1 */
 }
 
-
+#ifndef VOLUME_INPUT_DIGITAL
 /**
   * @brief This function handles ADC1 and ADC2 global interrupt.
   */
@@ -229,6 +229,7 @@ void ADC1_2_IRQHandler(void)
 
   /* USER CODE END ADC1_2_IRQn 1 */
 }
+#endif
 
 /* USER CODE BEGIN 1 */
 

@@ -36,7 +36,9 @@
 
 #define HAL_MODULE_ENABLED
 
-#define HAL_ADC_MODULE_ENABLED   
+#ifndef VOLUME_INPUT_DIGITAL
+#define HAL_ADC_MODULE_ENABLED 
+#endif  
 /*#define HAL_COMP_MODULE_ENABLED   */
 /*#define HAL_CORDIC_MODULE_ENABLED   */
 /*#define HAL_CRC_MODULE_ENABLED   */
@@ -62,7 +64,9 @@
 /*#define HAL_SMBUS_MODULE_ENABLED   */
 /*#define HAL_SPI_MODULE_ENABLED   */
 /*#define HAL_SRAM_MODULE_ENABLED   */
+#ifndef VOLUME_INPUT_DIGITAL
 #define HAL_TIM_MODULE_ENABLED   
+#endif
 /*#define HAL_UART_MODULE_ENABLED   */
 /*#define HAL_USART_MODULE_ENABLED   */
 /*#define HAL_WWDG_MODULE_ENABLED   */
@@ -78,7 +82,11 @@
 /**
   * @brief This is the list of modules where register callback can be used
   */
+#ifndef VOLUME_INPUT_DIGITAL
 #define USE_HAL_ADC_REGISTER_CALLBACKS        1U
+#else
+#define USE_HAL_ADC_REGISTER_CALLBACKS        0U
+#endif
 #define USE_HAL_COMP_REGISTER_CALLBACKS       0U
 #define USE_HAL_CORDIC_REGISTER_CALLBACKS     0U
 #define USE_HAL_CRYP_REGISTER_CALLBACKS       0U

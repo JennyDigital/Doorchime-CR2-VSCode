@@ -181,6 +181,7 @@ void HAL_I2S_MspDeInit(I2S_HandleTypeDef* hi2s)
 
 }
 
+#ifndef VOLUME_INPUT_DIGITAL
 /**
   * @brief TIM_Base MSP Initialization
   * This function configures the hardware resources used in this example
@@ -275,6 +276,7 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
 
 }
 
+
 /**
   * @brief ADC MSP De-Initialization
   * This function freeze the hardware resources used in this example
@@ -304,6 +306,7 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* hadc)
   }
 
 }
+#endif
 /* USER CODE BEGIN 1 */
 
 /* USER CODE END 1 */

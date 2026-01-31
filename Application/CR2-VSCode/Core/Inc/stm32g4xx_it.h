@@ -56,7 +56,9 @@ void DebugMon_Handler(void);
 void PendSV_Handler(void);
 void SysTick_Handler(void);
 void DMA1_Channel1_IRQHandler(void);
+#ifndef VOLUME_INPUT_DIGITAL
 void ADC1_2_IRQHandler(void);
+#endif
 /* USER CODE BEGIN EFP */
 
 /* USER CODE END EFP */
