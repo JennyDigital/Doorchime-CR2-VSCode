@@ -62,7 +62,7 @@ extern "C" {
 #define SECOND                1U
 
 /* Fade configuration */
-#define FADEOUT_SAMPLES       2048U    // About 100ms at 22kHz
+//#define FADEOUT_SAMPLES       2048U    // About 100ms at 22kHz
 #define PAUSE_FADEOUT_SAMPLES 5512U    // About 0.5 second at 11kHz
 #define FADEIN_SAMPLES        2048U    // About 93ms at 22kHz
 
@@ -72,7 +72,7 @@ extern "C" {
 #define SOFT_DC_FILTER_ALPHA  65216    // 0.995 in fixed-point (65216/65536)
 
 /* Biquad low-pass filter for 16-bit samples */
-#define LPF_16BIT_ALPHA       52429    // ~0.80 - gentle filtering (default)
+//#define LPF_16BIT_ALPHA       52429    // ~0.80 - gentle filtering (default)
 
 /* 16-bit biquad low-pass filter aggressiveness levels (alpha coefficients) */
 /* Lower alpha is heavier filtering for this biquad, so values are ordered heavy -> light. */
@@ -86,7 +86,6 @@ extern "C" {
 #define BIQUAD_WARMUP_CYCLES  16
 
 /* Low-pass filter for 8-bit samples */
-#define LPF_8BIT_SHIFT        16       // Right shift for fixed-point division
 #define LPF_MAKEUP_GAIN_Q16   70779    // ~1.08x post-LPF makeup (default)
 
 /* 8-bit low-pass filter aggressiveness levels (alpha coefficients in fixed-point) */
@@ -99,8 +98,7 @@ extern "C" {
 /* Noise gate configuration */
 #define NOISE_GATE_THRESHOLD  512      // ~1.5% of full scale
 
-/* Audio silence midpoints */
-#define MIDPOINT_U8           127U
+/* Audio silence midpoint */
 #define MIDPOINT_S16          0
 
 /* Playback status type */
