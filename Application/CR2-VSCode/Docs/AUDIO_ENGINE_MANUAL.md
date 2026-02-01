@@ -1447,7 +1447,7 @@ printf("PlaySample result: %d\n", result);
    ```
 
 3. **Reduce volume:**
-   - Check that hardware volume setting (GPIO) is at reasonable level
+   - Check that hardware volume setting (GPIO or analog input) is at reasonable level
    - Audio data may have peaks at or near ±32,767
 
 4. **Verify audio data:** 

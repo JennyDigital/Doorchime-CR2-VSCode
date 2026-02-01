@@ -1488,6 +1488,11 @@ PB_StatusTypeDef PlaySample (
       sample_to_play  == NULL
     ) { return PB_Error; }
 
+  // Ensure volume callback is initialized before starting playback
+  if( AudioEngine_ReadVolume == NULL ) {
+    return PB_Error;
+  }
+
   // Set low-pass filter alpha coefficient based on filter config
   lpf_8bit_alpha = GetLpf8BitAlpha( filter_cfg.lpf_8bit_level );
   
