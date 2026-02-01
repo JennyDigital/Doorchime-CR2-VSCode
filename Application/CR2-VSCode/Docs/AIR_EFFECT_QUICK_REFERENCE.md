@@ -14,14 +14,16 @@ Adds brightness and presence to audio samples by boosting high-frequency content
 
 ## Enable It
 ```c
-filter_cfg.enable_air_effect = 1;
-SetFilterConfig( &filter_cfg );
+// Auto-enables air effect when preset > 0
+SetAirEffectPresetDb( 1 );  // +1 dB
+SetAirEffectPresetDb( 2 );  // +2 dB (default)
+SetAirEffectPresetDb( 3 );  // +3 dB
 ```
 
 ## Disable It
 ```c
-filter_cfg.enable_air_effect = 0;
-SetFilterConfig( &filter_cfg );
+// Auto-disables air effect when preset = 0
+SetAirEffectPresetDb( 0 );
 ```
 
 ## When to Use

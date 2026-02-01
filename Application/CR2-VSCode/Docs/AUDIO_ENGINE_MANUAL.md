@@ -9,10 +9,13 @@
 5. [Filter Configuration](#filter-configuration)
 6. [Playing Audio](#playing-audio)
 7. [Filter Parameters & Tuning](#filter-parameters--tuning)
-8. [Hardware Integration](#hardware-integration)
-9. [Examples](#examples)
-10. [Troubleshooting](#troubleshooting)
-11. [Performance Notes](#performance-notes)
+8. [Volume Control](#volume-control)
+9. [Hardware Integration](#hardware-integration)
+10. [Examples](#examples)
+11. [Troubleshooting](#troubleshooting)
+12. [Performance Notes](#performance-notes)
+
+**📖 Complete API Reference:** See [API_REFERENCE.md](API_REFERENCE.md) for detailed documentation of all 40+ functions including getters, setters, and control functions.
 
 ---
 
@@ -626,14 +629,14 @@ The audio engine provides these implementations that will be called automaticall
 
 ### 16-bit LPF Aggressiveness Levels
 
-The 16-bit biquad uses higher α for heavier filtering (opposite direction from the 8-bit one-pole), so the level names are mapped from lowest to highest α to stay consistent with the 8-bit naming.
+The 16-bit biquad uses **lower α for heavier filtering** (same direction as the 8-bit one-pole). The coefficient formula `b0 = ((65536 - alpha) * (65536 - alpha)) >> 17` means lower alpha values result in more aggressive low-pass filtering.
 
 | Level | Alpha | Notes |
 |-------|-------|-------|
-| **Very Soft** | 0.625 | Lightest filtering / brightest tone |
+| **Very Soft** | 0.625 | Minimal filtering / brightest tone / highest cutoff |
 | **Soft** | ~0.80 | Gentle filtering |
 | **Medium** | 0.875 | Balanced filtering |
-| **Aggressive** | ~0.97 | Strongest filtering / darkest tone |
+| **Aggressive** | ~0.97 | Strongest filtering / darkest tone / lowest cutoff |
 
 - Warm-up (16 passes) still runs to suppress startup artifacts at the most aggressive setting.
 
@@ -669,6 +672,8 @@ Use **70–80% of full scale (±23,000)** as a safe starting point. If using LPF
 
 **Note on Range Differences:**  
 The 16-bit biquad (α: 0.625 → 0.97) and 8-bit one-pole (α: 0.625 → 0.9375) do *not* span the same range. This is intentional: the biquad's wider range is safe for 16-bit data, while the one-pole's narrower range prevents instability on 8-bit input. Both filters provide LPF_VerySoft, LPF_Soft, LPF_Medium, LPF_Firm, and LPF_Aggressive presets for user consistency, but their underlying coefficients differ.
+
+**Important:** The two filter types have the **same relationship** between alpha and filtering: **lower alpha = more filtering** for both architectures. The biquad coefficient formula uses `(65536 - alpha)`, which inverts the typical relationship.
 
 ### DC Blocking Filter
 
@@ -735,9 +740,8 @@ The Air Effect works by separating high-frequency content and amplifying it:
 
 ```c
 // Enable Air Effect and choose +2 dB preset
-filter_cfg.enable_air_effect = 1;
-SetFilterConfig(&filter_cfg);
-SetAirEffectPresetDb(1); // presets: +1 dB, +2 dB, +3 dB
+SetAirEffectPresetDb(2); // preset 0=off, 1=+1dB, 2=+2dB, 3=+3dB
+// (Auto-disables if preset=0, auto-enables if preset>0)
 
 PlaySample(
     muffled_doorbell,
@@ -801,12 +805,11 @@ static void AudioEngine_Init(void) {
     cfg.enable_8bit_lpf              = 1;
     cfg.enable_soft_dc_filter_16bit  = 0;
     cfg.enable_soft_clipping         = 1;
-    cfg.enable_air_effect            = 1; // enable brightening by default
     SetFilterConfig(&cfg);
 
     // Optional tuning
     SetLpf16BitLevel(LPF_Soft);
-    SetAirEffectPresetDb(2); // +3 dB preset
+    SetAirEffectPresetDb(2); // +2 dB preset (auto-enables air effect)
 }
 
 // 2. Play an audio sample
@@ -1018,6 +1021,112 @@ SetFilterConfig(&cfg);
 
 ---
 
+## Volume Control
+
+### Overview
+
+The audio engine applies volume scaling during sample processing. Volume can be controlled via:
+1. **Digital GPIO inputs** (OPT1–OPT3 pins for 3-bit binary encoding)
+2. **Analog ADC input** (12-bit potentiometer or variable resistance)
+
+Both pathways support **non-linear (logarithmic) volume response** to match human hearing perception.
+
+### Non-Linear Volume Response
+
+Human hearing perceives loudness logarithmically, not linearly. The audio engine provides a configurable gamma-curve response.
+
+**Enable in main.h:**
+```c
+#define VOLUME_RESPONSE_NONLINEAR    // Enable non-linear curve
+#define VOLUME_RESPONSE_GAMMA 2.0f   // Gamma exponent (typical value)
+```
+
+**How it works:**
+- Linear input (0–255) is normalized to 0.0–1.0
+- Gamma curve is applied: `output = input^(1/gamma)`
+- Result scales back to 0–255 for audio attenuation
+
+**Gamma Values:**
+| Gamma | Perception | Use Case |
+|-------|-----------|----------|
+| **1.0** | Linear | Reference (no curve) |
+| **2.0** | Quadratic (recommended) | Most intuitive for human control |
+| **2.5** | Stronger curve | Aggressive low-volume response |
+
+With **gamma = 2.0** (quadratic):
+- **Low volumes** (0–50%): Small slider movement → big loudness change
+- **High volumes** (50–100%): Big slider movement → small loudness change
+- Result: More intuitive volume "feel" matching human perception
+
+**To disable and use linear scaling:**
+```c
+//#define VOLUME_RESPONSE_NONLINEAR   // Comment this out
+```
+
+### Digital Volume Control (GPIO-Based)
+
+**Pin Configuration:**
+- **OPT1** (LSB): GPIO input pin
+- **OPT2**: GPIO input pin
+- **OPT3** (MSB): GPIO input pin
+
+**Encoding (3-bit binary, inverted so 0b000 = max volume):**
+
+| OPT3 | OPT2 | OPT1 | Level | Effective Volume |
+|------|------|------|-------|------------------|
+| 0 | 0 | 0 | Maximum | 100% (255/255) |
+| 0 | 0 | 1 | 75% | 191/255 |
+| 0 | 1 | 0 | 50% | 127/255 |
+| 0 | 1 | 1 | 37% | 95/255 |
+| 1 | 0 | 0 | 25% | 63/255 |
+| 1 | 0 | 1 | 19% | 47/255 |
+| 1 | 1 | 0 | 12% | 31/255 |
+| 1 | 1 | 1 | Minimum | 1/255 |
+
+**Implementation:**
+```c
+#define VOLUME_INPUT_DIGITAL  // Enable in audio_engine.h
+
+// In ReadVolume() (main.c):
+uint8_t v =
+  ( ( (OPT3_GPIO_Port->IDR & OPT3_Pin) != 0 ) << 2 ) |
+  ( ( (OPT2_GPIO_Port->IDR & OPT2_Pin) != 0 ) << 1 ) |
+  ( ( (OPT1_GPIO_Port->IDR & OPT1_Pin) != 0 ) << 0 );
+
+v = 7 - v;  // Invert so 0b000 = max
+uint16_t scaled = ( (uint16_t)v * 255U ) / 7U;  // Map 0–7 to 0–255
+return scaled ? (uint8_t)scaled : 1U;  // Return 1–255
+```
+
+### Analog Volume Control (ADC-Based)
+
+**Pin Configuration:**
+- Connect potentiometer to **ADC1 Channel X** (e.g., PA0)
+- 12-bit ADC reads 0–4095 from wiper voltage
+
+**Implementation:**
+```c
+// Disable VOLUME_INPUT_DIGITAL in audio_engine.h
+
+// In ReadVolume() (main.c):
+uint16_t lin = adc_raw / 16;  // Scale 0–4095 down to ~0–255
+
+if( lin > 220 ) lin = 220;    // Cap to 220 to avoid clipping
+return lin ? lin : 1;         // Return 1–255
+```
+
+**ADC Interrupt Handler:**
+```c
+void HAL_ADC_ConvCpltCallback( ADC_HandleTypeDef *hadc )
+{
+  if( hadc == &hadc1 ) {
+    adc_raw = HAL_ADC_GetValue( &hadc1 );
+  }
+}
+```
+
+---
+
 ## Hardware Integration
 
 ### STM32CubeMX Configuration
@@ -1050,13 +1159,26 @@ void DAC_MasterSwitch(GPIO_PinState setting) {
 }
 
 uint8_t ReadVolume(void) {
-    // Read two GPIO pins to determine 3 levels (0, 1, 2)
-    uint8_t vol_pin1 = HAL_GPIO_ReadPin(VOL_SEL0_GPIO_Port, VOL_SEL0_Pin);
-    uint8_t vol_pin2 = HAL_GPIO_ReadPin(VOL_SEL1_GPIO_Port, VOL_SEL1_Pin);
+    // Read three GPIO pins for 3-bit digital volume (1–8 scaled to 1–255)
+    // Or read an analog input via ADC
+    // The audio engine will apply non-linear (logarithmic) response
+    // if VOLUME_RESPONSE_NONLINEAR is enabled in main.h
     
-    if (vol_pin1 && vol_pin2) return 2;  // High
-    if (vol_pin1) return 1;               // Medium
-    return 0;                             // Low
+    #ifdef VOLUME_INPUT_DIGITAL
+        // Digital: Use OPT1–OPT3 GPIO pins
+        uint8_t v =
+          ( ( (OPT3_GPIO_Port->IDR & OPT3_Pin) != 0 ) << 2 ) |
+          ( ( (OPT2_GPIO_Port->IDR & OPT2_Pin) != 0 ) << 1 ) |
+          ( ( (OPT1_GPIO_Port->IDR & OPT1_Pin) != 0 ) << 0 );
+        v = 7 - v;  // Invert so 0b000 = max volume
+        uint16_t scaled = ( (uint16_t)v * 255U ) / 7U;  // Map 0–7 to 0–255
+        return scaled ? (uint8_t)scaled : 1U;
+    #else
+        // Analog: Use 12-bit ADC
+        uint16_t lin = adc_raw / 16;  // Scale to 0–255 range
+        if( lin > 220 ) lin = 220;
+        return lin ? lin : 1;
+    #endif
 }
 
 /* Main initialization (in main.c HAL_Init sequence) */

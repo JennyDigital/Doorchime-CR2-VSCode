@@ -3,8 +3,12 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-STM32%20with%20I2S-orange.svg)](https://www.st.com/en/microcontrollers-microprocessors/stm32-32-bit-arm-cortex-mcus.html)
 [![Audio](https://img.shields.io/badge/audio-8bit%20%7C%2016bit-green.svg)]()
+[![Documentation](https://img.shields.io/badge/docs-comprehensive-brightgreen.svg)](DOCUMENTATION_GUIDE.md)
+[![API Functions](https://img.shields.io/badge/API-40%2B%20functions-blue.svg)](API_REFERENCE.md)
 
 A professional, reusable audio playback engine for STM32 microcontrollers with I2S support (including STM32G4, STM32F4, STM32H7 series and others) with runtime-configurable DSP filter chain, supporting 8-bit and 16-bit audio playback through I2S to digital amplifiers such as the MAX98357A. Includes an Air Effect high-shelf brightening filter with presets (+1, +2, +3 dB) and direct dB control.
+
+> 📚 **New to the project?** See [DOCUMENTATION_GUIDE.md](DOCUMENTATION_GUIDE.md) for complete navigation of all 13 documentation files.
 
 ## 📋 Table of Contents
 
@@ -33,7 +37,10 @@ A professional, reusable audio playback engine for STM32 microcontrollers with I
 ## What's New
 
 - **Flash Footprint**: `.text` ≈ 12.9 KB (Release build), reflecting added features and refactoring.
-- **Air Effect**: High-shelf brightening with runtime control. Enable via `filter_cfg.enable_air_effect` and tune with `SetAirEffectPresetDb()` or `SetAirEffectGainDb()`.
+- **Non-Linear Volume Response**: Human-perception-matched volume control with configurable gamma curve. Enable via `VOLUME_RESPONSE_NONLINEAR` (#define in main.h). Gamma=2.0 provides intuitive volume feel.
+- **Digital Volume Control**: Fixed GPIO bit packing for 3-bit digital volume inputs (OPT1–OPT3). Scales to 1–255 range for proper audio attenuation.
+- **Air Effect Auto-Control**: `SetAirEffectPresetDb()` now auto-enables/disables air effect based on preset (0 = off, >0 = on). No separate `SetAirEffectEnable()` call needed.
+- **Air Effect**: High-shelf brightening with runtime control. Enable via `SetAirEffectPresetDb(preset)` and tune with `SetAirEffectGainDb()`.
 - **Filter Warm-Up & Resets**: Introduced `WarmupBiquadFilter16Bit()` and consolidated resets via `RESET_ALL_FILTER_STATE()` to reduce startup transients and simplify `PlaySample()`.
 - **Documentation**: Updated manual and README, enhanced graphs and A4 report, syntax-highlighted code blocks, and embedded system block diagram.
 - **Examples Alignment**: Usage examples now match the current API and runtime configuration model.
@@ -90,15 +97,15 @@ SetFilterConfig(&cfg);
 
 ### 16-bit Biquad LPF Aggressiveness Levels
 
-The 16-bit path uses a **second-order biquad filter** where higher α values provide stronger filtering (opposite to the 8-bit one-pole architecture).
+The 16-bit path uses a **second-order biquad filter** where lower α values provide stronger filtering (same direction as the 8-bit one-pole architecture).
 
 | Level | Alpha | Characteristics |
 |-------|-------|------------------|
-| **Very Soft** | 0.625 | Lightest filtering / brightest tone |
+| **Very Soft** | 0.625 | Minimal filtering / brightest tone / highest cutoff |
 | **Soft** | ~0.80 | Gentle filtering (recommended default) |
 | **Medium** | 0.875 | Balanced filtering |
 | **Firm** | ~0.92 | Firm filtering |
-| **Aggressive** | ~0.97 | Strongest filtering / darkest tone |
+| **Aggressive** | ~0.97 | Strongest filtering / darkest tone / lowest cutoff |
 
 **Recommended Input Levels:**
 
@@ -127,10 +134,10 @@ The 8-bit path uses a **first-order one-pole filter** to avoid instability on qu
 | **Aggressive** | 0.625 | ~1800 Hz | Strong filtering |
 
 **Why Different Ranges?**
-- **16-bit biquad** (α: 0.625 → 0.97): Wider range safe for higher bit depth
-- **8-bit one-pole** (α: 0.625 → 0.9375): Narrower range prevents quantization noise amplification
+- **16-bit biquad** (α: 0.625 → 0.97): Lower alpha = more filtering. Wider range safe for higher bit depth.
+- **8-bit one-pole** (α: 0.625 → 0.9375): Higher alpha = more filtering. Narrower range prevents quantization noise amplification.
 
-Both provide the same preset names (Very Soft, Soft, Medium, Aggressive) for consistency, but underlying coefficients differ due to architectural constraints.
+Both provide the same preset names (Very Soft, Soft, Medium, Aggressive) for consistency, but underlying coefficients differ due to architectural constraints. **Note:** The two filter types have opposite relationships between alpha and filtering strength.
 
 ### Warm-Up Behavior
 
@@ -316,6 +323,45 @@ SetAirEffectGainDb(2.0f);             // +2 dB boost at ω=π
 | **Typical Sample Rate** | 22 kHz (11 kHz Nyquist) |
 
 ## 📖 Documentation
+
+### Comprehensive Documentation Suite
+
+This project includes extensive documentation to help you understand and use the audio engine:
+
+#### 📘 User Guides
+- **README.md** (this file) - Quick start and overview
+- [AUDIO_ENGINE_MANUAL.md](AUDIO_ENGINE_MANUAL.md) - Complete technical manual with architecture details
+- [QUICK_REFERENCE.md](QUICK_REFERENCE.md) - Fast lookup guide for common tasks
+
+#### 📗 API Documentation
+- [API_REFERENCE.md](API_REFERENCE.md) - Comprehensive function reference with 40+ documented functions and code examples
+- [HEADER_DOCUMENTATION.md](HEADER_DOCUMENTATION.md) - Guide to using the Doxygen-documented header file
+- **audio_engine.h** - All public functions include Doxygen documentation for IDE integration
+
+#### 📕 Technical Reports
+- [Filter_Report_Enhanced.pdf](Filter_Report_Enhanced.pdf) - A4 technical report with filter response graphs and specifications
+- [Audio_Engine_Manual.pdf](Audio_Engine_Manual.pdf) - PDF version of the complete manual
+- [filter_characteristics_enhanced.png](filter_characteristics_enhanced.png) - Visual filter analysis
+
+#### 📙 Air Effect Documentation
+- [AIR_EFFECT_QUICK_REFERENCE.md](AIR_EFFECT_QUICK_REFERENCE.md) - High-shelf brightening filter guide
+- [AIR_EFFECT_INTEGRATION.md](AIR_EFFECT_INTEGRATION.md) - Integration examples
+
+#### 📓 Change History
+- [CHANGELOG.md](../CHANGELOG.md) - Comprehensive change log with all updates
+
+### Using the Documentation
+
+**New to the project?** See [DOCUMENTATION_GUIDE.md](DOCUMENTATION_GUIDE.md) for a complete guide to navigating all documentation.
+
+1. **First-time users**: Start with this README, then read [AUDIO_ENGINE_MANUAL.md](AUDIO_ENGINE_MANUAL.md)
+2. **Quick lookup**: Check [QUICK_REFERENCE.md](QUICK_REFERENCE.md) for common patterns
+3. **Function search**: Use [FUNCTION_INDEX.md](FUNCTION_INDEX.md) to find functions alphabetically or by category
+4. **API details**: See [API_REFERENCE.md](API_REFERENCE.md) for all 40+ functions with examples
+5. **IDE integration**: Hover over function names in your editor to see Doxygen documentation from audio_engine.h
+6. **Technical deep-dive**: Read the source code in `audio_engine.c` with inline comments
+
+**📘 Documentation Navigation:** For help choosing which docs to read based on your needs, see [DOCUMENTATION_GUIDE.md](DOCUMENTATION_GUIDE.md)
 
 ### Included Files
 

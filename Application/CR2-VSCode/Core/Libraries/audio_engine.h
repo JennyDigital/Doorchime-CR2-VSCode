@@ -75,12 +75,12 @@ extern "C" {
 #define LPF_16BIT_ALPHA       52429    // ~0.80 - gentle filtering (default)
 
 /* 16-bit biquad low-pass filter aggressiveness levels (alpha coefficients) */
-/* Higher alpha is heavier filtering for this biquad, so values are ordered light -> heavy. */
-#define LPF_16BIT_VERY_SOFT   40960    // 0.625 - light filtering / highest cutoff
+/* Lower alpha is heavier filtering for this biquad, so values are ordered heavy -> light. */
+#define LPF_16BIT_VERY_SOFT   40960    // 0.625 - minimal filtering / highest cutoff
 #define LPF_16BIT_SOFT        52429    // ~0.80 - gentle filtering
 #define LPF_16BIT_MEDIUM      57344    // 0.875 - balanced filtering
 #define LPF_16BIT_FIRM        60416    // ~0.92 - firm filtering
-#define LPF_16BIT_AGGRESSIVE  63488    // ~0.97 - strong filtering / lowest cutoff
+#define LPF_16BIT_AGGRESSIVE  63488    // ~0.97 - strongest filtering / lowest cutoff
 
 /* Number of cycles to warm up biquad filter state */
 #define BIQUAD_WARMUP_CYCLES  16
@@ -167,39 +167,168 @@ extern DAC_SwitchFunc AudioEngine_DACSwitch;
 extern ReadVolumeFunc AudioEngine_ReadVolume;
 extern I2S_InitFunc   AudioEngine_I2SInit;
 
-/* Audio engine initialization */
+/**
+ * @brief Initialize the audio engine with hardware interface callbacks
+ * @param[in] dac_switch   Function to control DAC amplifier power (GPIO)
+ * @param[in] read_volume  Function to read current volume setting (0-255)
+ * @param[in] i2s_init     Function to initialize I2S peripheral
+ * @return PB_Idle on success, PB_Error on failure
+ */
 PB_StatusTypeDef    AudioEngine_Init                  ( DAC_SwitchFunc dac_switch,
                                                         ReadVolumeFunc read_volume,
                                                         I2S_InitFunc i2s_init );
 
 /* Filter configuration functions */
+/**
+ * @brief Apply a complete filter configuration to the audio engine
+ * @param[in] cfg Pointer to FilterConfig_TypeDef with desired settings
+ * @note All filter settings in cfg are applied atomically
+ */
 void                SetFilterConfig                   ( const FilterConfig_TypeDef *cfg );
+
+/**
+ * @brief Read current filter configuration from the audio engine
+ * @param[out] cfg Pointer to FilterConfig_TypeDef to receive current settings
+ */
 void                GetFilterConfig                   ( FilterConfig_TypeDef *cfg );
+
+/**
+ * @brief Set makeup gain applied after 8-bit low-pass filter
+ * @param[in] gain Linear gain (1.0 = no gain, 2.0 = 2x, etc.)
+ * @note Compensates for attenuation from aggressive filtering
+ */
 void                SetLpfMakeupGain8Bit              ( float gain );
+
+/**
+ * @brief Enable/disable the high-shelf air effect brightening filter
+ * @param[in] enabled 1 to enable, 0 to disable
+ * @note Air effect is automatically controlled by SetAirEffectPresetDb()
+ */
 void                SetAirEffectEnable                ( uint8_t enabled );
+
+/**
+ * @brief Read current air effect enable state
+ * @return 1 if enabled, 0 if disabled
+ */
 uint8_t             GetAirEffectEnable                ( void );
+
+/**
+ * @brief Enable/disable soft clipping cubic curve above ±28,000
+ * @param[in] enabled 1 to enable, 0 to disable
+ */
 void                SetSoftClippingEnable             ( uint8_t enabled );
+
+/**
+ * @brief Read current soft clipping enable state
+ * @return 1 if enabled, 0 if disabled
+ */
 uint8_t             GetSoftClippingEnable             ( void );
 
+/* 8-bit sample low-pass filter configuration */
+/**
+ * @brief Set the aggressiveness level of the 8-bit low-pass filter
+ * @param[in] level One of: LPF_Off, LPF_VerySoft, LPF_Soft, LPF_Medium, LPF_Firm, LPF_Aggressive, LPF_Custom
+ * @note Custom alpha can be set separately via SetLpf16BitCustomAlpha()
+ */
 void                SetLpf8BitLevel                   ( LPF_Level level );
+
+/**
+ * @brief Get the current aggressiveness level of the 8-bit low-pass filter
+ * @return Current LPF_Level (Off, VerySoft, Soft, Medium, Firm, Aggressive, or Custom)
+ */
 LPF_Level           GetLpf8BitLevel                   ( void );
+
+/* 16-bit sample low-pass filter configuration */
+/**
+ * @brief Set the aggressiveness level of the 16-bit biquad low-pass filter
+ * @param[in] level One of: LPF_Off, LPF_VerySoft, LPF_Soft, LPF_Medium, LPF_Firm, LPF_Aggressive, LPF_Custom
+ */
 void                SetLpf16BitLevel                  ( LPF_Level level );
+
+/**
+ * @brief Set a custom alpha coefficient for the 16-bit low-pass filter
+ * @param[in] alpha Q16 fixed-point alpha value (0-65535), where 65535 = 0.99999, 32768 = 0.5
+ * @note This sets level to LPF_Custom and uses the provided alpha directly
+ */
 void                SetLpf16BitCustomAlpha            ( uint16_t alpha );
+
+/**
+ * @brief Calculate Q16 alpha coefficient from desired cutoff frequency
+ * @param[in] cutoff_hz Cutoff frequency in Hz
+ * @param[in] sample_rate_hz Sample rate in Hz
+ * @return Q16 alpha value suitable for SetLpf16BitCustomAlpha()
+ * @note Formula: alpha = 2*pi*fc / sr, clamped to [0, 65535]
+ */
 uint16_t            CalcLpf16BitAlphaFromCutoff       ( float cutoff_hz, float sample_rate_hz );
 
+/**
+ * @brief Get the cutoff frequency corresponding to the current 16-bit LPF custom alpha
+ * @param[in] cutoff_hz Cutoff frequency in Hz
+ * @return Q16 alpha value, or 0 if not in custom mode
+ */
 uint16_t            GetLpf16BitCustomAlphaFromCutoff  ( float cutoff_hz );
 
 /* Fade time configuration functions */
+/**
+ * @brief Set the duration of fade-in ramp at playback start
+ * @param[in] seconds Fade-in time in seconds (0.0-5.0 typical range)
+ * @note Fade uses quadratic curve for smooth volume ramp
+ */
 void                SetFadeInTime                     ( float seconds );
+
+/**
+ * @brief Get the current fade-in time setting
+ * @return Fade-in time in seconds
+ */
 float               GetFadeInTime                     ( void );
+
+/**
+ * @brief Set the duration of fade-out ramp when stopping playback
+ * @param[in] seconds Fade-out time in seconds (0.0-5.0 typical range)
+ */
 void                SetFadeOutTime                    ( float seconds );
+
+/**
+ * @brief Get the current fade-out time setting
+ * @return Fade-out time in seconds
+ */
 float               GetFadeOutTime                    ( void );
+
+/**
+ * @brief Set the duration of fade-out when pausing playback
+ * @param[in] seconds Pause fade time in seconds (0.0-5.0 typical range)
+ * @note Typically longer than normal fade-out for smooth pause
+ */
 void                SetPauseFadeTime                  ( float seconds );
+
+/**
+ * @brief Get the current pause fade time setting
+ * @return Pause fade time in seconds
+ */
 float               GetPauseFadeTime                  ( void );
+
+/**
+ * @brief Set the duration of fade-in ramp when resuming from pause
+ * @param[in] seconds Resume fade time in seconds (0.0-5.0 typical range)
+ */
 void                SetResumeFadeTime                 ( float seconds );
+
+/**
+ * @brief Get the current resume fade time setting
+ * @return Resume fade time in seconds
+ */
 float               GetResumeFadeTime                 ( void );
 
 /* Playback control functions */
+/**
+ * @brief Start playback of a sample from memory
+ * @param[in] sample_to_play Pointer to sample data in memory
+ * @param[in] sample_set_sz Total number of samples to play (all channels combined)
+ * @param[in] playback_speed Sample rate in Hz (e.g., 22000, 44100)
+ * @param[in] sample_depth Bits per sample: 8 or 16
+ * @param[in] mode Playback mode: Mode_mono or Mode_stereo
+ * @return PB_Playing on success, PB_Error on failure
+ */
 PB_StatusTypeDef    PlaySample                        ( 
                                                         const void *sample_to_play, 
                                                         uint32_t sample_set_sz, 
@@ -207,58 +336,171 @@ PB_StatusTypeDef    PlaySample                        (
                                                         uint8_t sample_depth, 
                                                         PB_ModeTypeDef mode 
                                                       ); 
+
+/**
+ * @brief Block until current sample playback completes
+ * @return PB_Idle when playback finished, PB_Error on playback failure
+ * @note Suitable for simple blocking playback. For non-blocking, poll GetPlaybackState()
+ */
 PB_StatusTypeDef    WaitForSampleEnd                  ( void );
+
+/**
+ * @brief Pause playback with fade-out
+ * @return PB_Paused on success, PB_Error if not playing
+ * @note Applies pause fade time before silencing. Use ResumePlayback() to resume.
+ */
 PB_StatusTypeDef    PausePlayback                     ( void );
+
+/**
+ * @brief Resume playback after pause with fade-in
+ * @return PB_Playing on success, PB_Error if not paused
+ * @note Applies resume fade time to smoothly restore volume
+ */
 PB_StatusTypeDef    ResumePlayback                    ( void );
+
+/**
+ * @brief Shut down all audio hardware (I2S, DAC, amplifier)
+ * @note Call when shutting down application or before changing configurations
+ */
 void                ShutDownAudio                     ( void );
 
-/* Hardware interface functions (to be implemented by application) */
-void ShutDownAudio( void );
-
 /* Chunk processing callbacks (call from DMA callbacks) */
+/**
+ * @brief Process next 16-bit PCM chunk from DMA half-complete callback
+ * @param[in,out] chunk_p Pointer to next chunk of 16-bit samples to process
+ * @return PB_Playing while playback continues, PB_Idle when finished
+ * @note Called from DMA ISR. Applies volume, filters, fade, clipping
+ */
 PB_StatusTypeDef    ProcessNextWaveChunk        ( int16_t *chunk_p );
+
+/**
+ * @brief Process next 8-bit PCM chunk from DMA half-complete callback
+ * @param[in,out] chunk_p Pointer to next chunk of 8-bit samples to process
+ * @return PB_Playing while playback continues, PB_Idle when finished
+ * @note Called from DMA ISR. Applies volume, filters, fade, clipping
+ */
 PB_StatusTypeDef    ProcessNextWaveChunk_8_bit  ( uint8_t *chunk_p );
+
+/**
+ * @brief Advance sample pointer for next DMA transfer
+ * @note Call from DMA complete callback after ProcessNextWaveChunk()
+ */
 void                AdvanceSamplePointer        ( void );
 
 /* Air Effect runtime control */
+/**
+ * @brief Set air effect gain using Q16 fixed-point format
+ * @param[in] gain_q16 Gain in Q16 format (65536 = 1.0x, 131072 = 2.0x max)
+ * @note Enables air effect automatically if gain > 0
+ */
 void                 SetAirEffectGainQ16        ( uint32_t gain_q16 );
+
+/**
+ * @brief Get current air effect gain as Q16 fixed-point value
+ * @return Current gain in Q16 format
+ */
 uint32_t             GetAirEffectGainQ16        ( void );
+
+/**
+ * @brief Set air effect gain using decibels
+ * @param[in] db Gain in dB (0.0 = no gain, 6.0 dB = ~2x, -6.0 dB = ~0.5x)
+ * @note Enables air effect automatically if db > 0
+ */
 void                 SetAirEffectGainDb         ( float db );
+
+/**
+ * @brief Get current air effect gain in decibels
+ * @return Current gain in dB
+ */
 float                GetAirEffectGainDb         ( void );
+
+/**
+ * @brief Set air effect using predefined preset (automatically enables/disables)
+ * @param[in] preset_index 0 = off, 1 = +1 dB, 2 = +2 dB, 3 = +3 dB (user can define more)
+ * @return 1 if enabled (preset > 0), 0 if disabled (preset == 0)
+ * @note Automatically calls SetAirEffectEnable(preset_index > 0 ? 1 : 0)
+ */
 void                 SetAirEffectPresetDb       ( uint8_t preset_index );
+
+/**
+ * @brief Cycle through available air effect presets
+ * @return New preset index after cycling
+ * @note Wraps from highest preset back to 0 (off). Useful for UI control.
+ */
 uint8_t              CycleAirEffectPresetDb     ( void );
+
+/**
+ * @brief Get the current air effect preset index
+ * @return Current preset index (0 = off, 1-N = various dB levels)
+ */
 uint8_t              GetAirEffectPresetIndex    ( void );
+
+/**
+ * @brief Get total number of available air effect presets (including off)
+ * @return Number of presets (typically 4 for off, +1dB, +2dB, +3dB)
+ */
 uint8_t              GetAirEffectPresetCount    ( void );
+
+/**
+ * @brief Get dB value for a specific air effect preset
+ * @param[in] preset_index Preset index to query
+ * @return dB gain for the preset (0.0 if preset_index is off or invalid)
+ */
 float                GetAirEffectPresetDb       ( uint8_t preset_index );
 
 
 /* Hardware callbacks (to be called from I2S DMA callbacks) */
+/**
+ * @brief DMA half-complete callback for I2S
+ * @param[in] hi2s Pointer to I2S handle
+ * @note Called from DMA ISR when first half of buffer is complete
+ * @note Application must call this from HAL_I2S_TxHalfCpltCallback()
+ */
 void                 HAL_I2S_TxHalfCpltCallback ( I2S_HandleTypeDef *hi2s );
+
+/**
+ * @brief DMA complete callback for I2S
+ * @param[in] hi2s Pointer to I2S handle
+ * @note Called from DMA ISR when entire buffer transfer is complete
+ * @note Application must call this from HAL_I2S_TxCpltCallback()
+ */
 void                 HAL_I2S_TxCpltCallback     ( I2S_HandleTypeDef *hi2s );
 
-/* Internal chunk processing functions */
-void                 AdvanceSamplePointer       ( void );
-PB_StatusTypeDef     ProcessNextWaveChunk       ( int16_t * chunk_p );
-PB_StatusTypeDef     ProcessNextWaveChunk_8_bit ( uint8_t * chunk_p );
-
-/* Playback control functions */
-PB_StatusTypeDef    PlaySample                  ( 
-                                                  const void *sample_to_play, 
-                                                  uint32_t sample_set_sz, 
-                                                  uint32_t playback_speed, 
-                                                  uint8_t sample_depth, 
-                                                  PB_ModeTypeDef mode 
-                                                ); 
-PB_StatusTypeDef    WaitForSampleEnd            ( void );
-PB_StatusTypeDef    PausePlayback               ( void );
-PB_StatusTypeDef    ResumePlayback              ( void );
-
-/* Accessors for global state (needed by application) */
+/* Playback state accessors (for internal use or advanced applications) */
+/**
+ * @brief Get current playback state
+ * @return PB_Idle, PB_Error, PB_Playing, PB_Paused, or PB_PlayingFailed
+ */
 uint8_t             GetPlaybackState            ( void );
+
+/**
+ * @brief Set playback state (internal use)
+ * @param[in] state New playback state
+ */
 void                SetPlaybackState            ( uint8_t state );
+
+/**
+ * @brief Get which half of double-buffer is next to fill
+ * @return FIRST (0) or SECOND (1)
+ */
 uint8_t             GetHalfToFill               ( void );
+
+/**
+ * @brief Set which half of double-buffer to fill next (internal use)
+ * @param[in] half FIRST or SECOND
+ */
 void                SetHalfToFill               ( uint8_t half );
+
+/**
+ * @brief Get current playback sample rate
+ * @return Sample rate in Hz (e.g., 22000, 44100)
+ */
 uint32_t            GetPlaybackSpeed            ( void );
+
+/**
+ * @brief Set playback sample rate (internal use)
+ * @param[in] speed Sample rate in Hz
+ */
 void                SetPlaybackSpeed            ( uint32_t speed );
 
 #ifdef __cplusplus
