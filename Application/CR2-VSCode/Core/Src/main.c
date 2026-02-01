@@ -210,7 +210,7 @@ int main(void)
   filter_cfg.enable_soft_clipping         = 0;
   filter_cfg.enable_air_effect            = 0;  // Air effect (high-shelf brightening) disabled by default; enable as needed
 
-  SetLpfMakeupGain8Bit( 1.1f );           // Slight attenuation to prevent clipping after LPF
+  SetLpfMakeupGain8Bit( 0.9f );           // Slight attenuation to prevent clipping after LPF
   SetLpf16BitLevel(LPF_VerySoft);
   SetSoftClippingEnable( 1 );            // Enable soft clipping
   SetFilterConfig( &filter_cfg );
@@ -272,7 +272,7 @@ int main(void)
     //   I2S_AUDIOFREQ_16K, 16, Mode_mono, LPF_VerySoft );
     // WaitForSampleEnd();
 
-    SetLpf16BitLevel( LPF_Off );
+    SetLpf16BitLevel( LPF_Medium );
     SetSoftClippingEnable( 1 );
   
     // PlaySample( tt_arrival, TT_ARRIVAL_SZ, I2S_AUDIOFREQ_11K, 16, Mode_mono );

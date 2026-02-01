@@ -573,17 +573,16 @@ AudioEngine_DACSwitch = MyDACControl;
 ```
 
 #### `AudioEngine_ReadVolume()`
-Function pointer to read volume setting (0–2 representing 3 levels).
+Function pointer to read volume setting (1–255). Values are scaled as a linear gain; 0 is treated as 1.
 
 ```c
 extern ReadVolumeFunc AudioEngine_ReadVolume;
 
 // Application must define:
 uint8_t MyReadVolume(void) {
-    // Read GPIO pins or ADC to determine volume level
-    if (volume_high) return 2;
-    if (volume_medium) return 1;
-    return 0;  // Low
+    // Read GPIO pins or ADC to determine volume level (1–255)
+    uint8_t volume = ReadMyVolumeSource();
+    return volume ? volume : 1;  // Ensure minimum volume of 1
 }
 
 // In initialization:

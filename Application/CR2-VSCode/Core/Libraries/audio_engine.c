@@ -1216,6 +1216,7 @@ void SetHalfToFill( uint8_t half )
 
 /** Set current playback speed
   * 
+  * @brief Sets the playback speed for sample processing.  Not to be use mid-playback.
   * @param: speed - Desired playback speed in Hz
   * @retval: none
   */
@@ -1511,9 +1512,7 @@ PB_StatusTypeDef PlaySample (
   pause_fadein_samples = (uint32_t)(pause_fadein_time_seconds * (float)I2S_PlaybackSpeed + 0.5f);
   if( pause_fadein_samples == 0 ) pause_fadein_samples = 1;
   
-  if( AudioEngine_I2SInit ) {                           // Initialize I2S peripheral with our chosen sample rate.
-    AudioEngine_I2SInit();
-  }
+  if( AudioEngine_I2SInit ) { AudioEngine_I2SInit(); }  // Initialize I2S peripheral with our chosen sample rate.
 
   HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );          // Ensure there is no currently playing sound before starting a new one.
   if( AudioEngine_DACSwitch ) {                         // starting a new one.
