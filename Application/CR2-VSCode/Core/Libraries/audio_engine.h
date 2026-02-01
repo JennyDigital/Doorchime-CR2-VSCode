@@ -61,9 +61,6 @@ extern "C" {
 #define FIRST                 0U
 #define SECOND                1U
 
-// Uncomment to use digital GPIOs for volume instead of ADC
-#define VOLUME_INPUT_DIGITAL
-
 /* Fade configuration */
 #define FADEOUT_SAMPLES       2048U    // About 100ms at 22kHz
 #define PAUSE_FADEOUT_SAMPLES 5512U    // About 0.5 second at 11kHz

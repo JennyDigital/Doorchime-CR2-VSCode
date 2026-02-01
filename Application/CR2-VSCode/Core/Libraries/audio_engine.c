@@ -100,7 +100,7 @@ ReadVolumeFunc  AudioEngine_ReadVolume  = NULL;
 I2S_InitFunc    AudioEngine_I2SInit     = NULL;
 
 /* Volume divisor (populated by hardware GPIO reading) */
-volatile uint8_t vol_div;
+volatile uint8_t vol_input;
 
 /* Playback buffer */
 int16_t pb_buffer[PB_BUFF_SZ] = {0};
@@ -274,7 +274,7 @@ PB_StatusTypeDef AudioEngine_Init( DAC_SwitchFunc dac_switch,
   fadeout_samples_remaining                 = 0;
   fadein_samples_remaining                  = 0;
   paused_sample_ptr                         = NULL;
-  vol_div                                   = 1;
+  vol_input                                   = 1;
   
   /* Reset dither state to non-zero seed */
   dither_state = 12345;
@@ -460,7 +460,7 @@ float GetAirEffectGainDb( void )
 
 
 /** Air Effect preset selection by index
-  * @param: preset_index - Index of desired preset
+  * @param: preset_index - Index of desired preset (0 disables, >0 enables with that preset)
   * @retval: none
   */
 void SetAirEffectPresetDb( uint8_t preset_index )
@@ -469,6 +469,10 @@ void SetAirEffectPresetDb( uint8_t preset_index )
     preset_index = 0;
   }
   air_effect_preset_idx = preset_index;
+  
+  /* Auto-enable/disable air effect based on preset: 0 = off, >0 = on */
+  SetAirEffectEnable( preset_index > 0 ? 1 : 0 );
+  
   SetAirEffectGainDb( air_effect_presets_db[preset_index] );
 }
 
@@ -1342,8 +1346,8 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
     return PB_Error;
   }
 
-  vol_div = AudioEngine_ReadVolume();
-  vol_div = vol_div ? vol_div : 1;
+  vol_input = AudioEngine_ReadVolume();
+  vol_input = vol_input ? vol_input : 1;
   input   = chunk_p;      // Source sample pointer
   output  = ( half_to_fill == SECOND ) ? (pb_buffer + CHUNK_SZ ) : pb_buffer;
 
@@ -1352,16 +1356,13 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
   // and also because the MAX983567A expects stereo audio data, but we only
   // have one speaker.
   //
-  // NOTE: Soldered pads set a value to DIVIDE the audio down by with OPT1
-  // being the LSB and OPT3 the MSB.
-  //
   for( uint16_t i = 0; i < HALFCHUNK_SZ; i++ )
   {
     if( (uint16_t *) input >=  pb_end16 ) {                                   // Check for end of sample data
       leftsample = MIDPOINT_S16;                                              // Pad with silence if at end 
     }
     else {
-      leftsample = ApplyVolumeSetting( *input, vol_div );                     // Apply volume setting
+      leftsample = ApplyVolumeSetting( *input, vol_input );                     // Apply volume setting
       leftsample = ApplyFilterChain16Bit( leftsample, 1 );                    // Apply complete filter chain
     }
     input++;
@@ -1372,7 +1373,7 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
         rightsample = MIDPOINT_S16;                                           // Pad with silence if at end
       }
       else { 
-        rightsample = ApplyVolumeSetting( *input, vol_div );                  // Right channel
+        rightsample = ApplyVolumeSetting( *input, vol_input );                  // Right channel
         rightsample = ApplyFilterChain16Bit( rightsample, 0 );                // Apply complete filter chain
       }   // End of right channel processing
       input++;
@@ -1405,8 +1406,8 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
   if( chunk_p == NULL ) {   // Sanity check
     return PB_Error;
   }
-  vol_div = AudioEngine_ReadVolume();
-  vol_div = vol_div ? vol_div : 1;
+  vol_input = AudioEngine_ReadVolume();
+  vol_input = vol_input ? vol_input : 1;
   input = chunk_p;                                               /* Source sample pointer */
   output = ( half_to_fill == SECOND ) ? ( pb_buffer + CHUNK_SZ ) : pb_buffer;
 
@@ -1414,10 +1415,7 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
   // This is done both to eliminate the need for a second resistor
   // and also because the MAX983567A expects stereo audio data, but we only
   // have one speaker.
-  //
-  // NOTE: Soldered pads set a value to DIVIDE the audio down by with OPT1
-  // being the LSB and OPT3 the MSB.
-  //
+
   for( uint16_t i = 0; i < HALFCHUNK_SZ; i++ )
   {
     if( (uint8_t *) input >=  pb_end8 ) {                             /* Check for end of sample data */
@@ -1427,7 +1425,7 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
       /* Convert unsigned 8-bit (0..255) -> signed 16-bit with dithering */
       uint8_t sample8 = *input;
       leftsample = Apply8BitDithering( sample8 );                     /* Left channel with dithering */
-      leftsample = ApplyVolumeSetting( leftsample, vol_div );
+      leftsample = ApplyVolumeSetting( leftsample, vol_input );
       leftsample = ApplyFilterChain8Bit( leftsample, 1 );             /* Apply complete filter chain */
     }
     input++;
@@ -1441,7 +1439,7 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
         /* Convert unsigned 8-bit (0..255) -> signed 16-bit with dithering */
         uint8_t sample8 = *input;
         rightsample = Apply8BitDithering( sample8 );                  /* Right channel with dithering */
-        rightsample = ApplyVolumeSetting( rightsample, vol_div );
+        rightsample = ApplyVolumeSetting( rightsample, vol_input );
         rightsample = ApplyFilterChain8Bit( rightsample, 0 );         /* Apply complete filter chain */
       }
       input++;

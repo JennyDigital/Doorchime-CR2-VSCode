@@ -83,6 +83,7 @@
 #include "doors_closing11k.h"
 #include "doors_opening.h"
 #include "doors_opening11k.h"
+#include "dalby_tritoneJan26.h"
 
 /* USER CODE END Includes */
 
@@ -116,14 +117,8 @@ volatile  uint16_t        trig_timeout_counter          = 0;
 volatile  uint8_t         trig_status                   = TRIGGER_CLR;
 volatile  uint16_t        adc_raw                       = 0;
 
-/* Master volume scaling factor (default 16) */
-static uint8_t vol_scaling = 16;
-
 // External variables from audio_engine
 extern FilterConfig_TypeDef filter_cfg;
-
-// // Volume divisor (populated by hardware GPIO reading)
-// volatile  uint8_t         vol_div;
 
 /* USER CODE END PV */
 
@@ -209,10 +204,10 @@ int main(void)
 
   // FilterConfig_TypeDef filter_cfg;
   filter_cfg.enable_noise_gate            = 0;  // Noise gate disabled by default; enable as needed
-  filter_cfg.enable_16bit_biquad_lpf      = 1;
-  filter_cfg.enable_8bit_lpf              = 1;
-  filter_cfg.enable_soft_dc_filter_16bit  = 1;
-  filter_cfg.enable_soft_clipping         = 1;
+  filter_cfg.enable_16bit_biquad_lpf      = 0;
+  filter_cfg.enable_8bit_lpf              = 0;
+  filter_cfg.enable_soft_dc_filter_16bit  = 0;
+  filter_cfg.enable_soft_clipping         = 0;
   filter_cfg.enable_air_effect            = 0;  // Air effect (high-shelf brightening) disabled by default; enable as needed
 
   SetLpfMakeupGain8Bit( 1.1f );           // Slight attenuation to prevent clipping after LPF
@@ -281,7 +276,7 @@ int main(void)
     SetSoftClippingEnable( 1 );
   
     // PlaySample( tt_arrival, TT_ARRIVAL_SZ, I2S_AUDIOFREQ_11K, 16, Mode_mono );
-    PlaySample( dalby_tritone16b16k, DALBY_TRITONE16B16K_SZ,
+    PlaySample( tritone16k1c, TRITONE16K1C_SZ,
       I2S_AUDIOFREQ_16K, 16, Mode_mono );
     WaitForSampleEnd();
     // PlaySample( KillBill11k, KILLBILL11K_SZ,
@@ -619,6 +614,30 @@ static void MX_ADC1_Init( void )
 
 /* USER CODE BEGIN 4 */
 
+/** Apply non-linear (logarithmic) volume response to match human hearing.
+  *
+  * Human perception of loudness follows approximately a logarithmic curve.
+  * This function applies a power law to create a more intuitive volume control.
+  *
+  * params: linear_volume - Linear volume value (0-255)
+  * retval: uint8_t - Non-linearly scaled volume (0-255)
+  *
+  */
+static inline uint8_t ApplyVolumeResponse( uint8_t linear_volume )
+{
+  #ifdef VOLUME_RESPONSE_NONLINEAR
+    /* Normalize to 0.0-1.0 range */
+    float normalized = (float)linear_volume / 255.0f;
+    /* Apply power law (gamma > 1 creates logarithmic response) */
+    float curved = powf( normalized, 1.0f / VOLUME_RESPONSE_GAMMA );
+    /* Scale back to 0-255 range */
+    return (uint8_t)( curved * 255.0f + 0.5f );
+  #else
+    /* Linear response - no scaling */
+    return linear_volume;
+  #endif
+}
+
 /** Changes NSD_MODE_Pin pin to control the DAC between on and Shutdown
   *
   * param: DAC_OFF (0) or DAC_ON (non zero)
@@ -634,59 +653,36 @@ void DAC_MasterSwitch( GPIO_PinState setting )
 }
 
 
-/** Set the master volume scaling factor.
-  *
-  * Adjusts the divisor multiplier used for volume calculations.
-  * Valid range: 1-255. Default: 16
-  * Higher values = lower maximum volume
-  *
-  * params: scaling - The scaling factor to apply (1=max, 255=min)
-  * retval: none
-  *
-  */
-void SetVolScaling( uint8_t scaling )
-{
-    /* Safety: ensure scaling is never 0 */
-    vol_scaling = scaling ? scaling : 16;
-}
-
-/** Get the current master volume scaling factor.
-  *
-  * params: none
-  * retval: uint8_t - Current scaling factor
-  *
-  */
-uint8_t GetVolScaling( void )
-{
-    return vol_scaling;
-}
-
-
 /** Read the master volume level for playback.
   *
   * params: none
-  * retval: uint8_t between 1 and 8 for the audio data divisor.
+  * retval: uint8_t between 1 and 255 for volume scaling.
   *
   */
 uint8_t ReadVolume( void )
 {
+  uint8_t volume = 0;
+
   #ifdef VOLUME_INPUT_DIGITAL
-    // Use digital GPIOs for volume (3 bits, 1-8)
+    // Use digital GPIOs for volume (3 bits, scaled to 1-255)
     uint8_t v =
       ( ( (OPT3_GPIO_Port->IDR & OPT3_Pin) != 0 ) << 2 ) |
       ( ( (OPT2_GPIO_Port->IDR & OPT2_Pin) != 0 ) << 1 ) |
       ( ( (OPT1_GPIO_Port->IDR & OPT1_Pin) != 0 ) << 0 );
 
-    // Map to 1-128 for output
-    v = 192 - ( v * 16 );
-    return v ? v : 1; // Ensure minimum volume of 1
+    v = 7 - v;        // Invert so 0b000 = max volume, 0b111 = min volume
+    uint16_t scaled = ( (uint16_t)v * 255U ) / 7U;  // Map 0-7 to 0-255
+    volume = scaled ? (uint8_t)scaled : 1U;         // Ensure minimum volume of 1
   #else
     // Use 12-bit ADC value (0-4095) for linear volume
     uint16_t lin = adc_raw / 16;  // Scale down and keep below maximum
 
     if( lin > 220 ) lin = 220; // Cap maximum volume
-    return lin ? lin : 1;
+    volume = lin ? lin : 1;
   #endif
+
+  /* Apply non-linear volume response if enabled */
+  return ApplyVolumeResponse( volume );
 } 
 
 /* ADC Conversion Complete Callback */

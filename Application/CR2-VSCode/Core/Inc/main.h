@@ -101,8 +101,12 @@ void Error_Handler(void);
 //#define LOCK_BUILD
 //#define NO_SLEEP_MODE
 
-// Volume special config
-#define VOL_SCALING           16
+// Uncomment to use digital GPIOs for volume instead of ADC
+//#define VOLUME_INPUT_DIGITAL
+
+// Volume response configuration
+#define VOLUME_RESPONSE_NONLINEAR    // Enable non-linear (logarithmic) volume response
+#define VOLUME_RESPONSE_GAMMA 2.0f   // Gamma exponent: 2.0 = quadratic (typical for human perception)
 
 /* USER CODE END Private defines */
 
