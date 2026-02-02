@@ -106,6 +106,7 @@ typedef enum {
   PB_Idle,
   PB_Error,
   PB_Playing,
+  PB_Pausing,
   PB_Paused,
   PB_PlayingFailed
 } PB_StatusTypeDef;

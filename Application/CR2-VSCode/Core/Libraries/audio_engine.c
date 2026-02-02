@@ -1247,7 +1247,14 @@ void SetPlaybackSpeed( uint32_t speed )
   */
 static inline void ProcessDMACallback( uint8_t which_half )
 {
-  /* If paused, stop processing samples and continue outputting silence */
+  /* If pausing and fadeout complete, transition to paused and fill buffer with silence */
+  if( pb_state == PB_Pausing && fadeout_complete ) {
+    memset( pb_buffer, MIDPOINT_S16, sizeof( pb_buffer) );
+    pb_state = PB_Paused;
+    return;
+  }
+
+  // /* If pausing but fadeout not complete, let ProcessNextWaveChunk handle it */
   if( pb_state == PB_Paused ) {
     return;
   }
@@ -1526,9 +1533,6 @@ PB_StatusTypeDef PlaySample (
   if( AudioEngine_I2SInit ) { AudioEngine_I2SInit(); }  // Initialize I2S peripheral with our chosen sample rate.
 
   HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );          // Ensure there is no currently playing sound before starting a new one.
-  if( AudioEngine_DACSwitch ) {                         // starting a new one.
-    AudioEngine_DACSwitch( DAC_ON );                    // Turn on the DAC in readiness.
-  }
   
   // Reset all filter state for new sample
   RESET_ALL_FILTER_STATE();
@@ -1620,30 +1624,18 @@ PB_StatusTypeDef PausePlayback( void )
     return pb_state;  // Can only pause while actively playing
   }
   
-  /* Save current playback state for resuming */
-  pb_paused_state = PB_Paused;
+  /* Initiate smooth fade-out by transitioning to PB_Pausing state */
+  pb_state = PB_Pausing;
+  fadeout_samples_remaining = pause_fadeout_samples;
+  fadeout_complete          = 0;
+  
+  /* Save current playback state for resuming (done after setting PB_Pausing to prevent DMA race) */
   if( pb_mode == 16 ) {
     paused_sample_ptr = (const void *)pb_p16;
   } else {
     paused_sample_ptr = (const void *)pb_p8;
   }
-  
-  /* Initiate smooth fade-out */
-  fadeout_samples_remaining = pause_fadeout_samples;
-  fadeout_complete          = 0;
-  
-  /* Wait for fade-out to complete */
-  while( !fadeout_complete ) {
-    __NOP();
-  }
-  
-  /* Turn off DAC after fade-out completes */
-  if( AudioEngine_DACSwitch ) {
-    AudioEngine_DACSwitch( DAC_OFF );
-  }
-  
-  /* Pause is complete - DMA still running but fade silence being output */
-  pb_state = PB_Paused;
+  pb_paused_state = PB_Pausing;
   
   return PB_Paused;
 }
@@ -1662,15 +1654,6 @@ PB_StatusTypeDef ResumePlayback( void )
   if( pb_state != PB_Paused ) {
     return pb_state;  // Can only resume from paused state
   }
-  
-  /* Turn on DAC before resuming playback */
-  if( AudioEngine_DACSwitch ) {
-    AudioEngine_DACSwitch( DAC_ON );
-  }
-  
-
-  /* Clear buffer to prevent full-volume glitch at resume */
-  memset( pb_buffer, MIDPOINT_S16, sizeof( pb_buffer ) );
   
   /* Restore playback position from where it was paused */
   if( paused_sample_ptr != NULL ) {
@@ -1716,11 +1699,6 @@ void ShutDownAudio( void )
 
     // Stop I2S DMA transmission
     HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );
-
-    // Shutdown the DAC (if function pointer is set)
-    if ( AudioEngine_DACSwitch ) {
-        AudioEngine_DACSwitch( DAC_OFF );
-    }
 }
 
 

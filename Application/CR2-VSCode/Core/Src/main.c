@@ -279,6 +279,7 @@ int main(void)
     // PlaySample( tritone16k1c, TRITONE16K1C_SZ,
     //   I2S_AUDIOFREQ_16K, 16, Mode_mono );
     // WaitForSampleEnd();
+    AudioEngine_DACSwitch( DAC_ON );
     PlaySample( KillBill11k, KILLBILL11K_SZ,
      I2S_AUDIOFREQ_11K, 16, Mode_mono );
     HAL_Delay( 1500 );
