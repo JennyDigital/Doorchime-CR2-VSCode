@@ -642,13 +642,23 @@ static inline uint8_t ApplyVolumeResponse( uint8_t linear_volume )
   *
   * param: DAC_OFF (0) or DAC_ON (non zero)
   * retval: none
+  *
+  * NOTE: HAL_GPIO_WritePin() is not reentrant; protect with interrupt disable
+  * to prevent race conditions on GPIO register access.
   */
 void DAC_MasterSwitch( GPIO_PinState setting )
 {
+  /* Disable interrupts to protect GPIO register access (atomic operation) */
+  uint32_t primask = __get_PRIMASK();
+  __disable_irq();
+  
   /* Change the setting */
   HAL_GPIO_WritePin( NSD_MODE_GPIO_Port, NSD_MODE_Pin, setting );
   
-  /* Wait 10mS no allow the MAX98357A to settle */
+  /* Restore interrupt state before delay to avoid blocking IRQs unnecessarily */
+  __set_PRIMASK( primask );
+  
+  /* Wait 10mS to allow the MAX98357A to settle */
   HAL_Delay( 10 );
 }
 
