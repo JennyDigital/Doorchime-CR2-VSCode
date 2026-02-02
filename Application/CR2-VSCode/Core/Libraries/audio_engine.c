@@ -134,6 +134,7 @@ volatile  uint8_t         half_to_fill;
           PB_ModeTypeDef  channels                    = Mode_mono;
 volatile  uint32_t        fadeout_samples_remaining   = 0;
 volatile  uint32_t        fadein_samples_remaining    = 0;
+volatile  uint8_t         fadeout_complete            = 0;
 
 /* Fade time configuration (stored in seconds, converted to samples based on playback speed) */
           float           fadein_time_seconds         = 0.150f;  // 150ms default
@@ -273,6 +274,7 @@ PB_StatusTypeDef AudioEngine_Init( DAC_SwitchFunc dac_switch,
   pb_mode                                   = 0;
   fadeout_samples_remaining                 = 0;
   fadein_samples_remaining                  = 0;
+  fadeout_complete                          = 0;
   paused_sample_ptr                         = NULL;
   vol_input                                   = 1;
   
@@ -872,6 +874,10 @@ static inline void UpdateFadeCounters( uint32_t samples_processed )
   if( fadeout_samples_remaining > 0 ) {
     fadeout_samples_remaining = ( fadeout_samples_remaining > samples_processed ) ? 
                                 fadeout_samples_remaining - samples_processed : 0;
+    // Set completion flag when fadeout reaches zero
+    if( fadeout_samples_remaining == 0 ) {
+      fadeout_complete = 1;
+    }
   }
 }
 
@@ -1546,6 +1552,7 @@ PB_StatusTypeDef PlaySample (
   // Initialize fade counters
   fadeout_samples_remaining = sample_set_sz;
   fadein_samples_remaining  = fadein_samples;
+  fadeout_complete          = 0;
   
   // Pre-fill the buffer with processed samples before starting DMA
   // This ensures the fade-in is applied from the very first sample that plays
@@ -1623,9 +1630,10 @@ PB_StatusTypeDef PausePlayback( void )
   
   /* Initiate smooth fade-out */
   fadeout_samples_remaining = pause_fadeout_samples;
+  fadeout_complete          = 0;
   
   /* Wait for fade-out to complete */
-  while( fadeout_samples_remaining > 0 ) {
+  while( !fadeout_complete ) {
     __NOP();
   }
   

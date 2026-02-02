@@ -276,12 +276,16 @@ int main(void)
     SetSoftClippingEnable( 1 );
   
     // PlaySample( tt_arrival, TT_ARRIVAL_SZ, I2S_AUDIOFREQ_11K, 16, Mode_mono );
-    PlaySample( tritone16k1c, TRITONE16K1C_SZ,
-      I2S_AUDIOFREQ_16K, 16, Mode_mono );
-    WaitForSampleEnd();
-    // PlaySample( KillBill11k, KILLBILL11K_SZ,
-    //  I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_Medium );
+    // PlaySample( tritone16k1c, TRITONE16K1C_SZ,
+    //   I2S_AUDIOFREQ_16K, 16, Mode_mono );
     // WaitForSampleEnd();
+    PlaySample( KillBill11k, KILLBILL11K_SZ,
+     I2S_AUDIOFREQ_11K, 16, Mode_mono );
+    HAL_Delay( 1500 );
+    PausePlayback();
+    HAL_Delay( 3000 );
+    ResumePlayback();
+    WaitForSampleEnd();
     // PlaySample( dramatic_organ11k, DRAMATIC_ORGAN11K_SZ,
     //     I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_Firm );
     // PlaySample( theremin_quartet11k, THEREMIN_QUARTET11K_SZ,
