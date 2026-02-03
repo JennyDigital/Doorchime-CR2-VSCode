@@ -71,10 +71,10 @@ flowchart TB
 
 ```mermaid
 flowchart TD
-    Start([Application calls<br/>PlaySample()]) --> CheckState{Playback<br/>Already Active?}
+    Start([Application calls<br/>PlaySample]) --> CheckState{Playback<br/>Already Active?}
     
     CheckState -->|Yes| ReturnError[Return PB_Error]
-    CheckState -->|No| StoreParams["Store Parameters:<br/>• Sample pointer<br/>• Sample size<br/>• Sample rate<br/>• Bit depth<br/>• Mode (mono/stereo)"]
+    CheckState -->|No| StoreParams["Store Parameters:<br/>• Sample pointer<br/>• Sample size<br/>• Sample rate<br/>• Bit depth<br/>• Mode: mono or stereo"]
     
     StoreParams --> ResetState["Reset Engine State:<br/>• Clear filter states<br/>• Reset fade counters<br/>• Initialize pointers"]
     
@@ -83,17 +83,17 @@ flowchart TD
     CheckDepth -->|16-bit| Check16Filters{Biquad LPF<br/>Enabled?}
     CheckDepth -->|8-bit| StartDMA
     
-    Check16Filters -->|Yes| Warmup["Warm-up Biquad Filter<br/>(16 cycles)<br/>Prevent startup transient"]
+    Check16Filters -->|Yes| Warmup["Warm-up Biquad Filter<br/>16 cycles<br/>Prevent startup transient"]
     Check16Filters -->|No| StartDMA
     
-    Warmup --> StartDMA["Start I2S DMA Transfer:<br/>HAL_I2S_Transmit_DMA()"]
+    Warmup --> StartDMA["Start I2S DMA Transfer:<br/>HAL_I2S_Transmit_DMA"]
     
     StartDMA --> CheckDMAResult{DMA Start<br/>Success?}
     
     CheckDMAResult -->|No| ReturnError
     CheckDMAResult -->|Yes| SetState["Set State = PB_Playing"]
     
-    SetState --> EnableDAC["Enable DAC:<br/>AudioEngine_DACSwitch(DAC_ON)"]
+    SetState --> EnableDAC["Enable DAC:<br/>AudioEngine_DACSwitch: DAC_ON"]
     
     EnableDAC --> ReturnSuccess[Return PB_Playing]
     ReturnError --> End1([End])
