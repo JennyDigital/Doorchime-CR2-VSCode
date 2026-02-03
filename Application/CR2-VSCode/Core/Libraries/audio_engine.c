@@ -265,9 +265,9 @@ PB_StatusTypeDef AudioEngine_Init( DAC_SwitchFunc dac_switch,
   }
   
   /* Assign hardware interface functions */
-  AudioEngine_DACSwitch = dac_switch;
-  AudioEngine_ReadVolume = read_volume;
-  AudioEngine_I2SInit = i2s_init;
+  AudioEngine_DACSwitch   = dac_switch;
+  AudioEngine_ReadVolume  = read_volume;
+  AudioEngine_I2SInit     = i2s_init;
   
   /* Reset all filter state variables to clean state */
   RESET_ALL_FILTER_STATE();
@@ -278,7 +278,7 @@ PB_StatusTypeDef AudioEngine_Init( DAC_SwitchFunc dac_switch,
   fadeout_samples_remaining                 = 0;
   fadein_samples_remaining                  = 0;
   paused_sample_ptr                         = NULL;
-  vol_input                                   = 1;
+  vol_input                                 = 1;
   
   /* Reset dither state to non-zero seed */
   dither_state = 12345;

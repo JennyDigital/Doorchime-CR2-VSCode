@@ -267,6 +267,7 @@ int main(void)
     if( GetTriggerOption() == AUTO_TRIG_DISABLED ) {
       LPSystemClock_Config();
       HAL_SuspendTick();
+      __disable_irq();
       while( 1 ) {  // Infinite sleep loop
         __DSB();    // Data synchronization barrier
         __WFE();    // Wait for event (STOP mode)
