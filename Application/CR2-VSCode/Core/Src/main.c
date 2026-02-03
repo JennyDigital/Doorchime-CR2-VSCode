@@ -33,9 +33,8 @@
 /* USER CODE BEGIN Includes */
 //
 #include <stdint.h>
+#include <stdbool.h>
 #include <math.h>
-//#include "stm32g474xx.h"
-//#include "stm32g4xx_hal.h"
 #include "stm32g4xx_hal_adc_ex.h"
 #include "stm32g4xx_hal_tim_ex.h"
 #include "stm32g4xx_hal_tim.h"
@@ -204,10 +203,10 @@ int main(void)
 
   // FilterConfig_TypeDef filter_cfg;
   filter_cfg.enable_noise_gate            = 0;  // Noise gate disabled by default; enable as needed
-  filter_cfg.enable_16bit_biquad_lpf      = 0;
-  filter_cfg.enable_8bit_lpf              = 0;
-  filter_cfg.enable_soft_dc_filter_16bit  = 0;
-  filter_cfg.enable_soft_clipping         = 0;
+  filter_cfg.enable_16bit_biquad_lpf      = 0;  // 16-bit biquad LPF disabled by default; enable as needed
+  filter_cfg.enable_8bit_lpf              = 0;  // 8-bit LPF disabled by default; enable as needed
+  filter_cfg.enable_soft_dc_filter_16bit  = 1;  // Soft DC blocking filter for 16-bit samples enabled by default
+  filter_cfg.enable_soft_clipping         = 1;  // Soft clipping enabled by default
   filter_cfg.enable_air_effect            = 0;  // Air effect (high-shelf brightening) disabled by default; enable as needed
 
   SetLpfMakeupGain8Bit( 0.9f );           // Slight attenuation to prevent clipping after LPF
@@ -219,16 +218,16 @@ int main(void)
   SetAirEffectPresetDb( 2 );       // default +3 dB preset
   
   // Set fade times
-  SetFadeInTime( 2.0f );                // 250 ms fade-in
-  SetFadeOutTime( 2.0f );               // 2000 ms fade-out
-  SetPauseFadeTime( 1.0f );             // 2000 ms pause fade-out
+  SetFadeInTime(0.15f );                // 150 ms fade-in
+  SetFadeOutTime( 0.15f );              // 150 ms fade-out
+  SetPauseFadeTime( 1.0f );             // 1000 ms pause fade-out
   SetResumeFadeTime( 1.0f );            // 1000 ms resume fade-in
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
+  while( true )
   {
 
     // Wait for playback trigger (if enabled)
@@ -238,63 +237,17 @@ int main(void)
       WaitForTrigger( TRIGGER_SET );
     }
 #endif
-    // PlaySample( intosuffering22k1c, INTOSUFFERING22K1C_SZ,
-    //     I2S_AUDIOFREQ_22K, 16, Mode_mono, LPF_Medium ); 
-    // PlaySample( guitar_harmony2_16bm_11k, GUITAR_HARMONY2_16BM_11K_SZ,
-    // I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_VerySoft );
-    // Start playback of your chosen sample here
-    // WaitForSampleEnd();
-    // PlaySample( handpan16bm, HANDPAN16BM_SZ,
-    //     I2S_AUDIOFREQ_44K, 16, Mode_mono, LPF_Medium );
-    // WaitForSampleEnd();
-    // PlaySample( magic_gong44k, MAGIC_GONG44K_SZ,
-    //     I2S_AUDIOFREQ_44K, 16, Mode_mono, LPF_Medium );
-    // WaitForSampleEnd();
-    // PlaySample( custom_tritone16k, CUSTOM_TRITONE16K_SZ,
-    //   I2S_AUDIOFREQ_16K, 16, Mode_mono, LPF_Medium );
-    // WaitForSampleEnd();
-    // PlaySample( rooster16b2c, ROOSTER16B2C_SZ, I2S_AUDIOFREQ_22K, 16, Mode_stereo, LPF_Medium );
-    // WaitForSampleEnd();
-    // PlaySample( ocarina32k, OCARINA32K_SZ,
-    //     I2S_AUDIOFREQ_32K, 16, Mode_mono, LPF_Aggressive );
-    // WaitForSampleEnd();
-    // PlaySample( rooster8b2c, ROOSTER8B2C_SZ,
-    // I2S_AUDIOFREQ_22K, 8, Mode_stereo, LPF_VerySoft );
-    // WaitForSampleEnd();
-    // PlaySample( dreamy22k, DREAMY22K_SZ,
-    //     I2S_AUDIOFREQ_22K, 16, Mode_mono, LPF_Medium );
-    // PlaySample( mind_the_door, MIND_THE_DOOR_SZ,
-    //     I2S_AUDIOFREQ_22K, 16, Mode_mono, LPF_Medium ); 
-    //  PlaySample( harmony8b, HARMONY8B_SZ,
-    //     I2S_AUDIOFREQ_11K, 8, Mode_mono, LPF_VerySoft );
-    // WaitForSampleEnd();
-    // PlaySample( custom_tritone16k, CUSTOM_TRITONE16K_SZ,
-    //   I2S_AUDIOFREQ_16K, 16, Mode_mono, LPF_VerySoft );
-    // WaitForSampleEnd();
-
+ 
+    // Start playback of samples
+    //
     SetLpf16BitLevel( LPF_Medium );
     SetSoftClippingEnable( 1 );
-  
-    // PlaySample( tt_arrival, TT_ARRIVAL_SZ, I2S_AUDIOFREQ_11K, 16, Mode_mono );
-    // PlaySample( tritone16k1c, TRITONE16K1C_SZ,
-    //   I2S_AUDIOFREQ_16K, 16, Mode_mono );
-    // WaitForSampleEnd();
     AudioEngine_DACSwitch( DAC_ON );
-    PlaySample( KillBill11k, KILLBILL11K_SZ,
-     I2S_AUDIOFREQ_11K, 16, Mode_mono );
-    HAL_Delay( 1000 );  // Align pause with end-of-file fadeout start (18.192s - 2s fadeout)
-    PausePlayback();
-    HAL_Delay( 1500 );    // Resume during pause fadeout (500ms into 1s fade)
-    ResumePlayback();
+    
+    PlaySample( tritone16k1c, TRITONE16K1C_SZ,
+      I2S_AUDIOFREQ_16K, 16, Mode_mono );
     WaitForSampleEnd();
-    // PlaySample( dramatic_organ11k, DRAMATIC_ORGAN11K_SZ,
-    //     I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_Firm );
-    // PlaySample( theremin_quartet11k, THEREMIN_QUARTET11K_SZ,
-    //     I2S_AUDIOFREQ_11K, 16, Mode_mono, LPF_VerySoft );
-    // HAL_Delay( 1000 );
-    // PausePlayback();
-    // HAL_Delay( 2000 );
-    // ResumePlayback();
+    AudioEngine_DACSwitch( DAC_OFF );
 
     ShutDownAudio();
 
