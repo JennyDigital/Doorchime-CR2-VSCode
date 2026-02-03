@@ -207,8 +207,8 @@ Filter Chain Components:
   • Soft clipping (±28,000 threshold, ±85% of full scale)
   • Fade in/out effects (configurable)
   • Noise gate (optional)
-  • Dithering for 8-bit samples (TPDF)
-   • Air Effect (high-shelf brightening; presets 0/+2/+3 dB and direct dB control)
+   • Dithering for 8-bit samples (TPDF)
+   • Air Effect (high-shelf brightening; presets +1/+2/+3 dB and direct dB control)
 
 Implementation:
   • All filters use fixed-point integer arithmetic
@@ -225,7 +225,7 @@ y_pos_whats_new = 0.14
 whats_new_text = """WHAT'S NEW
 
 • Flash Footprint: .text ≈ 12.9 KB (Release build)
-• Air Effect: High-shelf brightening with runtime presets (0, +2, +3 dB) and direct dB control
+• Air Effect: High-shelf brightening with runtime presets (+1, +2, +3 dB) and direct dB control
 • Startup Improvements: WarmupBiquadFilter16Bit() and RESET_ALL_FILTER_STATE() reduce transients and simplify PlaySample()
 • Documentation: Manual and README updated; enhanced visuals and PDF report
 """
@@ -499,7 +499,7 @@ specs_detailed = """TECHNICAL SPECIFICATIONS & IMPLEMENTATION DETAILS
    Purpose:  Add presence and brightness by boosting treble
    Type:     One-pole high-shelf filter (CPU efficient)
    Cutoff:   α ≈ 0.75 (≈5–6 kHz @ 22 kHz sample rate)
-   Gain:     Shelf gain clamped to 2.0× (presets: 0, +2, +3 dB)
+   Gain:     Shelf gain clamped to 2.0× (presets: +1, +2, +3 dB)
    Runtime:  Enable via `enable_air_effect`; tune via `SetAirEffectPresetDb()` or `SetAirEffectGainDb()`
    Position: After DC filter, before fade/clipping in the chain
 
