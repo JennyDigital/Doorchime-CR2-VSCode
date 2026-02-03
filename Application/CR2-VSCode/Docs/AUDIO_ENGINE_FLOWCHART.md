@@ -234,7 +234,7 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    UserConfig([User calls<br/>SetFilterConfig\(\)]) --> Batch{Batch Update or<br/>Single Function?}
+    UserConfig([User calls<br/>SetFilterConfig()]) --> Batch{Batch Update or<br/>Single Function?}
     
     Batch -->|Batch| GetCurrent["GetFilterConfig()<br/>Read current settings"]
     Batch -->|Single| DirectSet["Call specific setter:<br/>• SetLpf16BitLevel()<br/>• SetAirEffectPresetDb()<br/>• SetSoftClippingEnable()"]
@@ -334,7 +334,7 @@ stateDiagram-v2
 
 ```mermaid
 flowchart TD
-    UserCall([User calls<br/>SetAirEffectPresetDb\(preset_index\)]) --> StoreIndex["Store preset_index"]
+    UserCall([User calls<br/>SetAirEffectPresetDb(preset_index)]) --> StoreIndex["Store preset_index"]
     
     StoreIndex --> CheckIndex{preset_index == 0?}
     
