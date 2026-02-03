@@ -133,7 +133,7 @@ The audio playback system follows a clear data flow from flash memory through DS
 1. **Biquad Low-Pass Filter** *(Optional - enable_16bit_biquad_lpf)*
    - Second-order IIR filter
     - Runtime-configurable aggressiveness: Very Soft → Aggressive
-    - Warm-up: 16 passes of first sample to prevent startup artifacts
+    - Warm-up: 16 passes of first sample to prevent startup artefacts
     - Cutoff range (22 kHz fs, approx): ~2.6 kHz (Very Soft), ~1.4 kHz (Soft), ~0.9 kHz (Medium), ~0.2 kHz (Aggressive)
     - 64-bit accumulator in the biquad path to prevent overflow with aggressive settings
 
@@ -412,7 +412,7 @@ printf("Playback complete\n");
 ```
 
 ##### `PausePlayback()`
-Pause ongoing playback (can resume later).
+Pause ongoing playback (can resume later) with smooth fade-out.
 
 ```c
 PB_StatusTypeDef PausePlayback(void);
@@ -422,6 +422,13 @@ PB_StatusTypeDef PausePlayback(void);
 - `PB_Paused` on success
 - `PB_Idle` if no audio was playing
 
+**Notes:**
+- Pause fadeout duration set by `SetPauseFadeTime()`
+- Intelligently handles edge cases to prevent audible artefacts:
+  - **Pausing during fade-in:** Scales pause fadeout proportionally to start from current volume
+  - **Pausing during end-of-file fadeout:** Scales pause fadeout to maintain smooth volume continuity
+- All transitions use quadratic volume curves for smooth audio
+
 **Example:**
 ```c
 if (user_pressed_pause_button) {
@@ -430,7 +437,7 @@ if (user_pressed_pause_button) {
 ```
 
 ##### `ResumePlayback()`
-Resume previously paused audio.
+Resume previously paused audio with smooth fade-in.
 
 ```c
 PB_StatusTypeDef ResumePlayback(void);
@@ -439,6 +446,11 @@ PB_StatusTypeDef ResumePlayback(void);
 **Returns:**
 - `PB_Playing` on success
 - `PB_Idle` if no paused audio
+
+**Notes:**
+- Resume fadein duration set by `SetResumeFadeTime()`
+- Audio fades in smoothly from silence using a quadratic volume curve
+- Playback resumes from the exact position where it was paused
 
 **Example:**
 ```c
@@ -637,7 +649,7 @@ The 16-bit biquad uses **lower α for heavier filtering** (same direction as the
 | **Medium** | 0.875 | Balanced filtering |
 | **Aggressive** | ~0.97 | Strongest filtering / darkest tone / lowest cutoff |
 
-- Warm-up (16 passes) still runs to suppress startup artifacts at the most aggressive setting.
+- Warm-up (16 passes) still runs to suppress startup artefacts at the most aggressive setting.
 
 **Recommended Input Range for Best Quality:**
 
@@ -698,7 +710,7 @@ Soft clipping prevents harsh digital distortion when audio peaks exceed a thresh
 - **Benefit**: Musical, transparent limiting
 
 **When to Enable:**
-- Always recommended (prevents clipping artifacts)
+- Always recommended (prevents clipping artefacts)
 - Disable only if maximum undistorted headroom needed
 
 ### Air Effect (High-Shelf Brightening Filter)
@@ -927,7 +939,7 @@ Where coefficients are derived from α:
 - Automatically invoked when playing 16-bit audio with enabled LPF
 - Feeds the first audio sample through the biquad filter `BIQUAD_WARMUP_CYCLES` times on each channel (default: 16)
 - Allows filter state to converge smoothly before DMA streaming starts
-- Result: Eliminates startup transient artifacts
+- Result: Eliminates startup transient artefacts
 
 **Configuration:**
 The warm-up behavior can be adjusted by changing the `BIQUAD_WARMUP_CYCLES` define in `audio_engine.h`:
@@ -1578,7 +1590,7 @@ The Audio Engine provides a complete, production-ready solution for embedded aud
 2. **Modular Filter Chain** - Enable/disable each stage independently
 3. **Runtime Configuration** - Adjust filter parameters without recompilation
 4. **DMA-Driven Streaming** - Efficient background audio playback
-5. **Warm-Up Initialization** - Eliminates startup artifacts with aggressive filtering
+5. **Warm-Up Initialization** - Eliminates startup artefacts with aggressive filtering
 
 For questions or issues, refer to the troubleshooting section or review the provided code examples.
 

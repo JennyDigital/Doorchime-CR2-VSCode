@@ -134,8 +134,16 @@ PB_StatusTypeDef PausePlayback(void);
 **Returns:** `PB_Paused` if successful, `PB_Error` if no playback active
 
 **Notes:**
-- Fade-out time set by `SetPauseFadeTime()`
+- Fade-out duration set by `SetPauseFadeTime()`
 - Preserves playback position for resume
+- Handles edge cases smoothly:
+  - **Pausing during fade-in:** Scales pause fadeout to start from current volume level
+  - **Pausing during end-of-file fadeout:** Scales pause fadeout proportionally to maintain smooth volume continuity
+- All fade transitions use quadratic volume curves to prevent audible discontinuities
+- Handles edge cases smoothly:
+  - **Pausing during fade-in:** Scales pause fadeout to start from current volume level
+  - **Pausing during end-of-file fadeout:** Scales pause fadeout proportionally to maintain smooth volume continuity
+- All fade transitions use quadratic volume curves to prevent audible discontinuities
 
 ### `ResumePlayback()`
 
@@ -148,8 +156,10 @@ PB_StatusTypeDef ResumePlayback(void);
 **Returns:** `PB_Playing` if successful, `PB_Error` if not paused
 
 **Notes:**
-- Fade-in time set by `SetResumeFadeTime()`
+- Fade-in duration set by `SetResumeFadeTime()`
 - Resumes from the exact paused position
+- Audio fades in smoothly from silence using quadratic curve
+- Audio fades in smoothly from silence using quadratic curve
 
 ### `ShutDownAudio()`
 
@@ -656,11 +666,17 @@ void SetPauseFadeTime(float seconds);
 
 **Notes:**
 - Separate from main fade-out; typically longer for smooth pause
-- Default: ~0.100 seconds (100 ms)
+- Default: ~1.0 seconds (1000 ms)
+- Applied intelligently when pausing:
+  - During fade-in: Scaled proportionally to current volume
+  - During end-of-file fadeout: Scaled to maintain continuity from current level
+- Applied intelligently when pausing:
+  - During fade-in: Scaled proportionally to current volume
+  - During end-of-file fadeout: Scaled to maintain continuity from current level
 
 ### `GetPauseFadeTime()`
 
-Query current pause fade-out time.
+Query current pause fade-out duration.
 
 ```c
 float GetPauseFadeTime(void);
