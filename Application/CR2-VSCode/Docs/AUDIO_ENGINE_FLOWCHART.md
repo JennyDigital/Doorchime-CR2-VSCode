@@ -71,7 +71,7 @@ flowchart TB
 
 ```mermaid
 flowchart TD
-    Start([Application calls<br/>PlaySample\(\)]) --> CheckState{Playback<br/>Already Active?}
+    Start([Application calls<br/>PlaySample()]) --> CheckState{Playback<br/>Already Active?}
     
     CheckState -->|Yes| ReturnError[Return PB_Error]
     CheckState -->|No| StoreParams["Store Parameters:<br/>• Sample pointer<br/>• Sample size<br/>• Sample rate<br/>• Bit depth<br/>• Mode (mono/stereo)"]
