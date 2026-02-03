@@ -38,7 +38,7 @@ extern "C" {
 #include <cmsis_gcc.h>
 
 /**
-  * @brief Save interrupt state and disable all interrupts
+  * @brief Save interrupt state and disable all interrupts with memory barriers
   * 
   * Usage:
   *   ATOMIC_ENTER();
@@ -50,16 +50,20 @@ extern "C" {
   * already disabled before entering the critical section).
   * 
   * Uses a local variable _atomic_primask to store the original PRIMASK value.
+  * DSB ensures pending memory operations complete before disabling interrupts.
+  * ISB ensures instruction fetch is synchronized after disabling interrupts.
   */
-#define ATOMIC_ENTER() uint32_t _atomic_primask = __get_PRIMASK(); __disable_irq()
+#define ATOMIC_ENTER() uint32_t _atomic_primask = __get_PRIMASK(); __disable_irq(); __DSB(); __ISB()
 
 /**
-  * @brief Restore the interrupt state saved by ATOMIC_ENTER()
+  * @brief Restore the interrupt state saved by ATOMIC_ENTER() with memory barrier
   * 
   * Must be paired with ATOMIC_ENTER() in the same scope.
   * Restores the PRIMASK register to its value before ATOMIC_ENTER() was called.
+  * DSB ensures all memory operations in critical section complete before 
+  * re-enabling interrupts.
   */
-#define ATOMIC_EXIT() __set_PRIMASK(_atomic_primask)
+#define ATOMIC_EXIT() __DSB(); __set_PRIMASK(_atomic_primask)
 
 #ifdef __cplusplus
 }
