@@ -357,7 +357,7 @@ wkhtmltopdf docs/html/index.html Audio_Engine_API_Docs.pdf
 
 ### Implementation Questions
 1. Check [QUICK_REFERENCE.md](QUICK_REFERENCE.md) for similar pattern
-2. Look at complete example in [API_REFERENCE.md](API_REFERENCE.md#complete-example)
+2. Look at complete example in [API_REFERENCE.md](API_REFERENCE.md#complete-example-interactive-audio-control)
 3. Review source code in `audio_engine.c`
 
 ## ✅ Documentation Quality Standards

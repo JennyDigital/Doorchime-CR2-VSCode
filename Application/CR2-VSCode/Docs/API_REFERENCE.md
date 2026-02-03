@@ -12,7 +12,7 @@ Complete function reference for the STM32 Audio Engine with all getters, setters
 5. [Air Effect Control](#air-effect-control)
 6. [Fade Time Control](#fade-time-control)
 7. [Chunk Processing (DMA Callbacks)](#chunk-processing-dma-callbacks)
-8. [Status & Queries](#status--queries)
+8. [Status & Queries](#status-queries)
 
 ---
 

@@ -139,16 +139,16 @@ The same Doxygen format can be used by:
 ### Configuration Setter/Getter Pairs
 ```c
 /**
- * @brief Set the [feature]
- * @param[in] [param] [Description with valid values]
+ * @brief Set the <feature>
+ * @param[in] <param> <Description with valid values>
  */
-void Set[Feature]([Type] [param]);
+void Set<Feature>(<Type> <param>);
 
 /**
- * @brief Get the current [feature] setting
- * @return Current [feature]
+ * @brief Get the current <feature> setting
+ * @return Current <feature>
  */
-[ReturnType] Get[Feature](void);
+<ReturnType> Get<Feature>(void);
 ```
 
 Example: `SetFadeInTime()` / `GetFadeInTime()`
@@ -156,11 +156,11 @@ Example: `SetFadeInTime()` / `GetFadeInTime()`
 ### Enumeration-Based Functions
 ```c
 /**
- * @brief Set [feature] to a predefined level
+ * @brief Set <feature> to a predefined level
  * @param[in] level One of: LPF_Off, LPF_VerySoft, LPF_Soft, ... (enumeration values)
  * @note [Explanation of how levels affect behavior]
  */
-void Set[Feature]Level(LPF_Level level);
+void Set<Feature>Level(LPF_Level level);
 ```
 
 Example: `SetLpf8BitLevel()`
@@ -168,11 +168,11 @@ Example: `SetLpf8BitLevel()`
 ### Dual-Unit Functions (Q16 and dB)
 ```c
 /**
- * @brief Set [feature] gain using [unit]
- * @param[in] gain_[unit] Gain in [unit] ([range])
+ * @brief Set <feature> gain using <unit>
+ * @param[in] gain_<unit> Gain in <unit> (<range>)
  * @note [Relationship to other unit, e.g., "6.0 dB ≈ 2x gain"]
  */
-void Set[Feature]Gain[Unit]([Type] gain_[unit]);
+void Set<Feature>Gain<Unit>(<Type> gain_<unit>);
 ```
 
 Examples:

@@ -2,6 +2,54 @@
 
 Complete alphabetical index of all 40+ public functions in the Audio Engine API, organized by category with quick descriptions.
 
+<!-- Anchor targets for internal links -->
+<a id="advancesamplepointer"></a>
+<a id="audioengine_init"></a>
+<a id="calclpf16bitalphafromotoff"></a>
+<a id="cycleaireffectpresetdb"></a>
+<a id="getaireffectenable"></a>
+<a id="getaireffectgaindb"></a>
+<a id="getaireffectgainq16"></a>
+<a id="getaireffectpresetcount"></a>
+<a id="getaireffectpresetdb"></a>
+<a id="getaireffectpresetindex"></a>
+<a id="getfadeintime"></a>
+<a id="getfadeouttime"></a>
+<a id="getfilterconfig"></a>
+<a id="gethalftofill"></a>
+<a id="getlpf8bitlevel"></a>
+<a id="getlpf16bitcustomalphafromotoff"></a>
+<a id="getpausefadetime"></a>
+<a id="getplaybackspeed"></a>
+<a id="getplaybackstate"></a>
+<a id="getresumefadetime"></a>
+<a id="getsoftclippingenable"></a>
+<a id="hal_i2s_txcpltcallback"></a>
+<a id="hal_i2s_txhalfcpltcallback"></a>
+<a id="pauseplayback"></a>
+<a id="playsample"></a>
+<a id="processnextwavechunk"></a>
+<a id="processnextwavechunk_8_bit"></a>
+<a id="resumeplayback"></a>
+<a id="setaireffectenable"></a>
+<a id="setaireffectgaindb"></a>
+<a id="setaireffectgainq16"></a>
+<a id="setfadeintime"></a>
+<a id="setfadeouttime"></a>
+<a id="setfilterconfig"></a>
+<a id="sethalftofill"></a>
+<a id="setlpf8bitlevel"></a>
+<a id="setlpf16bitcustomalpha"></a>
+<a id="setlpf16bitlevel"></a>
+<a id="setlpfmakeupgain8bit"></a>
+<a id="setpausefadetime"></a>
+<a id="setplaybackspeed"></a>
+<a id="setplaybackstate"></a>
+<a id="setresumefadetime"></a>
+<a id="setsoftclippingenable"></a>
+<a id="shutdownaudio"></a>
+<a id="waitforsampleend"></a>
+
 ## 📑 Alphabetical Index
 
 | Function | Category | Description |

@@ -150,8 +150,8 @@ Both provide the same preset names (Very Soft, Soft, Medium, Aggressive) for con
 Visual representations of the filter characteristics are available in the project:
 
 ### Generated Graphs
-- [Docs/filter_characteristics_enhanced.png](Docs/filter_characteristics_enhanced.png) - Comprehensive filter analysis
-- [Docs/Filter_Report_Enhanced.pdf](Docs/Filter_Report_Enhanced.pdf) - A4 technical report with all graphs and tables
+- [filter_characteristics_enhanced.png](filter_characteristics_enhanced.png) - Comprehensive filter analysis
+- [Filter_Report_Enhanced.pdf](Filter_Report_Enhanced.pdf) - A4 technical report with all graphs and tables
 
 ### Generating Fresh Graphs
 
@@ -366,9 +366,9 @@ This project includes extensive documentation to help you understand and use the
 ### Included Files
 
 - **README.md** (this file) - Quick start and overview
-- [Docs/AUDIO_ENGINE_MANUAL.md](Docs/AUDIO_ENGINE_MANUAL.md) - Complete technical manual
-- [Docs/Filter_Report_Enhanced.pdf](Docs/Filter_Report_Enhanced.pdf) - A4 technical report with graphs
-- [Docs/filter_characteristics_enhanced.png](Docs/filter_characteristics_enhanced.png) - Visual filter analysis
+- [AUDIO_ENGINE_MANUAL.md](AUDIO_ENGINE_MANUAL.md) - Complete technical manual
+- [Filter_Report_Enhanced.pdf](Filter_Report_Enhanced.pdf) - A4 technical report with graphs
+- [filter_characteristics_enhanced.png](filter_characteristics_enhanced.png) - Visual filter analysis
 
 ### Key Configuration Defines
 
@@ -483,4 +483,4 @@ This project is provided under the MIT License. See LICENSE file for details.
 **Last Updated**: January 2026  
 **Maintainer**: Audio Engine Team
 
-For detailed technical information, see [Docs/AUDIO_ENGINE_MANUAL.md](Docs/AUDIO_ENGINE_MANUAL.md).
+For detailed technical information, see [AUDIO_ENGINE_MANUAL.md](AUDIO_ENGINE_MANUAL.md).

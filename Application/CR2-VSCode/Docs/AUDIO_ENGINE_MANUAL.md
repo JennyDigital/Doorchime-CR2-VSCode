@@ -8,7 +8,7 @@
 4. [API Reference](#api-reference)
 5. [Filter Configuration](#filter-configuration)
 6. [Playing Audio](#playing-audio)
-7. [Filter Parameters & Tuning](#filter-parameters--tuning)
+7. [Filter Parameters & Tuning](#filter-parameters-tuning)
 8. [Volume Control](#volume-control)
 9. [Hardware Integration](#hardware-integration)
 10. [Examples](#examples)
