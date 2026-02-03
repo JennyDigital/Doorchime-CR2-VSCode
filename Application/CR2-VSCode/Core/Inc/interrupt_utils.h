@@ -32,6 +32,8 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
+
 /* ARM Cortex-M CMSIS functions for interrupt control */
 #include <cmsis_gcc.h>
 

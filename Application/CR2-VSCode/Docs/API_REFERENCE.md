@@ -159,7 +159,48 @@ PB_StatusTypeDef ResumePlayback(void);
 - Fade-in duration set by `SetResumeFadeTime()`
 - Resumes from the exact paused position
 - Audio fades in smoothly from silence using quadratic curve
-- Audio fades in smoothly from silence using quadratic curve
+
+### `StopPlayback()`
+
+Request asynchronous stop with normal end-of-play fade-out.
+
+```c
+PB_StatusTypeDef StopPlayback(void);
+```
+
+**Returns:** Current playback state, `PB_Idle` if already idle
+
+**Notes:**
+- Returns immediately (non-blocking)
+- Uses the normal end-of-play fade-out duration
+- DMA callback completes the stop when fade finishes
+- Use `GetStopStatus()` to poll for completion
+- Fade-out duration set by `SetFadeOutTime()`
+
+**Example:**
+```c
+StopPlayback();  // Request stop (returns immediately)
+
+// Wait for stop to complete
+while (GetStopStatus() != PB_Idle) {
+    // Can do other work here while fading out
+}
+```
+
+### `GetStopStatus()`
+
+Poll for asynchronous stop completion.
+
+```c
+PB_StatusTypeDef GetStopStatus(void);
+```
+
+**Returns:** Current playback state (`PB_Idle` when stop is complete)
+
+**Notes:**
+- Only used after calling `StopPlayback()`
+- Returns `PB_Playing` while fade-out is in progress
+- Returns `PB_Idle` when fade-out completes and DMA is stopped
 
 ### `ShutDownAudio()`
 
@@ -896,6 +937,7 @@ void demo_interactive_control(void) {
 | `GetPlaybackState()` | Status | Get current playback state |
 | `GetResumeFadeTime()` | Fade | Get resume fade-in duration |
 | `GetSoftClippingEnable()` | Filter | Query soft clipping state |
+| `GetStopStatus()` | Playback | Poll for asynchronous stop completion |
 | `PausePlayback()` | Playback | Pause playback with fade |
 | `PlaySample()` | Playback | Start playback of audio sample |
 | `ProcessNextWaveChunk()` | Internal | Process 16-bit sample chunk |
@@ -915,6 +957,7 @@ void demo_interactive_control(void) {
 | `SetPauseFadeTime()` | Fade | Set pause fade-out duration |
 | `SetResumeFadeTime()` | Fade | Set resume fade-in duration |
 | `SetSoftClippingEnable()` | Filter | Enable/disable soft clipping |
+| `StopPlayback()` | Playback | Request asynchronous stop with fade |
 | `ShutDownAudio()` | Playback | Stop playback and disable amplifier |
 | `WaitForSampleEnd()` | Playback | Block until playback completes |
 

@@ -27,6 +27,10 @@ if (GetPlaybackState() == PB_Playing) { /* still playing */ }
 PausePlayback();      // Fade out and pause
 ResumePlayback();     // Fade in and resume
 
+// Stop with fade (asynchronous)
+StopPlayback();       // Request stop (returns immediately)
+while (GetStopStatus() != PB_Idle) { /* wait for fade/stop to complete */ }
+
 // Stop all audio
 ShutDownAudio();
 ```
@@ -177,7 +181,7 @@ SetFadeOutTime(slider_value / 100.0f);  // 0.0-1.0 seconds
 
 ## Function Categories
 
-**Playback** (5): `PlaySample`, `WaitForSampleEnd`, `PausePlayback`, `ResumePlayback`, `ShutDownAudio`
+**Playback** (7): `PlaySample`, `WaitForSampleEnd`, `PausePlayback`, `ResumePlayback`, `StopPlayback`, `GetStopStatus`, `ShutDownAudio`
 
 **Configuration** (2): `SetFilterConfig`, `GetFilterConfig`
 

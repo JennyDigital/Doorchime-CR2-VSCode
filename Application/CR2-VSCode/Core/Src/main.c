@@ -35,6 +35,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <math.h>
+#include "cmsis_gcc.h"
 #include "stm32g4xx_hal_adc_ex.h"
 #include "stm32g4xx_hal_tim_ex.h"
 #include "stm32g4xx_hal_tim.h"
@@ -220,7 +221,7 @@ int main(void)
   
   // Set fade times
   SetFadeInTime(0.15f );                // 150 ms fade-in
-  SetFadeOutTime( 0.15f );              // 150 ms fade-out
+  SetFadeOutTime( 2.0f );              // 150 ms fade-out
   SetPauseFadeTime( 1.0f );             // 1000 ms pause fade-out
   SetResumeFadeTime( 1.0f );            // 1000 ms resume fade-in
 
@@ -245,9 +246,16 @@ int main(void)
     SetSoftClippingEnable( 1 );
     AudioEngine_DACSwitch( DAC_ON );
 
-    PlaySample( tritone16k1c, TRITONE16K1C_SZ,
-      I2S_AUDIOFREQ_16K, 16, Mode_mono );
-    WaitForSampleEnd();
+    PlaySample( KillBill11k, KILLBILL11K_SZ,
+      I2S_AUDIOFREQ_11K, 16, Mode_mono ); 
+      HAL_Delay( 3000 );
+    StopPlayback();
+    while( GetStopStatus() != PB_Idle ) {
+      __NOP();
+    }
+    //PlaySample( tritone16k1c, TRITONE16K1C_SZ,
+    //  I2S_AUDIOFREQ_16K, 16, Mode_mono );
+    //WaitForSampleEnd();
     AudioEngine_DACSwitch( DAC_OFF );
 
     ShutDownAudio();

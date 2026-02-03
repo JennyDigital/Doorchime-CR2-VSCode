@@ -201,6 +201,9 @@ volatile  uint32_t        paused_sample_index         = 0;
 volatile  const void      *paused_sample_ptr          = NULL;
 volatile  uint32_t        paused_total_samples        = 0;
 
+/* Stop request flag for asynchronous stop with fade-out */
+volatile  uint8_t         stop_requested              = 0;
+
 /* ===== Filter State Reset Macros ===== */
 
 #define RESET_DC_FILTER_STATE() \
@@ -1305,6 +1308,16 @@ static inline void ProcessDMACallback( uint8_t which_half )
   if( pb_mode == 16 ) {
     if( pb_p16 >= pb_end16 ) {
       pb_state = PB_Idle;
+      /* If stop was requested, complete it now */
+      if( stop_requested ) {
+        HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );
+        pb_mode = 0;
+        paused_sample_ptr = NULL;
+        samples_remaining = 0;
+        fadeout_samples_remaining = 0;
+        fadein_samples_remaining = 0;
+        stop_requested = 0;
+      }
       return;
     }
     if( ProcessNextWaveChunk( (int16_t *) pb_p16 ) != PB_Playing ) {
@@ -1314,6 +1327,16 @@ static inline void ProcessDMACallback( uint8_t which_half )
   else if( pb_mode == 8 ) {
     if( pb_p8 >= pb_end8 ) {
       pb_state = PB_Idle;
+      /* If stop was requested, complete it now */
+      if( stop_requested ) {
+        HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );
+        pb_mode = 0;
+        paused_sample_ptr = NULL;
+        samples_remaining = 0;
+        fadeout_samples_remaining = 0;
+        fadein_samples_remaining = 0;
+        stop_requested = 0;
+      }
       return;
     }
     if( ProcessNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PB_Playing ) {
@@ -1736,6 +1759,76 @@ PB_StatusTypeDef ResumePlayback( void )
   fadein_samples_remaining  = pause_fadein_samples;
   
   return PB_Playing;
+}
+
+
+/**
+  * @brief Request asynchronous stop with normal end-of-play fade-out
+  *
+  * Sets a stop request flag that causes playback to fade out using the standard
+  * end-of-play fade and then stop. Returns immediately without blocking.
+  * The DMA callback handles the actual stop when fade completes.
+  *
+  * Use GetStopStatus() to poll for completion: returns PB_Idle when done.
+  *
+  * @retval PB_StatusTypeDef - Current playback state, or PB_Idle if already idle
+  */
+PB_StatusTypeDef StopPlayback( void )
+{
+  if( pb_state == PB_Idle ) {
+    return PB_Idle;
+  }
+
+  /* If already paused, can stop immediately */
+  if( pb_state == PB_Paused ) {
+    HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );
+    pb_state = PB_Idle;
+    pb_mode = 0;
+    paused_sample_ptr = NULL;
+    samples_remaining = 0;
+    fadeout_samples_remaining = 0;
+    fadein_samples_remaining = 0;
+    stop_requested = 0;
+    return PB_Idle;
+  }
+
+  /* Request asynchronous stop (DMA callback will handle it) */
+  stop_requested = 1;
+  
+  /* Ensure we're using normal playback state for fade logic */
+  if( pb_state == PB_Pausing ) {
+    pb_state = PB_Playing;
+    fadeout_samples_remaining = 0;
+  }
+
+  /* Shorten remaining playback to fadeout window so fade starts immediately */
+  if( pb_mode == 16 ) {
+    uint32_t remaining = (uint32_t)(pb_end16 - pb_p16);
+    if( remaining > fadeout_samples ) {
+      pb_end16 = pb_p16 + fadeout_samples;
+    }
+  } else if( pb_mode == 8 ) {
+    uint32_t remaining = (uint32_t)(pb_end8 - pb_p8);
+    if( remaining > fadeout_samples ) {
+      pb_end8 = pb_p8 + fadeout_samples;
+    }
+  }
+
+  return pb_state;
+}
+
+
+/**
+  * @brief Check if asynchronous stop has completed
+  *
+  * Polls the stop completion status. Returns PB_Idle when fade-out has
+  * completed and playback has fully stopped.
+  *
+  * @retval PB_StatusTypeDef - Current playback state (PB_Idle when complete)
+  */
+PB_StatusTypeDef GetStopStatus( void )
+{
+  return pb_state;
 }
 
 
