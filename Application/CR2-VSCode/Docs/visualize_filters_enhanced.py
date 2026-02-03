@@ -196,8 +196,8 @@ def soft_clipping_transfer():
     return input_range, output
 
 # Create the figure with more subplots
-fig = plt.figure(figsize=(16, 12))
-gs = GridSpec(4, 2, figure=fig, hspace=0.35, wspace=0.3)
+fig = plt.figure(figsize=(16, 16))
+gs = GridSpec(4, 2, figure=fig, hspace=0.5, wspace=0.3)
 
 # Plot 1: DC Blocking Filters
 ax1 = fig.add_subplot(gs[0, 0])
@@ -325,8 +325,8 @@ ax7.axhline(3, color='k', linestyle='--', alpha=0.3, linewidth=1, label='+3 dB g
 ax7.grid(True, alpha=0.3, which='both')
 ax7.set_xlabel('Frequency (Hz)')
 ax7.set_ylabel('Magnitude (dB)')
-ax7.set_title('Air Effect Presets (0, +2, +3 dB)\nα=0.75, Shelf Gain max=2.0x')
-ax7.legend(fontsize=8)
+ax7.set_title('Air Effect Presets (+1, +2, +3 dB)\nα=0.75, Shelf Gain max=2.0x')
+ax7.legend(fontsize=8, loc='upper left')
 ax7.set_ylim([-10, 10])
 
 # Add overall title for page 1
@@ -340,7 +340,7 @@ print(f"Enhanced filter characteristics plot saved to: {output_file}")
 
 # ========== PAGE 2: SUMMARY TABLE ==========
 # Create a second figure for the summary/characteristics table
-fig2 = plt.figure(figsize=(16, 12))
+fig2 = plt.figure(figsize=(16, 14))
 ax_summary = fig2.add_subplot(111)
 ax_summary.axis('off')
 
@@ -404,7 +404,7 @@ Air Effect Filter (High-Shelf Brightening)
 Type:                One-pole high-shelf filter
 Cutoff Alpha:        {AIR_EFFECT_CUTOFF:.4f} (≈ 5–6 kHz shelving frequency @ {FS} Hz)
 Shelf Gain:          {AIR_EFFECT_SHELF_GAIN:.4f} (≈ +1.6 dB HF boost @ α=0.75)
-Presets Shown:       0 dB, +2 dB, +3 dB (clamped to 2.0x max)
+Presets Shown:       +1 dB, +2 dB, +3 dB (clamped to 2.0x max)
 Purpose:             Adds presence and brightness to audio
 Runtime Control:     enable_air_effect; SetAirEffectPresetDb(), SetAirEffectGainDb()
 

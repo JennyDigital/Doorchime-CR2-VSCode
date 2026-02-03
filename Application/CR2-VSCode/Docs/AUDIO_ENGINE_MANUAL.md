@@ -789,8 +789,9 @@ Volume Scaling (always active)
 
 **Tuning the Effect:**
 
-- For more sparkle: use `SetAirEffectGainDb(2.0f)` or `SetAirEffectPresetDb(1)` (+2 dB).
-- For stronger presence: `SetAirEffectGainDb(3.0f)` or preset 2 (+3 dB).
+- For subtle brightening: use `SetAirEffectGainDb(1.0f)` or `SetAirEffectPresetDb(1)` (+1 dB).
+- For more sparkle: use `SetAirEffectGainDb(2.0f)` or `SetAirEffectPresetDb(2)` (+2 dB).
+- For stronger presence: `SetAirEffectGainDb(3.0f)` or preset 3 (+3 dB).
 - For a subtle lift: `SetAirEffectGainDb(0.0f)` (flat) or reduce gain below 0 dB if adding presence elsewhere.
 - For different sample rates (e.g., 48 kHz), raise `AIR_EFFECT_CUTOFF` (higher α) to keep the shelf in the upper band.
 
