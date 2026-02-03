@@ -234,14 +234,14 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    UserConfig([User calls<br/>SetFilterConfig()]) --> Batch{Batch Update or<br/>Single Function?}
+    UserConfig([User calls<br/>SetFilterConfig]) --> Batch{Batch Update or<br/>Single Function?}
     
-    Batch -->|Batch| GetCurrent["GetFilterConfig()<br/>Read current settings"]
-    Batch -->|Single| DirectSet["Call specific setter:<br/>• SetLpf16BitLevel()<br/>• SetAirEffectPresetDb()<br/>• SetSoftClippingEnable()"]
+    Batch -->|Batch| GetCurrent["GetFilterConfig<br/>Read current settings"]
+    Batch -->|Single| DirectSet["Call specific setter:<br/>• SetLpf16BitLevel<br/>• SetAirEffectPresetDb<br/>• SetSoftClippingEnable"]
     
     GetCurrent --> Modify["Modify FilterConfig_TypeDef:<br/>• enable_16bit_biquad_lpf<br/>• enable_air_effect<br/>• lpf_16bit_level<br/>• etc."]
     
-    Modify --> SetBatch["SetFilterConfig()<br/>Apply all changes"]
+    Modify --> SetBatch["SetFilterConfig<br/>Apply all changes"]
     
     SetBatch --> UpdateState["Update Internal State:<br/>• Alpha coefficients<br/>• Enable flags<br/>• Preset indices"]
     DirectSet --> UpdateState
@@ -249,7 +249,7 @@ flowchart TD
     UpdateState --> CheckActive{Playback<br/>Active?}
     
     CheckActive -->|Yes| ApplyNext["Filters take effect<br/>on next DMA chunk"]
-    CheckActive -->|No| Ready["Ready for next<br/>PlaySample() call"]
+    CheckActive -->|No| Ready["Ready for next<br/>PlaySample call"]
     
     ApplyNext --> Done1([Configuration Complete])
     Ready --> Done1
@@ -334,18 +334,18 @@ stateDiagram-v2
 
 ```mermaid
 flowchart TD
-    UserCall([User calls<br/>SetAirEffectPresetDb(preset_index)]) --> StoreIndex["Store preset_index"]
+    UserCall([User calls<br/>SetAirEffectPresetDb preset_index]) --> StoreIndex["Store preset_index"]
     
-    StoreIndex --> CheckIndex{preset_index == 0?}
+    StoreIndex --> CheckIndex{preset_index is 0?}
     
-    CheckIndex -->|Yes| DisableAir["SetAirEffectEnable(0)<br/>Disable air effect"]
-    CheckIndex -->|No| GetPresetDB["Get dB value from preset:<br/>preset[1] = +1 dB<br/>preset[2] = +2 dB<br/>preset[3] = +3 dB"]
+    CheckIndex -->|Yes| DisableAir["SetAirEffectEnable 0<br/>Disable air effect"]
+    CheckIndex -->|No| GetPresetDB["Get dB value from preset:<br/>preset 1 = +1 dB<br/>preset 2 = +2 dB<br/>preset 3 = +3 dB"]
     
-    GetPresetDB --> ConvertDB["Convert dB to Q16 gain:<br/>gain_q16 = 65536 × 10^(dB/20)"]
+    GetPresetDB --> ConvertDB["Convert dB to Q16 gain:<br/>gain_q16 = 65536 × 10 to the power dB over 20"]
     
     ConvertDB --> SetGain["Set air effect gain:<br/>air_effect_shelf_gain = gain_q16"]
     
-    SetGain --> EnableAir["SetAirEffectEnable(1)<br/>Enable air effect"]
+    SetGain --> EnableAir["SetAirEffectEnable 1<br/>Enable air effect"]
     
     DisableAir --> UpdateConfig["Update filter_cfg.enable_air_effect"]
     EnableAir --> UpdateConfig
