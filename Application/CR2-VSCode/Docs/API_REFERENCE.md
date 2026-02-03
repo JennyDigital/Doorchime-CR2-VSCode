@@ -915,50 +915,50 @@ void demo_interactive_control(void) {
 
 ## Function Index (Alphabetical)
 
-| Function | Category | Purpose |
-|----------|----------|---------|
-| `AdvanceSamplePointer()` | Internal | Advance to next sample chunk |
-| `AudioEngine_Init()` | Init | Initialize audio engine |
-| `CalcLpf16BitAlphaFromCutoff()` | LPF | Calculate alpha from cutoff frequency |
-| `CycleAirEffectPresetDb()` | Air Effect | Cycle to next air effect preset |
-| `GetAirEffectEnable()` | Air Effect | Query air effect enabled state |
-| `GetAirEffectGainDb()` | Air Effect | Read air effect gain in dB |
-| `GetAirEffectGainQ16()` | Air Effect | Read air effect gain in Q16 format |
-| `GetAirEffectPresetCount()` | Air Effect | Get number of available presets |
-| `GetAirEffectPresetDb()` | Air Effect | Get dB value of a preset |
-| `GetAirEffectPresetIndex()` | Air Effect | Get current preset index |
-| `GetFadeInTime()` | Fade | Get fade-in duration |
-| `GetFadeOutTime()` | Fade | Get fade-out duration |
-| `GetFilterConfig()` | Filter | Get complete filter configuration |
-| `GetLpf16BitCustomAlphaFromCutoff()` | LPF | Calculate 16-bit alpha from cutoff |
-| `GetLpf8BitLevel()` | LPF | Get 8-bit filter aggressiveness |
-| `GetPauseFadeTime()` | Fade | Get pause fade-out duration |
-| `GetPlaybackSpeed()` | Status | Get current playback sample rate |
-| `GetPlaybackState()` | Status | Get current playback state |
-| `GetResumeFadeTime()` | Fade | Get resume fade-in duration |
-| `GetSoftClippingEnable()` | Filter | Query soft clipping state |
-| `GetStopStatus()` | Playback | Poll for asynchronous stop completion |
-| `PausePlayback()` | Playback | Pause playback with fade |
-| `PlaySample()` | Playback | Start playback of audio sample |
-| `ProcessNextWaveChunk()` | Internal | Process 16-bit sample chunk |
-| `ProcessNextWaveChunk_8_bit()` | Internal | Process 8-bit sample chunk |
-| `ResumePlayback()` | Playback | Resume paused playback with fade |
-| `SetAirEffectEnable()` | Air Effect | Enable/disable air effect |
-| `SetAirEffectGainDb()` | Air Effect | Set air effect gain in dB |
-| `SetAirEffectGainQ16()` | Air Effect | Set air effect gain in Q16 format |
-| `SetAirEffectPresetDb()` | Air Effect | Select air effect preset by index |
-| `SetFadeInTime()` | Fade | Set fade-in duration |
-| `SetFadeOutTime()` | Fade | Set fade-out duration |
-| `SetFilterConfig()` | Filter | Apply complete filter configuration |
-| `SetLpf16BitCustomAlpha()` | LPF | Set custom 16-bit LPF alpha |
-| `SetLpf16BitLevel()` | LPF | Set 16-bit filter aggressiveness |
-| `SetLpf8BitLevel()` | LPF | Set 8-bit filter aggressiveness |
-| `SetLpfMakeupGain8Bit()` | LPF | Set 8-bit LPF makeup gain |
-| `SetPauseFadeTime()` | Fade | Set pause fade-out duration |
-| `SetResumeFadeTime()` | Fade | Set resume fade-in duration |
-| `SetSoftClippingEnable()` | Filter | Enable/disable soft clipping |
-| `StopPlayback()` | Playback | Request asynchronous stop with fade |
-| `ShutDownAudio()` | Playback | Stop playback and disable amplifier |
-| `WaitForSampleEnd()` | Playback | Block until playback completes |
+| Function                             | Category   | Purpose                               |
+|--------------------------------------|------------|---------------------------------------|
+| `AdvanceSamplePointer()`             | Internal   | Advance to next sample chunk          |
+| `AudioEngine_Init()`                 | Init       | Initialize audio engine               |
+| `CalcLpf16BitAlphaFromCutoff()`      | LPF        | Calculate alpha from cutoff frequency |
+| `CycleAirEffectPresetDb()`           | Air Effect | Cycle to next air effect preset       |
+| `GetAirEffectEnable()`               | Air Effect | Query air effect enabled state        |
+| `GetAirEffectGainDb()`               | Air Effect | Read air effect gain in dB            |
+| `GetAirEffectGainQ16()`              | Air Effect | Read air effect gain in Q16 format    |
+| `GetAirEffectPresetCount()`          | Air Effect | Get number of available presets       |
+| `GetAirEffectPresetDb()`             | Air Effect | Get dB value of a preset              |
+| `GetAirEffectPresetIndex()`          | Air Effect | Get current preset index              |
+| `GetFadeInTime()`                    | Fade       | Get fade-in duration                  |
+| `GetFadeOutTime()`                   | Fade       | Get fade-out duration                 |
+| `GetFilterConfig()`                  | Filter     | Get complete filter configuration     |
+| `GetLpf16BitCustomAlphaFromCutoff()` | LPF        | Calculate 16-bit alpha from cutoff    |
+| `GetLpf8BitLevel()`                  | LPF        | Get 8-bit filter aggressiveness       |
+| `GetPauseFadeTime()`                 | Fade       | Get pause fade-out duration           |
+| `GetPlaybackSpeed()`                 | Status     | Get current playback sample rate      |
+| `GetPlaybackState()`                 | Status     | Get current playback state            |
+| `GetResumeFadeTime()`                | Fade       | Get resume fade-in duration           |
+| `GetSoftClippingEnable()`            | Filter     | Query soft clipping state             |
+| `GetStopStatus()`                    | Playback   | Poll for asynchronous stop completion |
+| `PausePlayback()`                    | Playback   | Pause playback with fade              |
+| `PlaySample()`                       | Playback   | Start playback of audio sample        |
+| `ProcessNextWaveChunk()`             | Internal   | Process 16-bit sample chunk           |
+| `ProcessNextWaveChunk_8_bit()`       | Internal   | Process 8-bit sample chunk            |
+| `ResumePlayback()`                   | Playback   | Resume paused playback with fade      |
+| `SetAirEffectEnable()`               | Air Effect | Enable/disable air effect             |
+| `SetAirEffectGainDb()`               | Air Effect | Set air effect gain in dB             |
+| `SetAirEffectGainQ16()`              | Air Effect | Set air effect gain in Q16 format     |
+| `SetAirEffectPresetDb()`             | Air Effect | Select air effect preset by index     |
+| `SetFadeInTime()`                    | Fade       | Set fade-in duration                  |
+| `SetFadeOutTime()`                   | Fade       | Set fade-out duration                 |
+| `SetFilterConfig()`                  | Filter     | Apply complete filter configuration   |
+| `SetLpf16BitCustomAlpha()`           | LPF        | Set custom 16-bit LPF alpha           |
+| `SetLpf16BitLevel()`                 | LPF        | Set 16-bit filter aggressiveness      |
+| `SetLpf8BitLevel()`                  | LPF        | Set 8-bit filter aggressiveness       |
+| `SetLpfMakeupGain8Bit()`             | LPF        | Set 8-bit LPF makeup gain             |
+| `SetPauseFadeTime()`                 | Fade       | Set pause fade-out duration           |
+| `SetResumeFadeTime()`                | Fade       | Set resume fade-in duration           |
+| `SetSoftClippingEnable()`            | Filter     | Enable/disable soft clipping          |
+| `StopPlayback()`                     | Playback   | Request asynchronous stop with fade   |
+| `ShutDownAudio()`                    | Playback   | Stop playback and disable amplifier   |
+| `WaitForSampleEnd()`                 | Playback   | Block until playback completes        |
 
 ````
