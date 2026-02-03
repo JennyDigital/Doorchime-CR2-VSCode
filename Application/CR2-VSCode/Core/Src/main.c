@@ -40,6 +40,7 @@
 #include "stm32g4xx_hal_tim.h"
 #include "audio_engine.h"
 #include "lock.h"
+#include "interrupt_utils.h"
 
 // Sample data includes, use as needed.
 #include "newchallenger11k.h"
@@ -243,7 +244,7 @@ int main(void)
     SetLpf16BitLevel( LPF_Medium );
     SetSoftClippingEnable( 1 );
     AudioEngine_DACSwitch( DAC_ON );
-    
+
     PlaySample( tritone16k1c, TRITONE16K1C_SZ,
       I2S_AUDIOFREQ_16K, 16, Mode_mono );
     WaitForSampleEnd();
@@ -607,14 +608,13 @@ static inline uint8_t ApplyVolumeResponse( uint8_t linear_volume )
 void DAC_MasterSwitch( GPIO_PinState setting )
 {
   /* Disable interrupts to protect GPIO register access (atomic operation) */
-  uint32_t primask = __get_PRIMASK();
-  __disable_irq();
+  ATOMIC_ENTER();
   
   /* Change the setting */
   HAL_GPIO_WritePin( NSD_MODE_GPIO_Port, NSD_MODE_Pin, setting );
   
   /* Restore interrupt state before delay to avoid blocking IRQs unnecessarily */
-  __set_PRIMASK( primask );
+  ATOMIC_EXIT();
   
   /* Wait 10mS to allow the MAX98357A to settle */
   HAL_Delay( 10 );
