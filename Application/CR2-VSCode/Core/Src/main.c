@@ -219,10 +219,10 @@ int main(void)
   SetAirEffectPresetDb( 2 );       // default +3 dB preset
   
   // Set fade times
-  SetFadeInTime( 0.1f );                // 100 ms fade-in
-  SetFadeOutTime( 0.1f );               // 100 ms fade-out
-  SetPauseFadeTime( 0.1f );             // 100 ms pause fade-out
-  SetResumeFadeTime( 0.1f );            // 100 ms resume fade-in
+  SetFadeInTime( 2.0f );                // 250 ms fade-in
+  SetFadeOutTime( 2.0f );               // 2000 ms fade-out
+  SetPauseFadeTime( 1.0f );             // 2000 ms pause fade-out
+  SetResumeFadeTime( 1.0f );            // 1000 ms resume fade-in
 
   /* USER CODE END 2 */
 
@@ -282,9 +282,9 @@ int main(void)
     AudioEngine_DACSwitch( DAC_ON );
     PlaySample( KillBill11k, KILLBILL11K_SZ,
      I2S_AUDIOFREQ_11K, 16, Mode_mono );
-    HAL_Delay( 1500 );
+    HAL_Delay( 1000 );  // Align pause with end-of-file fadeout start (18.192s - 2s fadeout)
     PausePlayback();
-    HAL_Delay( 3000 );
+    HAL_Delay( 1500 );    // Resume during pause fadeout (500ms into 1s fade)
     ResumePlayback();
     WaitForSampleEnd();
     // PlaySample( dramatic_organ11k, DRAMATIC_ORGAN11K_SZ,
