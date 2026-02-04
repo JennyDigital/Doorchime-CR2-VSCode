@@ -136,7 +136,7 @@ static  void                MX_TIM7_Init                ( void );
 
 // Hardware-specific function prototypes
         void                DAC_MasterSwitch            ( GPIO_PinState setting );    // Used in audio_engine
-        uint8_t             ReadVolume                  ( void );                     // Used in audio_engine
+        uint16_t            ReadVolume                  ( void );                     // Used in audio_engine
         void                WaitForTrigger              ( uint8_t trig_to_wait_for );
         uint8_t             GetTriggerOption            ( void );
         void                LPSystemClock_Config        ( void );
@@ -212,16 +212,16 @@ int main(void)
   filter_cfg.enable_air_effect            = 0;  // Air effect (high-shelf brightening) disabled by default; enable as needed
 
   SetLpfMakeupGain8Bit( 0.9f );           // Slight attenuation to prevent clipping after LPF
-  SetLpf16BitLevel(LPF_VerySoft);
-  SetSoftClippingEnable( 1 );            // Enable soft clipping
+  SetLpf16BitLevel(LPF_Off);              // Disable 16-bit biquad LPF by default
+  SetSoftClippingEnable( 1 );             // Enable soft clipping
   SetFilterConfig( &filter_cfg );
 
   // Set initial Air Effect boost in dB (runtime adjustable)
   SetAirEffectPresetDb( 2 );       // default +3 dB preset
   
   // Set fade times
-  SetFadeInTime(0.15f );                // 150 ms fade-in
-  SetFadeOutTime( 2.0f );              // 150 ms fade-out
+  SetFadeInTime(0.4f );                // 400 ms fade-in
+  SetFadeOutTime( 0.4f );              // 400 ms fade-out
   SetPauseFadeTime( 1.0f );             // 1000 ms pause fade-out
   SetResumeFadeTime( 1.0f );            // 1000 ms resume fade-in
 
@@ -248,11 +248,11 @@ int main(void)
 
     PlaySample( KillBill11k, KILLBILL11K_SZ,
       I2S_AUDIOFREQ_11K, 16, Mode_mono ); 
-      HAL_Delay( 3000 );
-    StopPlayback();
-    while( GetStopStatus() != PB_Idle ) {
-      __NOP();
-    }
+    WaitForSampleEnd();
+    // StopPlayback();
+    // while( GetStopStatus() != PB_Idle ) {
+    //   __NOP();
+    // }
     //PlaySample( tritone16k1c, TRITONE16K1C_SZ,
     //  I2S_AUDIOFREQ_16K, 16, Mode_mono );
     //WaitForSampleEnd();
@@ -587,19 +587,19 @@ static void MX_ADC1_Init( void )
   * Human perception of loudness follows approximately a logarithmic curve.
   * This function applies a power law to create a more intuitive volume control.
   *
-  * params: linear_volume - Linear volume value (0-255)
-  * retval: uint8_t - Non-linearly scaled volume (0-255)
+  * params: linear_volume - Linear volume value (0-65535)
+  * retval: uint16_t - Non-linearly scaled volume (0-65535)
   *
   */
-static inline uint8_t ApplyVolumeResponse( uint8_t linear_volume )
+static inline uint16_t ApplyVolumeResponse( uint16_t linear_volume )
 {
   #ifdef VOLUME_RESPONSE_NONLINEAR
     /* Normalize to 0.0-1.0 range */
-    float normalized = (float)linear_volume / 255.0f;
+    float normalized = (float)linear_volume / 65535.0f;
     /* Apply power law (gamma > 1 creates logarithmic response) */
     float curved = powf( normalized, 1.0f / VOLUME_RESPONSE_GAMMA );
-    /* Scale back to 0-255 range */
-    return (uint8_t)( curved * 255.0f + 0.5f );
+    /* Scale back to 0-65535 range */
+    return (uint16_t)( curved * 65535.0f + 0.5f );
   #else
     /* Linear response - no scaling */
     return linear_volume;
@@ -633,30 +633,35 @@ void DAC_MasterSwitch( GPIO_PinState setting )
 /** Read the master volume level for playback.
   *
   * params: none
-  * retval: uint8_t between 1 and 255 for volume scaling.
+  * retval: uint16_t between 1 and 65535 for volume scaling.
   *
   */
-uint8_t ReadVolume( void )
+uint16_t ReadVolume( void )
 {
-  uint8_t volume = 0;
+  uint16_t volume = 0;
 
   #ifdef VOLUME_INPUT_DIGITAL
-    // Use digital GPIOs for volume (3 bits, scaled to 1-255)
+    // Use digital GPIOs for volume (3 bits, scaled to 1-65535)
     uint8_t v =
       ( ( (OPT3_GPIO_Port->IDR & OPT3_Pin) != 0 ) << 2 ) |
       ( ( (OPT2_GPIO_Port->IDR & OPT2_Pin) != 0 ) << 1 ) |
       ( ( (OPT1_GPIO_Port->IDR & OPT1_Pin) != 0 ) << 0 );
 
     v = 7 - v;        // Invert so 0b000 = max volume, 0b111 = min volume
-    uint16_t scaled = ( (uint16_t)v * 255U ) / 7U;  // Map 0-7 to 0-255
-    volume = scaled ? (uint8_t)scaled : 1U;         // Ensure minimum volume of 1
+    uint32_t scaled = ( (uint32_t)v * 65535U ) / 7U;  // Map 0-7 to 0-65535
+    volume = (uint16_t)scaled;
   #else
     // Use 12-bit ADC value (0-4095) for linear volume
-    uint16_t lin = adc_raw / 16;  // Scale down and keep below maximum
+    // Scale 12-bit ADC directly to match 16-bit volume range with 16x scaling factor
+    // (4095 * 16 = 65520, close to full 65535 range)
+    uint32_t lin = (uint32_t)adc_raw * 16U;  // Scale 12-bit (0-4095) to 16-bit range
 
-    if( lin > 220 ) lin = 220; // Cap maximum volume
-    volume = lin ? lin : 1;
+    if( lin > VOLUME_ADC_MAX_SCALED ) lin = VOLUME_ADC_MAX_SCALED;  // Cap at maximum ADC * 16
+    volume = (uint16_t)lin;
   #endif
+
+  /* Analog signals have noise; clamp low values to avoid noise-induced ultra-quiet audio */
+  if( volume < 32U ) volume = 32U;
 
   /* Apply non-linear volume response if enabled */
   return ApplyVolumeResponse( volume );

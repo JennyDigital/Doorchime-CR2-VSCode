@@ -156,7 +156,7 @@ typedef struct {
 
 /* Hardware interface function pointer types */
 typedef void        ( *DAC_SwitchFunc )         ( GPIO_PinState setting );
-typedef uint8_t     ( *ReadVolumeFunc )         ( void );
+typedef uint16_t    ( *ReadVolumeFunc )         ( void );
 typedef void        ( *I2S_InitFunc )           ( void );
 
 extern DAC_SwitchFunc AudioEngine_DACSwitch;

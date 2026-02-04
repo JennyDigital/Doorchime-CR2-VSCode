@@ -48,7 +48,7 @@
 static inline   void      UpdateFadeCounters          ( uint32_t samples_processed );
 static          int16_t   ApplyFadeIn                 ( int16_t sample );
 static          int16_t   ApplyFadeOut                ( int16_t sample );
-static inline   int16_t   ApplyVolumeSetting          ( int16_t sample, uint8_t volume_setting );
+static inline   int16_t   ApplyVolumeSetting          ( int16_t sample, uint16_t volume_setting );
 
 // Noise reduction and gating
 static          int16_t   ApplyNoiseGate              ( int16_t sample );
@@ -100,7 +100,7 @@ ReadVolumeFunc  AudioEngine_ReadVolume  = NULL;
 I2S_InitFunc    AudioEngine_I2SInit     = NULL;
 
 /* Volume divisor (populated by hardware GPIO reading) */
-volatile uint8_t vol_input;
+volatile uint16_t vol_input;
 
 /* Playback buffer */
 int16_t pb_buffer[PB_BUFF_SZ] = {0};
@@ -278,7 +278,7 @@ PB_StatusTypeDef AudioEngine_Init( DAC_SwitchFunc dac_switch,
   fadeout_samples_remaining                 = 0;
   fadein_samples_remaining                  = 0;
   paused_sample_ptr                         = NULL;
-  vol_input                                 = 1;
+  vol_input                                 = 32;  // Safe default above noise floor
   
   /* Reset dither state to non-zero seed */
   dither_state = 12345;
@@ -1426,7 +1426,6 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
   }
 
   vol_input = AudioEngine_ReadVolume();
-  vol_input = vol_input ? vol_input : 1;
   input   = chunk_p;      // Source sample pointer
   output  = ( half_to_fill == SECOND ) ? (pb_buffer + CHUNK_SZ ) : pb_buffer;
 
@@ -1486,7 +1485,6 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
     return PB_Error;
   }
   vol_input = AudioEngine_ReadVolume();
-  vol_input = vol_input ? vol_input : 1;
   input = chunk_p;                                               /* Source sample pointer */
   output = ( half_to_fill == SECOND ) ? ( pb_buffer + CHUNK_SZ ) : pb_buffer;
 
@@ -1838,11 +1836,13 @@ PB_StatusTypeDef GetStopStatus( void )
   * @param: volume_setting - Volume division factor (1 to 255)
   * @retval: int16_t - Volume-adjusted signed 16-bit audio sample
   */
-static inline int16_t ApplyVolumeSetting( int16_t sample, uint8_t volume_setting )
+static inline int16_t ApplyVolumeSetting( int16_t sample, uint16_t volume_setting )
 {
   int32_t sample32 = (int32_t) sample;
 
-  return  (int16_t)( sample32 ) * volume_setting / 255;
+  /* Apply 16-bit volume (0-65535) with proper scaling to 0.0-1.0 range
+     Preserves dynamic range equivalent to original uint8_t design (sample * volume / 255) */
+  return  (int16_t)( sample32 * volume_setting / 65535 );
 }
 
 
