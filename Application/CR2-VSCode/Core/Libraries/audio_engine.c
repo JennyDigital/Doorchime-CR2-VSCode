@@ -750,6 +750,13 @@ uint32_t GetPlaybackSpeed( void )
 
 /* ===== DSP Filter Functions ===== */
 
+/* TPDF Dithering - Linear Congruential Generator (LCG) constants */
+#define DITHER_LCG_MULTIPLIER       1103515245U   /* Standard POSIX LCG multiplier */
+#define DITHER_LCG_INCREMENT        12345U        /* Standard POSIX LCG increment */
+#define DITHER_RANDOM_BITS_SHIFT    16            /* Extract upper 16 bits of LCG state */
+#define DITHER_RANDOM_MASK          0xFF          /* Mask to get 8-bit random value */
+#define DITHER_SCALE_SHIFT          6             /* Scale dither from [-256, 256] to [-4, 4] */
+
 
 /** Apply TPDF dithering during 8-bit to 16-bit conversion with cubic interpolation
   * 
@@ -764,13 +771,13 @@ static int16_t Apply8BitDithering( uint8_t sample8 )
   int16_t sample16  = (int16_t)( sample8 - 128 ) << 8;
   
   // Generate TPDF (Triangular Probability Density Function) dither
-  dither_state      = dither_state * 1103515245U + 12345U;
-  int32_t rand1     = ( dither_state >> 16 ) & 0xFF;
+  dither_state      = dither_state * DITHER_LCG_MULTIPLIER + DITHER_LCG_INCREMENT;
+  int32_t rand1     = ( dither_state >> DITHER_RANDOM_BITS_SHIFT ) & DITHER_RANDOM_MASK;
   
-  dither_state      = dither_state * 1103515245U + 12345U;
-  int32_t rand2     = ( dither_state >> 16 ) & 0xFF;
+  dither_state      = dither_state * DITHER_LCG_MULTIPLIER + DITHER_LCG_INCREMENT;
+  int32_t rand2     = ( dither_state >> DITHER_RANDOM_BITS_SHIFT ) & DITHER_RANDOM_MASK;
   
-  int16_t dither    = (int16_t)( ( rand1 - rand2 ) >> 6 );
+  int16_t dither    = (int16_t)( ( rand1 - rand2 ) >> DITHER_SCALE_SHIFT );
   
   return sample16 + dither;
 }
@@ -810,7 +817,7 @@ static int16_t ApplyFadeIn( int16_t sample )
        We calculate fade_mult based on the ratio of remaining to initial. */
     
     /* Determine which fade duration to use as reference. */
-    uint32_t fade_total = (pb_state == PB_Playing && fadein_samples_remaining <= fadein_samples) ? 
+    uint32_t fade_total = ( pb_state == PB_Playing && fadein_samples_remaining <= fadein_samples ) ? 
                           fadein_samples : fadein_samples_remaining;
     
     int32_t progress    = fade_total - fadein_samples_remaining;
@@ -837,23 +844,23 @@ static int16_t ApplyFadeIn( int16_t sample )
 static int16_t ApplyFadeOut( int16_t sample )
 {
   uint8_t should_apply_fade = 0;
-  uint32_t fade_total = 0;
+  uint32_t fade_total       = 0;
   uint32_t remaining_to_use = 0;
   
   if( pb_state == PB_Pausing && fadeout_samples_remaining > 0 ) {
     /* Apply fadeout during explicit pause */
     should_apply_fade = 1;
-    fade_total = pause_fadeout_samples;
-    remaining_to_use = fadeout_samples_remaining;
+    fade_total        = pause_fadeout_samples;
+    remaining_to_use  = fadeout_samples_remaining;
   } else if( pb_state == PB_Playing ) {
     /* For normal playback, check if we're in the fadeout window based on file position.
        Calculate remaining samples from current pointer position to end. */
     uint32_t remaining_in_file = 0;
     
     if( pb_mode == 16 ) {
-      remaining_in_file = (uint32_t)(pb_end16 - pb_p16);
+      remaining_in_file = (uint32_t)( pb_end16 - pb_p16 );
     } else {
-      remaining_in_file = (uint32_t)(pb_end8 - pb_p8);
+      remaining_in_file = (uint32_t)( pb_end8 - pb_p8 );
     }
     
     if( remaining_in_file > 0 && remaining_in_file <= fadeout_samples ) {
