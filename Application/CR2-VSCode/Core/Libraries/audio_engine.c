@@ -1214,6 +1214,20 @@ static int16_t ApplyFilterChain8Bit( int16_t sample, uint8_t is_left_channel )
 }
 
 
+/**
+ * Reset playback state variables to idle condition.
+ * Resets mode, pointers, and counters.
+ */
+static void ResetPlaybackState( void ) {
+  pb_mode = 0;
+  paused_sample_ptr = NULL;
+  samples_remaining = 0;
+  fadeout_samples_remaining = 0;
+  fadein_samples_remaining = 0;
+  stop_requested = 0;
+}
+
+
 /* ===== State Accessors ===== */
 
 /** Get current playback state
@@ -1310,12 +1324,7 @@ static inline void ProcessDMACallback( uint8_t which_half )
       /* If stop was requested, complete it now */
       if( stop_requested ) {
         HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );
-        pb_mode = 0;
-        paused_sample_ptr = NULL;
-        samples_remaining = 0;
-        fadeout_samples_remaining = 0;
-        fadein_samples_remaining = 0;
-        stop_requested = 0;
+        ResetPlaybackState();
       }
       return;
     }
@@ -1329,12 +1338,7 @@ static inline void ProcessDMACallback( uint8_t which_half )
       /* If stop was requested, complete it now */
       if( stop_requested ) {
         HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );
-        pb_mode = 0;
-        paused_sample_ptr = NULL;
-        samples_remaining = 0;
-        fadeout_samples_remaining = 0;
-        fadein_samples_remaining = 0;
-        stop_requested = 0;
+        ResetPlaybackState();
       }
       return;
     }
@@ -1583,10 +1587,10 @@ PB_StatusTypeDef PlaySample (
   I2S_PlaybackSpeed = playback_speed;                     // Set our playback speed.
   
   // Recalculate fade sample counts based on new playback speed
-  fadein_samples = FadeTimeToSamples( fadein_time_seconds );
-  fadeout_samples = FadeTimeToSamples( fadeout_time_seconds );
+  fadein_samples        = FadeTimeToSamples( fadein_time_seconds );
+  fadeout_samples       = FadeTimeToSamples( fadeout_time_seconds );
   pause_fadeout_samples = FadeTimeToSamples( pause_fadeout_time_seconds );
-  pause_fadein_samples = FadeTimeToSamples( pause_fadein_time_seconds );
+  pause_fadein_samples  = FadeTimeToSamples( pause_fadein_time_seconds );
   
   if( AudioEngine_I2SInit ) { AudioEngine_I2SInit(); }  // Initialize I2S peripheral with our chosen sample rate.
 
@@ -1624,7 +1628,7 @@ PB_StatusTypeDef PlaySample (
     pb_p16 += p_advance;
 
     half_to_fill = SECOND;
-        if( ProcessNextWaveChunk( (int16_t *) pb_p16 ) != PB_Playing ) { return PB_Error; }
+    if( ProcessNextWaveChunk( (int16_t *) pb_p16 ) != PB_Playing ) { return PB_Error; }
     pb_p16 += p_advance;
     half_to_fill = FIRST;
   }
@@ -1766,7 +1770,7 @@ PB_StatusTypeDef ResumePlayback( void )
   * end-of-play fade and then stop. Returns immediately without blocking.
   * The DMA callback handles the actual stop when fade completes.
   *
-  * Use GetStopStatus() to poll for completion: returns PB_Idle when done.
+  * Use GetPlaybackState() to poll for completion: returns PB_Idle when done.
   *
   * @retval PB_StatusTypeDef - Current playback state, or PB_Idle if already idle
   */
@@ -1780,12 +1784,7 @@ PB_StatusTypeDef StopPlayback( void )
   if( pb_state == PB_Paused ) {
     HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );
     pb_state = PB_Idle;
-    pb_mode = 0;
-    paused_sample_ptr = NULL;
-    samples_remaining = 0;
-    fadeout_samples_remaining = 0;
-    fadein_samples_remaining = 0;
-    stop_requested = 0;
+    ResetPlaybackState();
     return PB_Idle;
   }
 
@@ -1811,20 +1810,6 @@ PB_StatusTypeDef StopPlayback( void )
     }
   }
 
-  return pb_state;
-}
-
-
-/**
-  * @brief Check if asynchronous stop has completed
-  *
-  * Polls the stop completion status. Returns PB_Idle when fade-out has
-  * completed and playback has fully stopped.
-  *
-  * @retval PB_StatusTypeDef - Current playback state (PB_Idle when complete)
-  */
-PB_StatusTypeDef GetStopStatus( void )
-{
   return pb_state;
 }
 

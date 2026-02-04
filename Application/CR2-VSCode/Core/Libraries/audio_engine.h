@@ -357,16 +357,9 @@ PB_StatusTypeDef    ResumePlayback                    ( void );
 /**
  * @brief Stop playback asynchronously with normal end-of-play fade-out
  * @return Current playback state, PB_Idle if already idle
- * @note Returns immediately. Use GetStopStatus() to poll for completion.
+ * @note Returns immediately. Use GetPlaybackState() to poll for completion.
  */
 PB_StatusTypeDef    StopPlayback                      ( void );
-
-/**
- * @brief Poll for asynchronous stop completion
- * @return Current playback state (PB_Idle when stop is complete)
- * @note Called after StopPlayback() to check if fade-out and DMA stop are done
- */
-PB_StatusTypeDef    GetStopStatus                     ( void );
 
 /**
  * @brief Shut down all audio hardware (I2S, DAC, amplifier)

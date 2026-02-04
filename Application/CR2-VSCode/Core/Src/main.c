@@ -246,11 +246,12 @@ int main(void)
 
     PlaySample( theremin_quartet11k, THEREMIN_QUARTET11K_SZ,
       I2S_AUDIOFREQ_11K, 16, Mode_mono ); 
-    WaitForSampleEnd();
-    // StopPlayback();
-    // while( GetStopStatus() != PB_Idle ) {
-    //   __NOP();
-    // }
+      HAL_Delay( 1000 );
+      StopPlayback();
+      while( GetPlaybackState() != PB_Idle ) {
+        __NOP();
+      }
+    //WaitForSampleEnd();
     //PlaySample( tritone16k1c, TRITONE16K1C_SZ,
     //  I2S_AUDIOFREQ_16K, 16, Mode_mono );
     //WaitForSampleEnd();
