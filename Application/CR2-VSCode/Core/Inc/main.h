@@ -101,7 +101,7 @@ void Error_Handler(void);
 //#define NO_SLEEP_MODE
 
 // Uncomment to use digital GPIOs for volume instead of ADC
-#define VOLUME_INPUT_DIGITAL
+//#define VOLUME_INPUT_DIGITAL
 
 // Volume response configuration
 #define VOLUME_RESPONSE_NONLINEAR    // Enable non-linear (logarithmic) volume response

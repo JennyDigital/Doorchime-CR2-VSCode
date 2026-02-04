@@ -42,7 +42,6 @@
 #include <string.h>         // Needed for memset
 
 /* Forward declarations for internal helper functions */
-/* Forward declarations for internal helper functions */
 
 // Fade and volume helpers
 static inline   void      UpdateFadeCounters          ( uint32_t samples_processed );
@@ -1833,16 +1832,17 @@ PB_StatusTypeDef GetStopStatus( void )
 /** Apply volume setting to sample
   * 
   * @param: sample - Signed 16-bit audio sample
-  * @param: volume_setting - Volume division factor (1 to 255)
+  * @param: volume_setting - Volume division factor (1 to 65535) where 65535 is full volume and 1 is minimum audible volume
   * @retval: int16_t - Volume-adjusted signed 16-bit audio sample
   */
 static inline int16_t ApplyVolumeSetting( int16_t sample, uint16_t volume_setting )
 {
   int32_t sample32 = (int32_t) sample;
+  int32_t volume32 = (int32_t) volume_setting;
 
   /* Apply 16-bit volume (0-65535) with proper scaling to 0.0-1.0 range
-     Preserves dynamic range equivalent to original uint8_t design (sample * volume / 255) */
-  return  (int16_t)( sample32 * volume_setting / 65535 );
+     Preserve signed sample polarity by keeping all math in signed space. */
+  return  (int16_t)( ( sample32 * volume32 ) / 65535 );
 }
 
 

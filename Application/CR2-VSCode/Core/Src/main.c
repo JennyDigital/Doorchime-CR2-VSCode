@@ -208,20 +208,18 @@ int main(void)
   filter_cfg.enable_16bit_biquad_lpf      = 0;  // 16-bit biquad LPF disabled by default; enable as needed
   filter_cfg.enable_8bit_lpf              = 0;  // 8-bit LPF disabled by default; enable as needed
   filter_cfg.enable_soft_dc_filter_16bit  = 1;  // Soft DC blocking filter for 16-bit samples enabled by default
-  filter_cfg.enable_soft_clipping         = 1;  // Soft clipping enabled by default
+  filter_cfg.enable_soft_clipping         = 0;  // Soft clipping enabled by default
   filter_cfg.enable_air_effect            = 0;  // Air effect (high-shelf brightening) disabled by default; enable as needed
 
-  SetLpfMakeupGain8Bit( 0.9f );           // Slight attenuation to prevent clipping after LPF
-  SetLpf16BitLevel(LPF_Off);              // Disable 16-bit biquad LPF by default
-  SetSoftClippingEnable( 1 );             // Enable soft clipping
+  // Apply initial filter configuration
   SetFilterConfig( &filter_cfg );
 
   // Set initial Air Effect boost in dB (runtime adjustable)
-  SetAirEffectPresetDb( 2 );       // default +3 dB preset
+  SetAirEffectPresetDb( 0 );       // default +3 dB preset
   
   // Set fade times
-  SetFadeInTime(0.4f );                // 400 ms fade-in
-  SetFadeOutTime( 0.4f );              // 400 ms fade-out
+  SetFadeInTime(0.75f );                // 750 ms fade-in
+  SetFadeOutTime( 0.75f );              // 750 ms fade-out
   SetPauseFadeTime( 1.0f );             // 1000 ms pause fade-out
   SetResumeFadeTime( 1.0f );            // 1000 ms resume fade-in
 
@@ -242,11 +240,11 @@ int main(void)
  
     // Start playback of samples
     //
-    SetLpf16BitLevel( LPF_Medium );
+    SetLpf16BitLevel( LPF_VerySoft );
     SetSoftClippingEnable( 1 );
     AudioEngine_DACSwitch( DAC_ON );
 
-    PlaySample( KillBill11k, KILLBILL11K_SZ,
+    PlaySample( theremin_quartet11k, THEREMIN_QUARTET11K_SZ,
       I2S_AUDIOFREQ_11K, 16, Mode_mono ); 
     WaitForSampleEnd();
     // StopPlayback();
@@ -654,7 +652,7 @@ uint16_t ReadVolume( void )
     // Use 12-bit ADC value (0-4095) for linear volume
     // Scale 12-bit ADC directly to match 16-bit volume range with 16x scaling factor
     // (4095 * 16 = 65520, close to full 65535 range)
-    uint32_t lin = (uint32_t)adc_raw * 16U;  // Scale 12-bit (0-4095) to 16-bit range
+    uint32_t lin = (uint32_t)adc_raw * 8U;  // Scale 12-bit (0-4095) to 15-bit range
 
     if( lin > VOLUME_ADC_MAX_SCALED ) lin = VOLUME_ADC_MAX_SCALED;  // Cap at maximum ADC * 16
     volume = (uint16_t)lin;
