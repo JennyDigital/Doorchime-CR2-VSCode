@@ -40,6 +40,7 @@
 #include <stddef.h>
 #include <stdint.h>         // We like things predictable in these here ports.
 #include <string.h>         // Needed for memset
+#include <stdbool.h>        // For true/false values in filter config, we like our C modern, clean and readable.
 
 /* Forward declarations for internal helper functions */
 
@@ -144,6 +145,7 @@ volatile  uint32_t        fadeout_samples_remaining   = 0;
           uint32_t        fadeout_samples             = 3300;    // Calculated from time and speed
           uint32_t        pause_fadeout_samples       = 2200;    // Calculated from time and speed
           uint32_t        pause_fadein_samples        = 2200;    // Calculated from time and speed
+
 /* DC filter state */
 volatile  int32_t         dc_filter_prev_input_left   = 0;
 volatile  int32_t         dc_filter_prev_input_right  = 0;
@@ -195,13 +197,13 @@ static const float        air_effect_presets_db[]     = { 1.0f, 2.0f, 3.0f };
 static volatile uint8_t   air_effect_preset_idx       = 1; // default +2 dB
 
 /* Pause/resume state tracking */
-volatile  PB_StatusTypeDef pb_paused_state            = PB_Idle;
-volatile  uint32_t        paused_sample_index         = 0;
 volatile  const void      *paused_sample_ptr          = NULL;
-volatile  uint32_t        paused_total_samples        = 0;
 
 /* Stop request flag for asynchronous stop with fade-out */
 volatile  uint8_t         stop_requested              = 0;
+
+/* DAC power control flag */
+volatile  uint8_t         dac_power_control           = 1;  // Default to enabled
 
 /* ===== Filter State Reset Macros ===== */
 
@@ -1259,6 +1261,27 @@ void SetPlaybackState( uint8_t state )
 }
 
 
+/** DAC Control Setter
+ *
+ * @param: enable - 1 to enable DAC output, 0 to disable
+ * @retval: none
+ */
+ void SetDAC_Control( uint8_t state )
+ {
+  dac_power_control = state;
+ }
+
+
+/** DAC Control Getter *
+ * @param: none
+ * @retval: uint8_t - Current DAC control state (1 for enabled, 0 for disabled)
+ */
+ uint8_t GetDAC_Control( void )
+ {
+  return dac_power_control;
+ }
+ 
+
 /** Get which half of the buffer to fill
   * 
   * @param: none
@@ -1649,6 +1672,9 @@ PB_StatusTypeDef PlaySample (
   
   // Start playback of the recording
   //
+    if( dac_power_control == true ) {
+      AudioEngine_DACSwitch( true );  // Ensure DAC is powered on before starting playback
+    }
   pb_state = PB_Playing;
   HAL_I2S_Transmit_DMA( &AUDIO_ENGINE_I2S_HANDLE, (uint16_t *) pb_buffer, PB_BUFF_SZ );
   return PB_Playing;
@@ -1847,6 +1873,9 @@ void ShutDownAudio( void )
 
     // Stop I2S DMA transmission
     HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );
+    if( dac_power_control == true ) {
+      AudioEngine_DACSwitch( DAC_OFF );
+    }
 }
 
 

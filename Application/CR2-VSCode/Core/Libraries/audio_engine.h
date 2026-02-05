@@ -367,6 +367,20 @@ PB_StatusTypeDef    StopPlayback                      ( void );
  */
 void                ShutDownAudio                     ( void );
 
+/* DAC power control */
+/**
+ * @brief Enable or disable DAC power control
+ * @param[in] state 1 to enable DAC, 0 to disable DAC
+ * @note Controls the optional DAC power management feature
+ */
+void                SetDAC_Control                    ( uint8_t state );
+
+/**
+ * @brief Get current DAC power control state
+ * @return 1 if DAC control enabled, 0 if disabled
+ */
+uint8_t             GetDAC_Control                    ( void );
+
 /* Chunk processing callbacks (call from DMA callbacks) */
 /**
  * @brief Process next 16-bit PCM chunk from DMA half-complete callback
