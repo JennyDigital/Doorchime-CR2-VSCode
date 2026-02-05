@@ -99,6 +99,12 @@ DAC_SwitchFunc  AudioEngine_DACSwitch   = NULL;
 ReadVolumeFunc  AudioEngine_ReadVolume  = NULL;
 I2S_InitFunc    AudioEngine_I2SInit     = NULL;
 
+/* Weak callback function for playback end notification */
+__attribute__((weak)) void AudioEngine_OnPlaybackEnd( void )
+{
+  /* Default implementation does nothing - override in application if needed */
+}
+
 /* Volume divisor (populated by hardware GPIO reading) */
 volatile uint16_t vol_input;
 
@@ -1351,11 +1357,14 @@ static inline void ProcessDMACallback( uint8_t which_half )
   if( pb_mode == 16 ) {
     if( pb_p16 >= pb_end16 ) {
       pb_state = PB_Idle;
+      memset( pb_buffer, MIDPOINT_S16, sizeof( pb_buffer ) );  // Flush buffer with silence on completion.
       /* If stop was requested, complete it now */
       if( stop_requested ) {
         HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );
         ResetPlaybackState();
       }
+      /* Notify application that playback has ended */
+      AudioEngine_OnPlaybackEnd();
       return;
     }
     if( ProcessNextWaveChunk( (int16_t *) pb_p16 ) != PB_Playing ) {
@@ -1365,11 +1374,14 @@ static inline void ProcessDMACallback( uint8_t which_half )
   else if( pb_mode == 8 ) {
     if( pb_p8 >= pb_end8 ) {
       pb_state = PB_Idle;
+      memset( pb_buffer, MIDPOINT_S16, sizeof( pb_buffer ) );  // Flush buffer with silence on completion.
       /* If stop was requested, complete it now */
       if( stop_requested ) {
         HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );
         ResetPlaybackState();
       }
+      /* Notify application that playback has ended */
+      AudioEngine_OnPlaybackEnd();
       return;
     }
     if( ProcessNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PB_Playing ) {

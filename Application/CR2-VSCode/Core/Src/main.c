@@ -207,8 +207,8 @@ int main(void)
   filter_cfg.enable_noise_gate            = 0;  // Noise gate disabled by default; enable as needed
   filter_cfg.enable_16bit_biquad_lpf      = 0;  // 16-bit biquad LPF disabled by default; enable as needed
   filter_cfg.enable_8bit_lpf              = 0;  // 8-bit LPF disabled by default; enable as needed
-  filter_cfg.enable_soft_dc_filter_16bit  = 1;  // Soft DC blocking filter for 16-bit samples enabled by default
-  filter_cfg.enable_soft_clipping         = 0;  // Soft clipping enabled by default
+  filter_cfg.enable_soft_dc_filter_16bit  = 0;  // Soft DC blocking filter for 16-bit samples enabled by default
+  filter_cfg.enable_soft_clipping         = 1;  // Soft clipping enabled by default
   filter_cfg.enable_air_effect            = 0;  // Air effect (high-shelf brightening) disabled by default; enable as needed
 
   // Apply initial filter configuration
@@ -218,10 +218,10 @@ int main(void)
   SetAirEffectPresetDb( 0 );       // default +3 dB preset
   
   // Set fade times
-  SetFadeInTime(0.75f );                // 750 ms fade-in
-  SetFadeOutTime( 0.75f );              // 750 ms fade-out
-  SetPauseFadeTime( 1.0f );             // 1000 ms pause fade-out
-  SetResumeFadeTime( 1.0f );            // 1000 ms resume fade-in
+  SetFadeInTime(0.15f );                // 150 ms fade-in
+  SetFadeOutTime( 0.15f );              // 150 ms fade-out
+  SetPauseFadeTime( 0.15f );             // 150 ms pause fade-out
+  SetResumeFadeTime( 0.15f );            // 150 ms resume fade-in
 
   /* USER CODE END 2 */
 
@@ -242,21 +242,11 @@ int main(void)
     //
     SetLpf16BitLevel( LPF_VerySoft );
     SetSoftClippingEnable( 1 );
-    AudioEngine_DACSwitch( DAC_ON );
 
-    PlaySample( theremin_quartet11k, THEREMIN_QUARTET11K_SZ,
-      I2S_AUDIOFREQ_11K, 16, Mode_mono ); 
-      HAL_Delay( 1000 );
-      StopPlayback();
-      while( GetPlaybackState() != PB_Idle ) {
-        __NOP();
-      }
-    //WaitForSampleEnd();
-    //PlaySample( tritone16k1c, TRITONE16K1C_SZ,
-    //  I2S_AUDIOFREQ_16K, 16, Mode_mono );
-    //WaitForSampleEnd();
-    AudioEngine_DACSwitch( DAC_OFF );
+    PlaySample( custom_tritone16k, CUSTOM_TRITONE16K_SZ,
+      I2S_AUDIOFREQ_16K, 16, Mode_mono ); 
 
+    WaitForSampleEnd();
     ShutDownAudio();
 
     // Handle permanent stop if auto-trigger is disabled
@@ -653,8 +643,7 @@ uint16_t ReadVolume( void )
     // Use 12-bit ADC value (0-4095) for linear volume
     // Scale 12-bit ADC directly to match 16-bit volume range with 16x scaling factor
     // (4095 * 16 = 65520, close to full 65535 range)
-    uint32_t lin = (uint32_t)adc_raw * 8U;  // Scale 12-bit (0-4095) to 15-bit range
-
+    uint32_t lin = (uint32_t)adc_raw * MASTER_VOLUME_SCALE;         // Scale 12-bit to acceptable range
     if( lin > VOLUME_ADC_MAX_SCALED ) lin = VOLUME_ADC_MAX_SCALED;  // Cap at maximum ADC * 16
     volume = (uint16_t)lin;
   #endif

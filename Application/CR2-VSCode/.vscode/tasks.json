@@ -160,18 +160,6 @@
 			"type": "shell",
 			"command": "cmake --build build/Debug --target clean && cmake --build build/Debug",
 			"group": "build"
-		},
-		{
-			"label": "CMake: clean rebuild",
-			"type": "shell",
-			"command": "cmake --build build/Debug --target clean && cmake --build build/Debug",
-			"group": "build"
-		},
-		{
-			"label": "CMake: clean rebuild",
-			"type": "shell",
-			"command": "cmake --build build/Debug --target clean && cmake --build build/Debug",
-			"group": "build"
 		}
 	]
 }

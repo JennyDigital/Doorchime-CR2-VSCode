@@ -111,6 +111,9 @@ void Error_Handler(void);
 // ADC max (4095) * 16 = 65520, representing the maximum usable 16-bit volume value
 #define VOLUME_ADC_MAX_SCALED 65520U
 
+// Scale factor for master volume input.
+#define MASTER_VOLUME_SCALE 8U
+
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

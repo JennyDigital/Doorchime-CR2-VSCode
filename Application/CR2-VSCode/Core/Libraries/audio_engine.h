@@ -158,10 +158,18 @@ typedef struct {
 typedef void        ( *DAC_SwitchFunc )         ( GPIO_PinState setting );
 typedef uint16_t    ( *ReadVolumeFunc )         ( void );
 typedef void        ( *I2S_InitFunc )           ( void );
+typedef void        ( *PlaybackEndCallback )    ( void );
 
 extern DAC_SwitchFunc AudioEngine_DACSwitch;
 extern ReadVolumeFunc AudioEngine_ReadVolume;
 extern I2S_InitFunc   AudioEngine_I2SInit;
+
+/**
+ * @brief Weak callback invoked when playback ends naturally or via stop
+ * @note Define this function in your application to receive playback end notifications
+ * @note Called from ISR context - keep implementation short and non-blocking
+ */
+void AudioEngine_OnPlaybackEnd( void );
 
 /**
  * @brief Initialize the audio engine with hardware interface callbacks
