@@ -200,6 +200,10 @@ int main(void)
     Error_Handler();
   }
 
+  // Configure volume response curve (human perception matched)
+  SetVolumeResponseNonlinear( 1 );    // Enable non-linear (logarithmic) response
+  SetVolumeResponseGamma( 2.0f );     // Gamma = 2.0 (quadratic, typical for human perception)
+
   // Small delay to allow hardware to stabilize
   HAL_Delay( 150 );
 
@@ -243,8 +247,10 @@ int main(void)
     SetLpf16BitLevel( LPF_VerySoft );
     SetSoftClippingEnable( 1 );
 
-    PlaySample( custom_tritone16k, CUSTOM_TRITONE16K_SZ,
-      I2S_AUDIOFREQ_16K, 16, Mode_mono ); 
+    // PlaySample( custom_tritone16k, CUSTOM_TRITONE16K_SZ,
+    //   I2S_AUDIOFREQ_16K, 16, Mode_mono ); 
+    PlaySample( handpan16bm, HANDPAN16BM_SZ,
+      I2S_AUDIOFREQ_44K, 16, Mode_mono );
 
     WaitForSampleEnd();
     ShutDownAudio();
@@ -571,30 +577,6 @@ static void MX_ADC1_Init( void )
 
 /* USER CODE BEGIN 4 */
 
-/** Apply non-linear (logarithmic) volume response to match human hearing.
-  *
-  * Human perception of loudness follows approximately a logarithmic curve.
-  * This function applies a power law to create a more intuitive volume control.
-  *
-  * params: linear_volume - Linear volume value (0-65535)
-  * retval: uint16_t - Non-linearly scaled volume (0-65535)
-  *
-  */
-static inline uint16_t ApplyVolumeResponse( uint16_t linear_volume )
-{
-  #ifdef VOLUME_RESPONSE_NONLINEAR
-    /* Normalize to 0.0-1.0 range */
-    float normalized = (float)linear_volume / 65535.0f;
-    /* Apply power law (gamma > 1 creates logarithmic response) */
-    float curved = powf( normalized, 1.0f / VOLUME_RESPONSE_GAMMA );
-    /* Scale back to 0-65535 range */
-    return (uint16_t)( curved * 65535.0f + 0.5f );
-  #else
-    /* Linear response - no scaling */
-    return linear_volume;
-  #endif
-}
-
 /** Changes NSD_MODE_Pin pin to control the DAC between on and Shutdown
   *
   * param: DAC_OFF (0) or DAC_ON (non zero)
@@ -624,6 +606,8 @@ void DAC_MasterSwitch( GPIO_PinState setting )
   * params: none
   * retval: uint16_t between 1 and 65535 for volume scaling.
   *
+  * Note: Non-linear volume response is now handled internally by the audio engine.
+  *       Use SetVolumeResponseNonlinear() and SetVolumeResponseGamma() to configure.
   */
 uint16_t ReadVolume( void )
 {
@@ -651,8 +635,8 @@ uint16_t ReadVolume( void )
   /* Analog signals have noise; clamp low values to avoid noise-induced ultra-quiet audio */
   if( volume < 32U ) volume = 32U;
 
-  /* Apply non-linear volume response if enabled */
-  return ApplyVolumeResponse( volume );
+  /* Return raw volume - audio engine applies non-linear response curve internally */
+  return volume;
 } 
 
 /* ADC Conversion Complete Callback */

@@ -1,10 +1,11 @@
 # Audio Engine Function Index
 
-Complete alphabetical index of all 40+ public functions in the Audio Engine API, organized by category with quick descriptions.
+Complete alphabetical index of all 43+ public functions in the Audio Engine API, organized by category with quick descriptions.
 
 <!-- Anchor targets for internal links -->
 <a id="advancesamplepointer"></a>
 <a id="audioengine_init"></a>
+<a id="audioengine_onplaybackend"></a>
 <a id="calclpf16bitalphafromotoff"></a>
 <a id="cycleaireffectpresetdb"></a>
 <a id="getaireffectenable"></a>
@@ -13,6 +14,7 @@ Complete alphabetical index of all 40+ public functions in the Audio Engine API,
 <a id="getaireffectpresetcount"></a>
 <a id="getaireffectpresetdb"></a>
 <a id="getaireffectpresetindex"></a>
+<a id="getdac_control"></a>
 <a id="getfadeintime"></a>
 <a id="getfadeouttime"></a>
 <a id="getfilterconfig"></a>
@@ -34,6 +36,7 @@ Complete alphabetical index of all 40+ public functions in the Audio Engine API,
 <a id="setaireffectenable"></a>
 <a id="setaireffectgaindb"></a>
 <a id="setaireffectgainq16"></a>
+<a id="setdac_control"></a>
 <a id="setfadeintime"></a>
 <a id="setfadeouttime"></a>
 <a id="setfilterconfig"></a>
@@ -56,6 +59,7 @@ Complete alphabetical index of all 40+ public functions in the Audio Engine API,
 |----------|----------|-------------|
 | [`AdvanceSamplePointer()`](#advancesamplepointer) | Chunk Processing | Advance to next DMA buffer position |
 | [`AudioEngine_Init()`](#audioengine_init) | Initialization | Initialize engine with hardware callbacks |
+| [`AudioEngine_OnPlaybackEnd()`](#audioengine_onplaybackend) | Callback | Weak callback for playback end event |
 | [`CalcLpf16BitAlphaFromCutoff()`](#calclpf16bitalphafromotoff) | 16-bit LPF | Calculate alpha from cutoff frequency |
 | [`CycleAirEffectPresetDb()`](#cycleaireffectpresetdb) | Air Effect | Cycle through air effect presets |
 | [`GetAirEffectEnable()`](#getaireffectenable) | Air Effect | Read air effect enable state |
@@ -64,6 +68,7 @@ Complete alphabetical index of all 40+ public functions in the Audio Engine API,
 | [`GetAirEffectPresetCount()`](#getaireffectpresetcount) | Air Effect | Get number of available presets |
 | [`GetAirEffectPresetDb()`](#getaireffectpresetdb) | Air Effect | Get dB value for a preset index |
 | [`GetAirEffectPresetIndex()`](#getaireffectpresetindex) | Air Effect | Get current preset index |
+| [`GetDAC_Control()`](#getdac_control) | DAC Control | Read DAC power control state |
 | [`GetFadeInTime()`](#getfadeintime) | Fade Time | Get fade-in duration in seconds |
 | [`GetFadeOutTime()`](#getfadeouttime) | Fade Time | Get fade-out duration in seconds |
 | [`GetFilterConfig()`](#getfilterconfig) | Filter Config | Read current filter configuration |
@@ -86,6 +91,7 @@ Complete alphabetical index of all 40+ public functions in the Audio Engine API,
 | [`SetAirEffectGainDb()`](#setaireffectgaindb) | Air Effect | Set air effect gain in dB |
 | [`SetAirEffectGainQ16()`](#setaireffectgainq16) | Air Effect | Set air effect gain in Q16 format |
 | [`SetAirEffectPresetDb()`](#setaireffectpresetdb) | Air Effect | Set air effect preset (auto-enable) |
+| [`SetDAC_Control()`](#setdac_control) | DAC Control | Enable/disable DAC power control |
 | [`SetFadeInTime()`](#setfadeintime) | Fade Time | Set fade-in duration in seconds |
 | [`SetFadeOutTime()`](#setfadeouttime) | Fade Time | Set fade-out duration in seconds |
 | [`SetFilterConfig()`](#setfilterconfig) | Filter Config | Apply complete filter configuration |
@@ -113,6 +119,13 @@ Complete alphabetical index of all 40+ public functions in the Audio Engine API,
 - [`PausePlayback()`](#pauseplayback) - Pause with fade-out
 - [`ResumePlayback()`](#resumeplayback) - Resume from pause with fade-in
 - [`ShutDownAudio()`](#shutdownaudio) - Shut down all audio hardware
+
+### DAC Power Control (2 functions)
+- [`SetDAC_Control()`](#setdac_control) - Enable/disable automatic DAC power control
+- [`GetDAC_Control()`](#getdac_control) - Read current DAC power control state
+
+### Application Callbacks (1 function)
+- [`AudioEngine_OnPlaybackEnd()`](#audioengine_onplaybackend) - Weak callback invoked when playback ends
 
 ### Filter Configuration (5 functions)
 - [`SetFilterConfig()`](#setfilterconfig) - Apply complete filter configuration

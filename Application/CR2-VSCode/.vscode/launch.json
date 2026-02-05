@@ -32,7 +32,6 @@
             "name": "STM32Cube: Release",
             "origin": "snippet",
             "cwd": "${workspaceFolder}",
-            "preBuild": "${command:st-stm32-ide-release-launch.build}",
             "runEntry": "main",
             "imagesAndSymbols": [
                 {

@@ -104,8 +104,11 @@ void Error_Handler(void);
 //#define VOLUME_INPUT_DIGITAL
 
 // Volume response configuration
-#define VOLUME_RESPONSE_NONLINEAR    // Enable non-linear (logarithmic) volume response
-#define VOLUME_RESPONSE_GAMMA 2.0f   // Gamma exponent: 2.0 = quadratic (typical for human perception)
+// NOTE: Non-linear volume response is now managed by the audio engine library.
+// Use SetVolumeResponseNonlinear(1) and SetVolumeResponseGamma(2.0f) instead.
+// These defines are kept for reference only and are no longer used.
+// #define VOLUME_RESPONSE_NONLINEAR    // Enable non-linear (logarithmic) volume response
+// #define VOLUME_RESPONSE_GAMMA 2.0f   // Gamma exponent: 2.0 = quadratic (typical for human perception)
 
 // Analog volume ADC scaling (12-bit ADC scaled to 16-bit range)
 // ADC max (4095) * 16 = 65520, representing the maximum usable 16-bit volume value

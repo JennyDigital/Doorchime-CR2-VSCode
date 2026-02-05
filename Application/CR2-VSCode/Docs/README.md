@@ -4,7 +4,7 @@
 [![Platform](https://img.shields.io/badge/platform-STM32%20with%20I2S-orange.svg)](https://www.st.com/en/microcontrollers-microprocessors/stm32-32-bit-arm-cortex-mcus.html)
 [![Audio](https://img.shields.io/badge/audio-8bit%20%7C%2016bit-green.svg)]()
 [![Documentation](https://img.shields.io/badge/docs-comprehensive-brightgreen.svg)](DOCUMENTATION_GUIDE.md)
-[![API Functions](https://img.shields.io/badge/API-40%2B%20functions-blue.svg)](API_REFERENCE.md)
+[![API Functions](https://img.shields.io/badge/API-43%2B%20functions-blue.svg)](API_REFERENCE.md)
 
 A professional, reusable audio playback engine for STM32 microcontrollers with I2S support (including STM32G4, STM32F4, STM32H7 series and others) with runtime-configurable DSP filter chain, supporting 8-bit and 16-bit audio playback through I2S to digital amplifiers such as the MAX98357A. Includes an Air Effect high-shelf brightening filter with presets (+1, +2, +3 dB) and direct dB control.
 
@@ -36,6 +36,8 @@ A professional, reusable audio playback engine for STM32 microcontrollers with I
 
 ## What's New
 
+- **Playback End Callback**: New weak `AudioEngine_OnPlaybackEnd()` callback for ISR-safe playback completion notifications - ideal for event-driven applications, playlists, and RTOS integration.
+- **DAC Power Control**: Added `SetDAC_Control()` and `GetDAC_Control()` for optional runtime control of DAC power management - useful when sharing the audio engine across multiple applications.
 - **Flash Footprint**: `.text` ≈ 12.9 KB (Release build), reflecting added features and refactoring.
 - **Non-Linear Volume Response**: Human-perception-matched volume control with configurable gamma curve. Enable via `VOLUME_RESPONSE_NONLINEAR` (#define in main.h). Gamma=2.0 provides intuitive volume feel.
 - **Digital Volume Control**: Fixed GPIO bit packing for 3-bit digital volume inputs (OPT1–OPT3). Scales to 1–255 range for proper audio attenuation.

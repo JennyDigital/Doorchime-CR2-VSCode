@@ -264,8 +264,6 @@ typedef struct {
 
 ### Function Reference
 
-### Function Reference
-
 #### Hardware Setup (Done in CubeMX + main.c)
 
 Before playing audio, ensure:
@@ -320,7 +318,7 @@ void DAC_MasterSwitch(uint8_t state) {
     }
 }
 
-uint8_t ReadVolume(void) {
+uint16_t ReadVolume(void) {
     // Return volume level 0-2
     return volume_setting;
 }
@@ -585,20 +583,24 @@ AudioEngine_DACSwitch = MyDACControl;
 ```
 
 #### `AudioEngine_ReadVolume()`
-Function pointer to read volume setting (1–255). Values are scaled as a linear gain; 0 is treated as 1.
+Function pointer to read volume setting (0–65535). Raw values are scaled as gain during playback. 0 is treated as 1 for minimum volume. Values are subject to the configured volume response curve (linear by default, or non-linear gamma curve if enabled).
 
 ```c
 extern ReadVolumeFunc AudioEngine_ReadVolume;
 
 // Application must define:
-uint8_t MyReadVolume(void) {
-    // Read GPIO pins or ADC to determine volume level (1–255)
-    uint8_t volume = ReadMyVolumeSource();
-    return volume ? volume : 1;  // Ensure minimum volume of 1
+uint16_t MyReadVolume(void) {
+    // Read GPIO pins or ADC to determine volume level (0–65535)
+    uint16_t volume = ReadMyVolumeSource();
+    return volume ? volume : 1;  // Treat 0 as 1 for minimum volume
 }
 
 // In initialization:
 AudioEngine_ReadVolume = MyReadVolume;
+
+// Optionally configure volume response curve:
+SetVolumeResponseNonlinear(1);      // Enable non-linear response (default)
+SetVolumeResponseGamma(2.0f);       // Set gamma exponent (1.0–4.0)
 ```
 
 #### `AudioEngine_I2SInit()`

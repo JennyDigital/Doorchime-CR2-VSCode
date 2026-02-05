@@ -1,4 +1,3 @@
-````markdown
 # Audio Engine API Reference
 
 Complete function reference for the STM32 Audio Engine with all getters, setters, and control functions.
@@ -7,12 +6,15 @@ Complete function reference for the STM32 Audio Engine with all getters, setters
 
 1. [Initialization](#initialization)
 2. [Playback Control](#playback-control)
-3. [Filter Configuration](#filter-configuration)
-4. [Low-Pass Filter (LPF) Control](#low-pass-filter-lpf-control)
-5. [Air Effect Control](#air-effect-control)
-6. [Fade Time Control](#fade-time-control)
-7. [Chunk Processing (DMA Callbacks)](#chunk-processing-dma-callbacks)
-8. [Status & Queries](#status-queries)
+3. [DAC Power Control](#dac-power-control)
+4. [Volume Response Control](#volume-response-control)
+5. [Filter Configuration](#filter-configuration)
+6. [Low-Pass Filter (LPF) Control](#low-pass-filter-lpf-control)
+7. [Air Effect Control](#air-effect-control)
+8. [Fade Time Control](#fade-time-control)
+9. [Chunk Processing (DMA Callbacks)](#chunk-processing-dma-callbacks)
+10. [Application Callbacks](#application-callbacks)
+11. [Status & Queries](#status-queries)
 
 ---
 
@@ -174,33 +176,18 @@ PB_StatusTypeDef StopPlayback(void);
 - Returns immediately (non-blocking)
 - Uses the normal end-of-play fade-out duration
 - DMA callback completes the stop when fade finishes
-- Use `GetStopStatus()` to poll for completion
 - Fade-out duration set by `SetFadeOutTime()`
+- Use `GetPlaybackState()` to poll for completion
 
 **Example:**
 ```c
 StopPlayback();  // Request stop (returns immediately)
 
 // Wait for stop to complete
-while (GetStopStatus() != PB_Idle) {
+while (GetPlaybackState() != PB_Idle) {
     // Can do other work here while fading out
 }
 ```
-
-### `GetStopStatus()`
-
-Poll for asynchronous stop completion.
-
-```c
-PB_StatusTypeDef GetStopStatus(void);
-```
-
-**Returns:** Current playback state (`PB_Idle` when stop is complete)
-
-**Notes:**
-- Only used after calling `StopPlayback()`
-- Returns `PB_Playing` while fade-out is in progress
-- Returns `PB_Idle` when fade-out completes and DMA is stopped
 
 ### `ShutDownAudio()`
 
@@ -212,13 +199,168 @@ void ShutDownAudio(void);
 
 **Notes:**
 - Waits for DMA buffer to drain before stopping
-- Calls `DAC_MasterSwitch(DAC_OFF)` to disable amplifier
+- Calls `AudioEngine_DACSwitch(DAC_OFF)` if DAC control is enabled
 - Safe to call during or after playback
 
 **Example:**
 ```c
 ShutDownAudio();
 // Amplifier is now off and I2S is stopped
+```
+
+---
+
+## DAC Power Control
+
+### `SetDAC_Control()`
+
+Enable or disable optional DAC power control during playback.
+
+```c
+void SetDAC_Control(uint8_t state);
+```
+
+**Parameters:**
+- `state`: `1` to enable DAC power control, `0` to disable
+
+**Notes:**
+- When enabled, `AudioEngine_DACSwitch()` is called automatically during playback
+- When disabled, DAC power management is handled externally by the application
+- Default is enabled (`1`)
+- Useful when sharing the audio engine across multiple applications with different power requirements
+
+**Example:**
+```c
+// Disable automatic DAC control (manual control)
+SetDAC_Control(0);
+
+// Enable automatic DAC control (engine manages power)
+SetDAC_Control(1);
+```
+
+### `GetDAC_Control()`
+
+Query current DAC power control state.
+
+```c
+uint8_t GetDAC_Control(void);
+```
+
+**Returns:** `1` if DAC control is enabled, `0` if disabled
+
+**Example:**
+```c
+if (GetDAC_Control()) {
+    printf("DAC power control is automatic\n");
+} else {
+    printf("DAC power control is manual\n");
+}
+```
+
+---
+
+## Volume Response Control
+
+Control how raw volume input values (0–65535) are mapped to actual audio gain. The audio engine supports two response modes:
+
+- **Linear**: Direct proportional mapping (default when non-linear is disabled)
+- **Non-linear (Gamma Curve)**: Perceptually uniform response matching human loudness perception
+
+The gamma curve applies: `output = input^(1/gamma)`, where gamma = 2.0 (typical) provides a quadratic response curve.
+
+### `SetVolumeResponseNonlinear()`
+
+Enable or disable non-linear volume response curve.
+
+```c
+void SetVolumeResponseNonlinear( uint8_t enable );
+```
+
+**Parameters:**
+- `enable`: 1 to enable non-linear (gamma curve) response, 0 for linear response
+
+**Notes:**
+- Non-linear response (enabled by default) matches human loudness perception for more intuitive volume control
+- Linear response provides direct proportional scaling (input/65535 × max_gain)
+- Change takes effect immediately on next sample processing
+
+**Example:**
+```c
+// Enable non-linear (perceptual) volume response
+SetVolumeResponseNonlinear(1);
+
+// Switch to linear volume response
+SetVolumeResponseNonlinear(0);
+```
+
+### `GetVolumeResponseNonlinear()`
+
+Get current volume response mode.
+
+```c
+uint8_t GetVolumeResponseNonlinear( void );
+```
+
+**Returns:** 1 if non-linear mode enabled, 0 if linear mode
+
+### `SetVolumeResponseGamma()`
+
+Set the gamma exponent for non-linear volume response curve.
+
+```c
+void SetVolumeResponseGamma( float gamma );
+```
+
+**Parameters:**
+- `gamma`: Gamma exponent (typical range: 1.0–4.0)
+  - 1.0: Linear response (same as linear mode)
+  - 2.0: Quadratic curve (recommended, matches human perception)
+  - 3.0–4.0: More aggressive curve (flattens low volumes, steepens high volumes)
+
+**Notes:**
+- Higher gamma values create a more aggressive curve where small volume adjustments have smaller effect at low settings and larger effect at high settings
+- Typical value: 2.0 (provides balanced perceptual uniformity)
+- Change takes effect immediately on next sample processing
+- Only used when non-linear mode is enabled
+
+**Example:**
+```c
+// Set quadratic response (recommended)
+SetVolumeResponseGamma(2.0f);
+
+// Set cubic response (more aggressive)
+SetVolumeResponseGamma(3.0f);
+
+// Match human loudness perception preferences
+SetVolumeResponseGamma(2.2f);
+```
+
+### `GetVolumeResponseGamma()`
+
+Get current volume response gamma exponent.
+
+```c
+float GetVolumeResponseGamma( void );
+```
+
+**Returns:** Current gamma value (typical: 1.0–4.0)
+
+### Volume Response Usage Example
+
+```c
+// Initialize with defaults (non-linear, gamma=2.0)
+AudioEngine_Init(DAC_MasterSwitch, ReadVolume, MX_I2S2_Init);
+
+// Enable non-linear response with custom gamma for specific perception
+SetVolumeResponseNonlinear(1);           // Enable perceptual volume
+SetVolumeResponseGamma(2.2f);            // Slightly more aggressive curve
+
+// Optional: switch to linear for testing
+// SetVolumeResponseNonlinear(0);        // Linear mode (direct scaling)
+
+// Check current configuration
+uint8_t is_nonlinear = GetVolumeResponseNonlinear();  // Returns 1
+float current_gamma = GetVolumeResponseGamma();       // Returns 2.2f
 ```
 
 ---
@@ -811,6 +953,87 @@ void AdvanceSamplePointer(void);
 
 ---
 
+## Application Callbacks
+
+### `AudioEngine_OnPlaybackEnd()`
+
+Weak callback invoked when playback ends naturally or via `StopPlayback()`.
+
+```c
+void AudioEngine_OnPlaybackEnd(void);
+```
+
+**Notes:**
+- **Weak symbol** - default implementation does nothing
+- Override in your application to receive playback end notifications
+- Called from **ISR context** (DMA callback) - keep implementation short and non-blocking
+- Triggered when:
+  - Sample reaches end naturally
+  - `StopPlayback()` completes its fade-out
+- Perfect for:
+  - Setting event flags
+  - Posting to RTOS queues
+  - Triggering state machine transitions
+  - Starting next sample in a playlist
+
+**Restrictions:**
+- Do NOT call blocking functions (delays, mutexes, etc.)
+- Do NOT call complex audio engine functions
+- Keep execution time under 10 microseconds
+- Use volatile flags or RTOS primitives for communication
+
+**Example (Simple Flag):**
+```c
+volatile uint8_t playback_complete = 0;
+
+// Override the weak callback
+void AudioEngine_OnPlaybackEnd(void)
+{
+    playback_complete = 1;  // Set flag for main loop
+}
+
+// In main loop:
+void main(void)
+{
+    PlaySample(sample, size, 22000, 16, Mode_mono);
+    
+    while (!playback_complete) {
+        // Do other work
+        UpdateDisplay();
+        CheckButtons();
+    }
+    
+    printf("Playback finished!\n");
+}
+```
+
+**Example (RTOS Event):**
+```c
+extern osEventFlagsId_t audio_events;
+
+void AudioEngine_OnPlaybackEnd(void)
+{
+    osEventFlagsSet(audio_events, AUDIO_DONE_FLAG);
+}
+```
+
+**Example (Playlist):**
+```c
+volatile uint8_t current_track = 0;
+const uint8_t max_tracks = 5;
+
+void AudioEngine_OnPlaybackEnd(void)
+{
+    current_track++;
+    if (current_track < max_tracks) {
+        // Signal main loop to start next track
+        next_track_ready = 1;
+    }
+}
+```
+
+---
+
 ## Status & Queries
 
 ### `GetPlaybackState()`
@@ -927,6 +1150,7 @@ void demo_interactive_control(void) {
 | `GetAirEffectPresetCount()`          | Air Effect | Get number of available presets       |
 | `GetAirEffectPresetDb()`             | Air Effect | Get dB value of a preset              |
 | `GetAirEffectPresetIndex()`          | Air Effect | Get current preset index              |
+| `GetDAC_Control()`                   | DAC        | Query DAC power control state         |
 | `GetFadeInTime()`                    | Fade       | Get fade-in duration                  |
 | `GetFadeOutTime()`                   | Fade       | Get fade-out duration                 |
 | `GetFilterConfig()`                  | Filter     | Get complete filter configuration     |
@@ -937,7 +1161,7 @@ void demo_interactive_control(void) {
 | `GetPlaybackState()`                 | Status     | Get current playback state            |
 | `GetResumeFadeTime()`                | Fade       | Get resume fade-in duration           |
 | `GetSoftClippingEnable()`            | Filter     | Query soft clipping state             |
-| `GetStopStatus()`                    | Playback   | Poll for asynchronous stop completion |
+
 | `PausePlayback()`                    | Playback   | Pause playback with fade              |
 | `PlaySample()`                       | Playback   | Start playback of audio sample        |
 | `ProcessNextWaveChunk()`             | Internal   | Process 16-bit sample chunk           |
@@ -947,6 +1171,7 @@ void demo_interactive_control(void) {
 | `SetAirEffectGainDb()`               | Air Effect | Set air effect gain in dB             |
 | `SetAirEffectGainQ16()`              | Air Effect | Set air effect gain in Q16 format     |
 | `SetAirEffectPresetDb()`             | Air Effect | Select air effect preset by index     |
+| `SetDAC_Control()`                   | DAC        | Enable/disable DAC power control      |
 | `SetFadeInTime()`                    | Fade       | Set fade-in duration                  |
 | `SetFadeOutTime()`                   | Fade       | Set fade-out duration                 |
 | `SetFilterConfig()`                  | Filter     | Apply complete filter configuration   |
@@ -960,5 +1185,4 @@ void demo_interactive_control(void) {
 | `StopPlayback()`                     | Playback   | Request asynchronous stop with fade   |
 | `ShutDownAudio()`                    | Playback   | Stop playback and disable amplifier   |
 | `WaitForSampleEnd()`                 | Playback   | Block until playback completes        |
-
-````
+| `AudioEngine_OnPlaybackEnd()`        | Callback   | Weak callback for playback end event  |

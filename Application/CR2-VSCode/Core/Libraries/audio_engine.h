@@ -389,6 +389,33 @@ void                SetDAC_Control                    ( uint8_t state );
  */
 uint8_t             GetDAC_Control                    ( void );
 
+/* Volume response control */
+/**
+ * @brief Enable or disable non-linear volume response curve
+ * @param[in] enable 1 to enable logarithmic response (recommended), 0 for linear
+ * @note Non-linear response matches human loudness perception for intuitive control
+ */
+void                SetVolumeResponseNonlinear        ( uint8_t enable );
+
+/**
+ * @brief Get current volume response mode
+ * @return 1 if non-linear mode enabled, 0 if linear
+ */
+uint8_t             GetVolumeResponseNonlinear        ( void );
+
+/**
+ * @brief Set volume response gamma exponent
+ * @param[in] gamma Gamma value (1.0-4.0), typical: 2.0 for quadratic response
+ * @note Higher gamma = more aggressive curve. 1.0 = linear, 2.0 = recommended
+ */
+void                SetVolumeResponseGamma            ( float gamma );
+
+/**
+ * @brief Get current volume response gamma exponent
+ * @return Current gamma value
+ */
+float               GetVolumeResponseGamma            ( void );
+
 /* Chunk processing callbacks (call from DMA callbacks) */
 /**
  * @brief Process next 16-bit PCM chunk from DMA half-complete callback

@@ -7,7 +7,7 @@ Complete overview of the Audio Engine Documentation Suite.
 | Metric | Count |
 |--------|-------|
 | **Total Documentation Files** | 13 |
-| **Documented Functions** | 40+ |
+| **Documented Functions** | 43+ |
 | **Code Examples** | 40+ |
 | **Total Estimated Pages** | ~150 |
 | **Documentation Coverage** | 100% |
@@ -18,7 +18,7 @@ Complete overview of the Audio Engine Documentation Suite.
 ### Core Documentation (6 files)
 1. **[README.md](README.md)** - Project overview and quick start (5 min read)
 2. **[AUDIO_ENGINE_MANUAL.md](AUDIO_ENGINE_MANUAL.md)** - Complete technical manual (30 min read)
-3. **[API_REFERENCE.md](API_REFERENCE.md)** - 40+ functions with examples (20 min reference)
+3. **[API_REFERENCE.md](API_REFERENCE.md)** - 43+ functions with examples (20 min reference)
 4. **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Fast lookup guide (5 min reference)
 5. **[FUNCTION_INDEX.md](FUNCTION_INDEX.md)** - Function catalog (3 min reference)
 6. **[DOCUMENTATION_GUIDE.md](DOCUMENTATION_GUIDE.md)** - Navigation guide (5 min read)

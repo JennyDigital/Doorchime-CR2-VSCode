@@ -35,6 +35,45 @@ while (GetStopStatus() != PB_Idle) { /* wait for fade/stop to complete */ }
 ShutDownAudio();
 ```
 
+## DAC Power Control
+
+```c
+// Enable/disable automatic DAC power control
+SetDAC_Control(1);  // Engine manages DAC power (default)
+SetDAC_Control(0);  // Manual DAC control
+
+// Query current state
+if (GetDAC_Control()) {
+    // DAC power is automatic
+}
+```
+
+## Application Callbacks
+
+```c
+// Override this weak function to get playback end notifications
+void AudioEngine_OnPlaybackEnd(void)
+{
+    // Called from ISR when playback ends
+    playback_done_flag = 1;  // Set flag for main loop
+}
+
+// Usage patterns:
+// 1. Simple flag
+volatile uint8_t done = 0;
+void AudioEngine_OnPlaybackEnd(void) { done = 1; }
+
+// 2. RTOS event
+void AudioEngine_OnPlaybackEnd(void) {
+    osEventFlagsSet(audio_events, AUDIO_DONE);
+}
+
+// 3. Playlist management
+void AudioEngine_OnPlaybackEnd(void) {
+    next_track_ready = 1;
+}
+```
+
 ## Filter Configuration
 
 ```c
@@ -179,9 +218,35 @@ printf("Preset: %u\n", GetAirEffectPresetIndex());
 SetFadeOutTime(slider_value / 100.0f);  // 0.0-1.0 seconds
 ```
 
+### Pattern 6: Event-Driven Playback
+```c
+volatile uint8_t playback_done = 0;
+
+void AudioEngine_OnPlaybackEnd(void) {
+    playback_done = 1;  // Called from ISR when done
+}
+
+void main_loop(void) {
+    PlaySample(sound_data, sound_size, 22000, 16, Mode_mono);
+    
+    // Continue other work while audio plays
+    while (!playback_done) {
+        UpdateDisplay();
+        ProcessButtons();
+        HAL_Delay(10);
+    }
+    
+    printf("Audio finished!\n");
+}
+```
+
 ## Function Categories
 
 **Playback** (7): `PlaySample`, `WaitForSampleEnd`, `PausePlayback`, `ResumePlayback`, `StopPlayback`, `GetStopStatus`, `ShutDownAudio`
+
+**DAC Control** (2): `SetDAC_Control`, `GetDAC_Control`
+
+**Callbacks** (1): `AudioEngine_OnPlaybackEnd`
 
 **Configuration** (2): `SetFilterConfig`, `GetFilterConfig`
 

@@ -108,6 +108,10 @@ __attribute__((weak)) void AudioEngine_OnPlaybackEnd( void )
 /* Volume divisor (populated by hardware GPIO reading) */
 volatile uint16_t vol_input;
 
+/* Volume response configuration */
+volatile uint8_t  volume_response_nonlinear = 1;  // Default: enabled
+volatile float    volume_response_gamma     = 2.0f; // Default: quadratic (human perception)
+
 /* Playback buffer */
 int16_t pb_buffer[PB_BUFF_SZ] = {0};
 
@@ -1859,6 +1863,26 @@ PB_StatusTypeDef StopPlayback( void )
 }
 
 
+/** Apply non-linear volume response curve for perceptually-uniform control
+  * 
+  * @param: linear_volume - Linear volume value (0-65535)
+  * @retval: uint16_t - Non-linearly scaled volume (0-65535)
+  */
+static inline uint16_t ApplyVolumeResponseCurve( uint16_t linear_volume )
+{
+  if( volume_response_nonlinear ) {
+    /* Normalize to 0.0-1.0 range */
+    float normalized = (float)linear_volume / 65535.0f;
+    /* Apply inverse power law (gamma > 1 creates logarithmic response) */
+    float curved = powf( normalized, 1.0f / volume_response_gamma );
+    /* Scale back to 0-65535 range */
+    return (uint16_t)( curved * 65535.0f + 0.5f );
+  } else {
+    /* Linear response - no scaling */
+    return linear_volume;
+  }
+}
+
 /** Apply volume setting to sample
   * 
   * @param: sample - Signed 16-bit audio sample
@@ -1867,8 +1891,11 @@ PB_StatusTypeDef StopPlayback( void )
   */
 static inline int16_t ApplyVolumeSetting( int16_t sample, uint16_t volume_setting )
 {
+  /* Apply non-linear volume response curve if enabled */
+  uint16_t adjusted_volume = ApplyVolumeResponseCurve( volume_setting );
+  
   int32_t sample32 = (int32_t) sample;
-  int32_t volume32 = (int32_t) volume_setting;
+  int32_t volume32 = (int32_t) adjusted_volume;
 
   /* Apply 16-bit volume (0-65535) with proper scaling to 0.0-1.0 range
      Preserve signed sample polarity by keeping all math in signed space. */
@@ -1918,4 +1945,54 @@ static inline uint16_t GetLpf8BitAlpha( LPF_Level lpf_level )
         default:
             return LPF_MEDIUM;
     }
+}
+
+
+/** Enable or disable non-linear volume response
+  * 
+  * @brief Human hearing perceives loudness logarithmically. Enabling non-linear
+  *        response applies a power curve to create more intuitive volume control.
+  * 
+  * @param: enable - 1 to enable non-linear response, 0 for linear
+  * @retval: none
+  */
+void SetVolumeResponseNonlinear( uint8_t enable )
+{
+  volume_response_nonlinear = enable ? 1 : 0;
+}
+
+
+/** Get current volume response mode
+  * 
+  * @retval: uint8_t - 1 if non-linear, 0 if linear
+  */
+uint8_t GetVolumeResponseNonlinear( void )
+{
+  return volume_response_nonlinear;
+}
+
+
+/** Set volume response gamma exponent
+  * 
+  * @brief Controls the aggressiveness of the non-linear volume curve.
+  *        Typical values: 1.0 = linear, 2.0 = quadratic (recommended for human perception)
+  * 
+  * @param: gamma - Gamma exponent value (clamped to 1.0-4.0 range)
+  * @retval: none
+  */
+void SetVolumeResponseGamma( float gamma )
+{
+  if( gamma < 1.0f ) gamma = 1.0f;
+  if( gamma > 4.0f ) gamma = 4.0f;
+  volume_response_gamma = gamma;
+}
+
+
+/** Get current volume response gamma exponent
+  * 
+  * @retval: float - Current gamma value
+  */
+float GetVolumeResponseGamma( void )
+{
+  return volume_response_gamma;
 }
