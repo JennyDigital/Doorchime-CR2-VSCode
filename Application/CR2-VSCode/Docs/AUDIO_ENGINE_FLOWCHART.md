@@ -60,11 +60,11 @@ flowchart TB
     DMA -->|"I2S Stream"| DAC
     DAC --> Speaker
 
-    style User fill:#e1f5ff
-    style Engine fill:#fff4e1
-    style DSP fill:#ffe1f5
-    style Hardware fill:#e1ffe1
-    style ISR fill:#ffe1e1
+    style User fill:#e1f5ff,color:#000000
+    style Engine fill:#fff4e1,color:#000000
+    style DSP fill:#ffe1f5,color:#000000
+    style Hardware fill:#e1ffe1,color:#000000
+    style ISR fill:#ffe1e1,color:#000000
 ```
 
 ## 🔄 Playback Initialization Flow
@@ -99,9 +99,9 @@ flowchart TD
     ReturnError --> End1([End])
     ReturnSuccess --> End2([End])
 
-    style Start fill:#e1f5ff
-    style ReturnSuccess fill:#e1ffe1
-    style ReturnError fill:#ffe1e1
+    style Start fill:#e1f5ff,color:#000000
+    style ReturnSuccess fill:#e1ffe1,color:#000000
+    style ReturnError fill:#ffe1e1,color:#000000
 ```
 
 ## 🎚️ DMA Interrupt Processing Flow
@@ -153,9 +153,9 @@ flowchart TD
     ReturnPlaying --> ISRExit([ISR Complete])
     ReturnIdle --> ISRExit
 
-    style DMAInt fill:#ffe1e1
-    style ReturnPlaying fill:#e1ffe1
-    style ReturnIdle fill:#fff4e1
+    style DMAInt fill:#ffe1e1,color:#000000
+    style ReturnPlaying fill:#e1ffe1,color:#000000
+    style ReturnIdle fill:#fff4e1,color:#000000
 ```
 
 ## 🎛️ DSP Filter Chain Pipeline (16-bit)
@@ -194,14 +194,14 @@ flowchart LR
     
     Clip --> Output["Output Sample<br/>(Filtered 16-bit)"]
 
-    style Input fill:#e1f5ff
-    style Output fill:#e1ffe1
-    style Biquad fill:#ffe1f5
-    style DCFilter fill:#fff4e1
-    style AirEffect fill:#f5e1ff
-    style Fade fill:#e1ffe1
-    style NoiseGate fill:#ffe1e1
-    style Clip fill:#ffe1f5
+    style Input fill:#e1f5ff,color:#000000
+    style Output fill:#e1ffe1,color:#000000
+    style Biquad fill:#ffe1f5,color:#000000
+    style DCFilter fill:#fff4e1,color:#000000
+    style AirEffect fill:#f5e1ff,color:#000000
+    style Fade fill:#e1ffe1,color:#000000
+    style NoiseGate fill:#ffe1e1,color:#000000
+    style Clip fill:#ffe1f5,color:#000000
 ```
 
 ## 🎛️ DSP Filter Chain Pipeline (8-bit)
@@ -224,10 +224,10 @@ flowchart LR
     
     Rest8 --> Output8["Output Sample<br/>(Filtered 16-bit)"]
 
-    style Input8 fill:#e1f5ff
-    style Convert fill:#fff4e1
-    style OnePole fill:#ffe1f5
-    style Output8 fill:#e1ffe1
+    style Input8 fill:#e1f5ff,color:#000000
+    style Convert fill:#fff4e1,color:#000000
+    style OnePole fill:#ffe1f5,color:#000000
+    style Output8 fill:#e1ffe1,color:#000000
 ```
 
 ## 🔧 Filter Configuration Flow
@@ -254,8 +254,8 @@ flowchart TD
     ApplyNext --> Done1([Configuration Complete])
     Ready --> Done1
 
-    style UserConfig fill:#e1f5ff
-    style Done1 fill:#e1ffe1
+    style UserConfig fill:#e1f5ff,color:#000000
+    style Done1 fill:#e1ffe1,color:#000000
 ```
 
 ## 🎚️ Volume Control Flow
@@ -290,9 +290,9 @@ flowchart TD
     
     ApplyToSample --> Continue([Continue DSP Pipeline])
 
-    style DMAChunk fill:#ffe1e1
-    style ApplyGamma fill:#f5e1ff
-    style Continue fill:#e1ffe1
+    style DMAChunk fill:#ffe1e1,color:#000000
+    style ApplyGamma fill:#f5e1ff,color:#000000
+    style Continue fill:#e1ffe1,color:#000000
 ```
 
 ## 📊 State Machine Diagram
@@ -352,10 +352,10 @@ flowchart TD
     
     UpdateConfig --> Done([Air Effect Configured])
 
-    style UserCall fill:#e1f5ff
-    style EnableAir fill:#e1ffe1
-    style DisableAir fill:#ffe1e1
-    style Done fill:#e1ffe1
+    style UserCall fill:#e1f5ff,color:#000000
+    style EnableAir fill:#e1ffe1,color:#000000
+    style DisableAir fill:#ffe1e1,color:#000000
+    style Done fill:#e1ffe1,color:#000000
 ```
 
 ## 📈 Buffer Management (Ping-Pong DMA)
@@ -389,11 +389,11 @@ flowchart TD
     FirstHalf -.->|Read by DMA| Transfer1
     SecondHalf -.->|Read by DMA| Transfer2
 
-    style Start fill:#e1f5ff
-    style FirstHalf fill:#ffe1f5
-    style SecondHalf fill:#fff4e1
-    style Process1 fill:#e1ffe1
-    style Process2 fill:#e1ffe1
+    style Start fill:#e1f5ff,color:#000000
+    style FirstHalf fill:#ffe1f5,color:#000000
+    style SecondHalf fill:#fff4e1,color:#000000
+    style Process1 fill:#e1ffe1,color:#000000
+    style Process2 fill:#e1ffe1,color:#000000
 ```
 
 ---
