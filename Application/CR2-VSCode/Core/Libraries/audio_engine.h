@@ -111,7 +111,7 @@ extern "C" {
     return; \
   } while(0)
 
-  /* Fill buffer macro */
+  /* Fill half buffer macro */
   #define MIDPOINT_FILL_BUFFER_HALF() memset( output, MIDPOINT_S16, CHUNK_SZ * sizeof( int16_t ) )
 
 /* Playback status type */

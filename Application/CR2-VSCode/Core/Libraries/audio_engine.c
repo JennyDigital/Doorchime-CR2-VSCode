@@ -320,9 +320,12 @@ void SetFilterConfig( const FilterConfig_TypeDef *cfg )
 {
   if( cfg != NULL ) {
     filter_cfg = *cfg;
-    // Ensure a sane makeup gain (default if zero)
+    // Ensure a sane makeup gain (default if zero, cap if too high)
     if( filter_cfg.lpf_makeup_gain_q16 == 0 ) {
       filter_cfg.lpf_makeup_gain_q16 = LPF_MAKEUP_GAIN_Q16;
+    }
+    else if( filter_cfg.lpf_makeup_gain_q16 > AIR_EFFECT_SHELF_GAIN_MAX ) {
+      filter_cfg.lpf_makeup_gain_q16 = AIR_EFFECT_SHELF_GAIN_MAX;
     }
   }
 }
