@@ -1,4 +1,3 @@
-````markdown
 # Audio Engine - Quick Reference Card
 
 Fast lookup for common audio engine operations.
@@ -271,5 +270,3 @@ void main_loop(void) {
 - **Full API Reference**: [API_REFERENCE.md](API_REFERENCE.md) - Complete documentation for all 40+ functions
 - **User Manual**: [AUDIO_ENGINE_MANUAL.md](AUDIO_ENGINE_MANUAL.md) - Architecture, examples, troubleshooting
 - **Air Effect Guide**: [AIR_EFFECT_QUICK_REFERENCE.md](AIR_EFFECT_QUICK_REFERENCE.md) - Air effect details
-
-````

@@ -36,6 +36,7 @@
   */
 
 #include "audio_engine.h"
+#include "stm32g4xx_hal_i2s.h"
 #include <math.h>           // Some of our filter calculations need math functions
 #include <stddef.h>
 #include <stdint.h>         // We like things predictable in these here ports.
@@ -1713,7 +1714,9 @@ PB_StatusTypeDef PlaySample (
       AudioEngine_DACSwitch( true );  // Ensure DAC is powered on before starting playback
     }
   pb_state = PB_Playing;
-  HAL_I2S_Transmit_DMA( &AUDIO_ENGINE_I2S_HANDLE, (uint16_t *) pb_buffer, PB_BUFF_SZ );
+  if( HAL_I2S_Transmit_DMA( &AUDIO_ENGINE_I2S_HANDLE, (uint16_t *) pb_buffer, PB_BUFF_SZ ) != HAL_OK ) {
+    return PB_PlayingFailed;
+  }
   return PB_Playing;
 }
 

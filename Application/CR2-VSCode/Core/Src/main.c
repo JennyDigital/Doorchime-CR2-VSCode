@@ -263,6 +263,7 @@ int main(void)
 
       WaitForTrigger( TRIGGER_CLR );  // Wait for trigger to clear before stopping audio
       StopPlayback();
+
       while( GetPlaybackState()) {
         HAL_Delay( 1 );  // Wait for playback to fully stop before starting next sample
       }
@@ -271,6 +272,7 @@ int main(void)
         I2S_AUDIOFREQ_11K, 16, Mode_mono );
       WaitForTrigger( TRIGGER_SET ); // Wait for trigger to set before stopping audio
       StopPlayback();
+
       while( GetPlaybackState()) {
         HAL_Delay( 1 );  // Wait for playback to fully stop before starting next sample
       }
