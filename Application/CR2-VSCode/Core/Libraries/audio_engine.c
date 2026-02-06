@@ -1346,15 +1346,15 @@ static inline void ProcessDMACallback( uint8_t which_half )
 {
   /* If fully paused (fadeout already complete), fill buffer with silence */
   if( pb_state == PB_Paused ) {
-    int16_t *output = ( which_half == SECOND ) ? (pb_buffer + CHUNK_SZ ) : pb_buffer;
-    MIDPOINT_FILL_BUFFER_HALF();
+    //int16_t *output = ( which_half == SECOND ) ? (pb_buffer + CHUNK_SZ ) : pb_buffer;
+    MIDPOINT_FILL_BUFFER();
     return;
   }
   
   /* Special case: if pausing and fadeout nearly complete, skip processing and fill with silence */
   if( pb_state == PB_Pausing && fadeout_samples_remaining <= HALFCHUNK_SZ ) {
-    int16_t *output = ( which_half == SECOND ) ? (pb_buffer + CHUNK_SZ ) : pb_buffer;
-    MIDPOINT_FILL_BUFFER_HALF();
+    //int16_t *output = ( which_half == SECOND ) ? (pb_buffer + CHUNK_SZ ) : pb_buffer;
+    MIDPOINT_FILL_BUFFER();
     pb_state = PB_Paused;
     return;
   }

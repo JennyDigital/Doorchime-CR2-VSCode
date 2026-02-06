@@ -112,7 +112,7 @@ extern "C" {
   } while(0)
 
   /* Fill half buffer macro */
-  #define MIDPOINT_FILL_BUFFER_HALF() memset( output, MIDPOINT_S16, CHUNK_SZ * sizeof( int16_t ) )
+  #define MIDPOINT_FILL_BUFFER() memset( pb_buffer, MIDPOINT_S16, sizeof( pb_buffer ) );
 
 /* Playback status type */
 typedef enum {
