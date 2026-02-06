@@ -98,6 +98,22 @@ extern "C" {
 /* Audio silence midpoint */
 #define MIDPOINT_S16          0
 
+/* Playback end cleanup macro - handles buffer flush, stop request, and callback */
+#define END_PLAYBACK_CLEANUP() \
+  do { \
+    pb_state = PB_Idle; \
+    memset( pb_buffer, MIDPOINT_S16, sizeof( pb_buffer ) ); \
+    if( stop_requested ) { \
+      HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE ); \
+      ResetPlaybackState(); \
+    } \
+    AudioEngine_OnPlaybackEnd(); \
+    return; \
+  } while(0)
+
+  /* Fill buffer macro */
+  #define MIDPOINT_FILL_BUFFER_HALF() memset( output, MIDPOINT_S16, CHUNK_SZ * sizeof( int16_t ) )
+
 /* Playback status type */
 typedef enum {
   PB_Idle,

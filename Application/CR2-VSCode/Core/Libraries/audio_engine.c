@@ -1344,14 +1344,14 @@ static inline void ProcessDMACallback( uint8_t which_half )
   /* If fully paused (fadeout already complete), fill buffer with silence */
   if( pb_state == PB_Paused ) {
     int16_t *output = ( which_half == SECOND ) ? (pb_buffer + CHUNK_SZ ) : pb_buffer;
-    memset( output, MIDPOINT_S16, CHUNK_SZ * sizeof(int16_t) );
+    MIDPOINT_FILL_BUFFER_HALF();
     return;
   }
   
   /* Special case: if pausing and fadeout nearly complete, skip processing and fill with silence */
   if( pb_state == PB_Pausing && fadeout_samples_remaining <= HALFCHUNK_SZ ) {
     int16_t *output = ( which_half == SECOND ) ? (pb_buffer + CHUNK_SZ ) : pb_buffer;
-    memset( output, MIDPOINT_S16, CHUNK_SZ * sizeof(int16_t) );
+    MIDPOINT_FILL_BUFFER_HALF();
     pb_state = PB_Paused;
     return;
   }
@@ -1360,16 +1360,7 @@ static inline void ProcessDMACallback( uint8_t which_half )
 
   if( pb_mode == 16 ) {
     if( pb_p16 >= pb_end16 ) {
-      pb_state = PB_Idle;
-      memset( pb_buffer, MIDPOINT_S16, sizeof( pb_buffer ) );  // Flush buffer with silence on completion.
-      /* If stop was requested, complete it now */
-      if( stop_requested ) {
-        HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );
-        ResetPlaybackState();
-      }
-      /* Notify application that playback has ended */
-      AudioEngine_OnPlaybackEnd();
-      return;
+      END_PLAYBACK_CLEANUP();   // Cleanup and stop playback if we've reached the end of the sample data, also returns from the callback to prevent further processing.
     }
     if( ProcessNextWaveChunk( (int16_t *) pb_p16 ) != PB_Playing ) {
       return;
@@ -1377,16 +1368,7 @@ static inline void ProcessDMACallback( uint8_t which_half )
   }
   else if( pb_mode == 8 ) {
     if( pb_p8 >= pb_end8 ) {
-      pb_state = PB_Idle;
-      memset( pb_buffer, MIDPOINT_S16, sizeof( pb_buffer ) );  // Flush buffer with silence on completion.
-      /* If stop was requested, complete it now */
-      if( stop_requested ) {
-        HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );
-        ResetPlaybackState();
-      }
-      /* Notify application that playback has ended */
-      AudioEngine_OnPlaybackEnd();
-      return;
+      END_PLAYBACK_CLEANUP();   // Cleanup and stop playback if we've reached the end of the sample data, also returns from the callback to prevent further processing.
     }
     if( ProcessNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PB_Playing ) {
       return;
