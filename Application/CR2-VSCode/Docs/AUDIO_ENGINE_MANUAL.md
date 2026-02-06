@@ -1039,11 +1039,14 @@ SetFilterConfig(&cfg);
 
 ### Overview
 
-The audio engine applies volume scaling during sample processing. Volume can be controlled via:
-1. **Digital GPIO inputs** (OPT1–OPT3 pins for 3-bit binary encoding)
-2. **Analog ADC input** (12-bit potentiometer or variable resistance)
+The audio engine applies volume scaling during sample processing. **Your application provides the volume input** by implementing a custom `ReadVolume()` function that returns a uint16_t value in the range 1–65535.
 
-Both pathways support **non-linear (logarithmic) volume response** to match human hearing perception.
+You can implement this function using various input methods:
+- **Digital GPIO inputs** (OPT1–OPT3 pins for 3-bit binary encoding) — example pattern provided below
+- **Analog ADC input** (12-bit potentiometer or variable resistance) — example pattern provided below
+- **Other methods** (CAN bus, UART commands, network, etc.) — follow the same scaling approach
+
+All implementations support **non-linear (logarithmic) volume response** to match human hearing perception.
 
 ### Non-Linear Volume Response
 
@@ -1056,9 +1059,9 @@ Human hearing perceives loudness logarithmically, not linearly. The audio engine
 ```
 
 **How it works:**
-- Linear input (0–255) is normalized to 0.0–1.0
+- Linear input (1–65535) is normalized to 0.0–1.0
 - Gamma curve is applied: `output = input^(1/gamma)`
-- Result scales back to 0–255 for audio attenuation
+- Result scales back to 1–65535 for audio attenuation
 
 **Gamma Values:**
 | Gamma | Perception | Use Case |
@@ -1077,65 +1080,59 @@ With **gamma = 2.0** (quadratic):
 //#define VOLUME_RESPONSE_NONLINEAR   // Comment this out
 ```
 
-### Digital Volume Control (GPIO-Based)
+## Volume Control Implementation
 
-**Pin Configuration:**
-- **OPT1** (LSB): GPIO input pin
-- **OPT2**: GPIO input pin
-- **OPT3** (MSB): GPIO input pin
+> **Note:** Volume input implementation is application-specific. The audio engine simply invokes the `ReadVolume()` callback and expects a uint16_t value in the range 1–65535. The application is responsible for:
+> - Choosing the volume input method (digital GPIO, ADC potentiometer, CAN bus, UART command, etc.)
+> - Scaling that input to the 1–65535 range
+> - Handling debouncing, hysteresis, or other input conditioning
+> - Being aware that if `VOLUME_RESPONSE_NONLINEAR` is enabled, the engine applies a gamma curve to the returned value
 
-**Encoding (3-bit binary, inverted so 0b000 = max volume):**
+### Application Example: Digital GPIO Volume Control
 
-| OPT3 | OPT2 | OPT1 | Level | Effective Volume |
-|------|------|------|-------|------------------|
-| 0 | 0 | 0 | Maximum | 100% (255/255) |
-| 0 | 0 | 1 | 75% | 191/255 |
-| 0 | 1 | 0 | 50% | 127/255 |
-| 0 | 1 | 1 | 37% | 95/255 |
-| 1 | 0 | 0 | 25% | 63/255 |
-| 1 | 0 | 1 | 19% | 47/255 |
-| 1 | 1 | 0 | 12% | 31/255 |
-| 1 | 1 | 1 | Minimum | 1/255 |
+**3-bit binary selector example (shows the pattern for application developers):**
 
-**Implementation:**
+| Selection | Binary | Scaled to 1–65535 |
+|-----------|--------|------------------|
+| Maximum | 0b000 | 65535 |
+| 75% | 0b001 | 49151 |
+| 50% | 0b010 | 32767 |
+| ... | ... | ... |
+| Minimum | 0b111 | 1 |
+
+**Example implementation in application (main.c):**
 ```c
-#define VOLUME_INPUT_DIGITAL  // Enable in audio_engine.h
+uint16_t ReadVolume(void) {
+    // Application reads three GPIO pins for volume
+    uint8_t v =
+      ( ( (OPT3_GPIO_Port->IDR & OPT3_Pin) != 0 ) << 2 ) |
+      ( ( (OPT2_GPIO_Port->IDR & OPT2_Pin) != 0 ) << 1 ) |
+      ( ( (OPT1_GPIO_Port->IDR & OPT1_Pin) != 0 ) << 0 );
 
-// In ReadVolume() (main.c):
-uint8_t v =
-  ( ( (OPT3_GPIO_Port->IDR & OPT3_Pin) != 0 ) << 2 ) |
-  ( ( (OPT2_GPIO_Port->IDR & OPT2_Pin) != 0 ) << 1 ) |
-  ( ( (OPT1_GPIO_Port->IDR & OPT1_Pin) != 0 ) << 0 );
-
-v = 7 - v;  // Invert so 0b000 = max
-uint16_t scaled = ( (uint16_t)v * 255U ) / 7U;  // Map 0–7 to 0–255
-return scaled ? (uint8_t)scaled : 1U;  // Return 1–255
+    v = 7 - v;  // Invert so 0b000 = max volume
+    uint32_t scaled = ( (uint32_t)v * 65535U ) / 7U;  // Map 0–7 to 1–65535
+    return (uint16_t)scaled;
+}
 ```
 
-### Analog Volume Control (ADC-Based)
+### Application Example: Analog ADC Volume Control
 
-**Pin Configuration:**
-- Connect potentiometer to **ADC1 Channel X** (e.g., PA0)
-- 12-bit ADC reads 0–4095 from wiper voltage
+**Potentiometer example (shows the pattern for application developers):**
 
-**Implementation:**
+**Example implementation in application (main.c):**
 ```c
-// Disable VOLUME_INPUT_DIGITAL in audio_engine.h
+uint16_t ReadVolume(void) {
+    // Application reads 12-bit ADC (0–4095)
+    // Scale to 1–65535 range
+    uint32_t lin = ((uint32_t)adc_raw * 65535U) / 4095U;
+    return (uint16_t)lin;
+}
 
-// In ReadVolume() (main.c):
-uint16_t lin = adc_raw / 16;  // Scale 0–4095 down to ~0–255
-
-if( lin > 220 ) lin = 220;    // Cap to 220 to avoid clipping
-return lin ? lin : 1;         // Return 1–255
-```
-
-**ADC Interrupt Handler:**
-```c
 void HAL_ADC_ConvCpltCallback( ADC_HandleTypeDef *hadc )
 {
-  if( hadc == &hadc1 ) {
-    adc_raw = HAL_ADC_GetValue( &hadc1 );
-  }
+    if( hadc == &hadc1 ) {
+        adc_raw = HAL_ADC_GetValue( &hadc1 );
+    }
 }
 ```
 
@@ -1164,35 +1161,27 @@ void HAL_ADC_ConvCpltCallback( ADC_HandleTypeDef *hadc )
 ### Application Integration Template
 
 ```c
-#include "audio_engine.h"
-#include "stm32g4xx_hal.h"
+#include \"audio_engine.h\"
+#include \"stm32g4xx_hal.h\"
 
-/* Hardware control functions */
+/* Hardware control functions (application-specific) */
 void DAC_MasterSwitch(GPIO_PinState setting) {
     HAL_GPIO_WritePin(AMP_EN_GPIO_Port, AMP_EN_Pin, setting);
 }
 
-uint8_t ReadVolume(void) {
-    // Read three GPIO pins for 3-bit digital volume (1–8 scaled to 1–255)
-    // Or read an analog input via ADC
-    // The audio engine will apply non-linear (logarithmic) response
-    // if VOLUME_RESPONSE_NONLINEAR is enabled in main.h
+uint16_t ReadVolume(void) {
+    // Application-specific: read volume from GPIO, ADC, UART, etc.
+    // Must return 1–65535 (0 is treated as 1)
+    // The audio engine applies non-linear response if enabled
     
-    #ifdef VOLUME_INPUT_DIGITAL
-        // Digital: Use OPT1–OPT3 GPIO pins
-        uint8_t v =
-          ( ( (OPT3_GPIO_Port->IDR & OPT3_Pin) != 0 ) << 2 ) |
-          ( ( (OPT2_GPIO_Port->IDR & OPT2_Pin) != 0 ) << 1 ) |
-          ( ( (OPT1_GPIO_Port->IDR & OPT1_Pin) != 0 ) << 0 );
-        v = 7 - v;  // Invert so 0b000 = max volume
-        uint16_t scaled = ( (uint16_t)v * 255U ) / 7U;  // Map 0–7 to 0–255
-        return scaled ? (uint8_t)scaled : 1U;
-    #else
-        // Analog: Use 12-bit ADC
-        uint16_t lin = adc_raw / 16;  // Scale to 0–255 range
-        if( lin > 220 ) lin = 220;
-        return lin ? lin : 1;
-    #endif
+    // Example: 3-bit GPIO selector
+    uint8_t v =
+      ( ( (OPT3_GPIO_Port->IDR & OPT3_Pin) != 0 ) << 2 ) |
+      ( ( (OPT2_GPIO_Port->IDR & OPT2_Pin) != 0 ) << 1 ) |
+      ( ( (OPT1_GPIO_Port->IDR & OPT1_Pin) != 0 ) << 0 );
+    v = 7 - v;  // Invert: 0b000 = max volume
+    uint32_t scaled = ( (uint32_t)v * 65535U ) / 7U;
+    return (uint16_t)scaled;
 }
 
 /* Main initialization (in main.c HAL_Init sequence) */
@@ -1208,7 +1197,7 @@ void SystemInit_Audio(void) {
     cfg.enable_soft_clipping = 1;
     SetFilterConfig(&cfg);
     
-    printf("Audio engine ready\n");
+    printf(\"Audio engine ready\\n\");
 }
 
 /* DMA interrupt handlers (in stm32g4xx_it.c or similar) */

@@ -41,7 +41,6 @@ A professional, reusable audio playback engine for STM32 microcontrollers with I
 - **DAC Power Control**: Added `SetDAC_Control()` and `GetDAC_Control()` for optional runtime control of DAC power management - useful when sharing the audio engine across multiple applications.
 - **Flash Footprint**: `.text` ≈ 12.9 KB (Release build), reflecting added features and refactoring.
 - **Non-Linear Volume Response**: Human-perception-matched volume control with configurable gamma curve. Enable via `VOLUME_RESPONSE_NONLINEAR` (#define in main.h). Gamma=2.0 provides intuitive volume feel.
-- **Digital Volume Control**: Fixed GPIO bit packing for 3-bit digital volume inputs (OPT1–OPT3). Scales to 1–255 range for proper audio attenuation.
 - **Air Effect Auto-Control**: `SetAirEffectPresetDb()` now auto-enables/disables air effect based on preset (0 = off, >0 = on). No separate `SetAirEffectEnable()` call needed.
 - **Air Effect**: High-shelf brightening with runtime control. Enable via `SetAirEffectPresetDb(preset)` and tune with `SetAirEffectGainDb()`.
 - **Filter Warm-Up & Resets**: Introduced `WarmupBiquadFilter16Bit()` and consolidated resets via `RESET_ALL_FILTER_STATE()` to reduce startup transients and simplify `PlaySample()`.
