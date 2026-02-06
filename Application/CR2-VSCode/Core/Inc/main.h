@@ -117,6 +117,10 @@ void Error_Handler(void);
 // Scale factor for master volume input.
 #define MASTER_VOLUME_SCALE 8U
 
+// ADC reading inversion option (uncomment to invert ADC so 0 = max volume, 4095 = min volume)
+// This is a convenience option for the user who wants to layout their PCB with reverse pinout.
+//#define VOLUME_ADC_INVERTED
+
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

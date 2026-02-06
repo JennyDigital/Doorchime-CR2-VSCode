@@ -627,8 +627,12 @@ uint16_t ReadVolume( void )
     // Use 12-bit ADC value (0-4095) for linear volume
     // Scale 12-bit ADC directly to match 16-bit volume range with 16x scaling factor
     // (4095 * 16 = 65520, close to full 65535 range)
-    uint32_t lin = (uint32_t)adc_raw * MASTER_VOLUME_SCALE;         // Scale 12-bit to acceptable range
-    if( lin > VOLUME_ADC_MAX_SCALED ) lin = VOLUME_ADC_MAX_SCALED;  // Cap at maximum ADC * 16
+    #ifndef VOLUME_ADC_INVERTED
+    uint32_t lin = (uint32_t)adc_raw * MASTER_VOLUME_SCALE;               // Scale 12-bit to acceptable range
+    #else
+    uint32_t lin = ( (4095U - (uint32_t)adc_raw) * MASTER_VOLUME_SCALE ); // Invert ADC reading so 0 = max volume, 4095 = min volume
+    #endif
+    if( lin > VOLUME_ADC_MAX_SCALED ) lin = VOLUME_ADC_MAX_SCALED;        // Cap at maximum ADC * 16
     volume = (uint16_t)lin;
   #endif
 
