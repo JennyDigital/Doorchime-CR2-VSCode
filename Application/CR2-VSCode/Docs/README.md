@@ -36,7 +36,8 @@ A professional, reusable audio playback engine for STM32 microcontrollers with I
 
 ## What's New
 
-- **Playback End Callback**: New weak `AudioEngine_OnPlaybackEnd()` callback for ISR-safe playback completion notifications - ideal for event-driven applications, playlists, and RTOS integration.
+- **Thread-Safe Stop Logic**: `StopPlayback()` refactored for complete thread-safety by moving all state modifications into the DMA callback context, eliminating race conditions.
+- **Playback End Callback**: New weak `AudioEngine_OnPlaybackEnd()` callback for ISR-safe playback completion notifications - invoked exactly once per playback session with internal guard, ideal for event-driven applications, playlists, and RTOS integration.
 - **DAC Power Control**: Added `SetDAC_Control()` and `GetDAC_Control()` for optional runtime control of DAC power management - useful when sharing the audio engine across multiple applications.
 - **Flash Footprint**: `.text` ≈ 12.9 KB (Release build), reflecting added features and refactoring.
 - **Non-Linear Volume Response**: Human-perception-matched volume control with configurable gamma curve. Enable via `VOLUME_RESPONSE_NONLINEAR` (#define in main.h). Gamma=2.0 provides intuitive volume feel.

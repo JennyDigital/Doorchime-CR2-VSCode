@@ -212,6 +212,9 @@ volatile  const void      *paused_sample_ptr          = NULL;
 /* Stop request flag for asynchronous stop with fade-out */
 volatile  uint8_t         stop_requested              = 0;
 
+/* Playback end callback invocation guard - ensures callback is called only once */
+volatile  uint8_t         playback_end_callback_called = 0;
+
 /* DAC power control flag */
 volatile  uint8_t         dac_power_control           = 1;  // Default to enabled
 
@@ -1247,6 +1250,7 @@ static void ResetPlaybackState( void ) {
   fadeout_samples_remaining = 0;
   fadein_samples_remaining = 0;
   stop_requested = 0;
+  playback_end_callback_called = 0;
 }
 
 
@@ -1344,6 +1348,32 @@ void SetPlaybackSpeed( uint32_t speed )
   */
 static inline void ProcessDMACallback( uint8_t which_half )
 {
+  /* Handle pending stop request at the beginning of DMA callback (safest place to modify state) */
+  if( stop_requested && pb_state != PB_Idle ) {
+    /* Only handle stop if we're in a playable state */
+    if( pb_state == PB_Paused ) {
+      /* If paused, stop immediately */
+      STOP_IMMEDIATE();
+    }
+    
+    /* For playing states, initiate fade-out by shortening the sample duration */
+    if( pb_state != PB_Pausing ) {
+      /* If not already pausing, set state to pausing and prepare for fade */
+      pb_state = PB_Pausing;
+      if( pb_mode == 16 ) {
+        uint32_t remaining = (uint32_t)(pb_end16 - pb_p16);
+        if( remaining > fadeout_samples ) {
+          pb_end16 = pb_p16 + fadeout_samples;
+        }
+      } else if( pb_mode == 8 ) {
+        uint32_t remaining = (uint32_t)(pb_end8 - pb_p8);
+        if( remaining > fadeout_samples ) {
+          pb_end8 = pb_p8 + fadeout_samples;
+        }
+      }
+    }
+  }
+  
   /* If fully paused (fadeout already complete), fill buffer with silence */
   if( pb_state == PB_Paused ) {
     //int16_t *output = ( which_half == SECOND ) ? (pb_buffer + CHUNK_SZ ) : pb_buffer;
@@ -1603,6 +1633,9 @@ PB_StatusTypeDef PlaySample (
     return PB_Error;
   }
 
+  // Reset callback guard for new playback session
+  playback_end_callback_called = 0;
+
   // Set low-pass filter alpha coefficient based on filter config
   lpf_8bit_alpha = GetLpf8BitAlpha( filter_cfg.lpf_8bit_level );
   
@@ -1626,6 +1659,9 @@ PB_StatusTypeDef PlaySample (
   if( AudioEngine_I2SInit ) { AudioEngine_I2SInit(); }  // Initialize I2S peripheral with our chosen sample rate.
 
   HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );          // Ensure there is no currently playing sound before starting a new one.
+  
+  // Reset callback guard for new playback session
+  playback_end_callback_called = 0;
   
   // Reset all filter state for new sample
   RESET_ALL_FILTER_STATE();
@@ -1814,36 +1850,9 @@ PB_StatusTypeDef StopPlayback( void )
     return PB_Idle;
   }
 
-  /* If already paused, can stop immediately */
-  if( pb_state == PB_Paused ) {
-    HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );
-    pb_state = PB_Idle;
-    ResetPlaybackState();
-    return PB_Idle;
-  }
-
-  /* Request asynchronous stop (DMA callback will handle it) */
+  /* Request asynchronous stop (DMA callback will handle it on next interrupt) */
   stop_requested = 1;
   
-  /* Ensure we're using normal playback state for fade logic */
-  if( pb_state == PB_Pausing ) {
-    pb_state = PB_Playing;
-    fadeout_samples_remaining = 0;
-  }
-
-  /* Shorten remaining playback to fadeout window so fade starts immediately */
-  if( pb_mode == 16 ) {
-    uint32_t remaining = (uint32_t)(pb_end16 - pb_p16);
-    if( remaining > fadeout_samples ) {
-      pb_end16 = pb_p16 + fadeout_samples;
-    }
-  } else if( pb_mode == 8 ) {
-    uint32_t remaining = (uint32_t)(pb_end8 - pb_p8);
-    if( remaining > fadeout_samples ) {
-      pb_end8 = pb_p8 + fadeout_samples;
-    }
-  }
-
   return pb_state;
 }
 

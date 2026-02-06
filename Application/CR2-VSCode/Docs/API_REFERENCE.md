@@ -174,10 +174,12 @@ PB_StatusTypeDef StopPlayback(void);
 
 **Notes:**
 - Returns immediately (non-blocking)
+- **Thread-safe:** Simply sets a flag; all stop logic runs in DMA callback context
 - Uses the normal end-of-play fade-out duration
-- DMA callback completes the stop when fade finishes
+- DMA callback initiates fade-out and completes the stop when fade finishes
 - Fade-out duration set by `SetFadeOutTime()`
 - Use `GetPlaybackState()` to poll for completion
+- `AudioEngine_OnPlaybackEnd()` callback invoked once when stop completes
 
 **Example:**
 ```c
@@ -967,9 +969,11 @@ void AudioEngine_OnPlaybackEnd(void);
 - **Weak symbol** - default implementation does nothing
 - Override in your application to receive playback end notifications
 - Called from **ISR context** (DMA callback) - keep implementation short and non-blocking
+- **Invoked exactly once per playback session** - internal guard prevents repeated calls
 - Triggered when:
   - Sample reaches end naturally
   - `StopPlayback()` completes its fade-out
+  - `StopPlayback()` called while paused (immediate stop)
 - Perfect for:
   - Setting event flags
   - Posting to RTOS queues

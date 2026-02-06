@@ -98,7 +98,7 @@ extern "C" {
 /* Audio silence midpoint */
 #define MIDPOINT_S16          0
 
-/* Playback end cleanup macro - handles buffer flush, stop request, and callback */
+/* Playback end cleanup macro - handles buffer flush, stop request, and callback (only called once) */
 #define END_PLAYBACK_CLEANUP() \
   do { \
     pb_state = PB_Idle; \
@@ -107,7 +107,23 @@ extern "C" {
       HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE ); \
       ResetPlaybackState(); \
     } \
-    AudioEngine_OnPlaybackEnd(); \
+    if( !playback_end_callback_called ) { \
+      playback_end_callback_called = 1; \
+      AudioEngine_OnPlaybackEnd(); \
+    } \
+    return; \
+  } while(0)
+
+/* Immediate stop when paused - cease playback right away and invoke callback */
+#define STOP_IMMEDIATE() \
+  do { \
+    pb_state = PB_Idle; \
+    ResetPlaybackState(); \
+    MIDPOINT_FILL_BUFFER(); \
+    if( !playback_end_callback_called ) { \
+      playback_end_callback_called = 1; \
+      AudioEngine_OnPlaybackEnd(); \
+    } \
     return; \
   } while(0)
 

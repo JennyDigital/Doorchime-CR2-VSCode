@@ -121,6 +121,9 @@ volatile  uint16_t        adc_raw                       = 0;
 // External variables from audio_engine
 extern FilterConfig_TypeDef filter_cfg;
 
+// Test veriable to count playback end callbacks
+volatile uint32_t callback_count = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -207,6 +210,10 @@ int main(void)
   // Small delay to allow hardware to stabilize
   HAL_Delay( 150 );
 
+  // Set DAC control to manual and start with it on.
+  DAC_MasterSwitch( DAC_ON );         // Start with DAC off until ready to play
+  SetDAC_Control( 0 );                // 0 = manual control, 1 = auto control by audio engine
+
   // FilterConfig_TypeDef filter_cfg;
   filter_cfg.enable_noise_gate            = 0;  // Noise gate disabled by default; enable as needed
   filter_cfg.enable_16bit_biquad_lpf      = 0;  // 16-bit biquad LPF disabled by default; enable as needed
@@ -236,11 +243,11 @@ int main(void)
 
     // Wait for playback trigger (if enabled)
     //
-#ifndef TEST_CYCLING
-    if( GetTriggerOption() == AUTO_TRIG_ENABLED ) {
-      WaitForTrigger( TRIGGER_SET );
-    }
-#endif
+// #ifndef TEST_CYCLING
+//     if( GetTriggerOption() == AUTO_TRIG_ENABLED ) {
+//       WaitForTrigger( TRIGGER_SET );
+//     }
+// #endif
  
     // Start playback of samples
     //
@@ -249,10 +256,26 @@ int main(void)
 
     // PlaySample( custom_tritone16k, CUSTOM_TRITONE16K_SZ,
     //   I2S_AUDIOFREQ_16K, 16, Mode_mono ); 
-    PlaySample( handpan16bm, HANDPAN16BM_SZ,
-      I2S_AUDIOFREQ_44K, 16, Mode_mono );
+    while( true ) {
+      WaitForTrigger( TRIGGER_SET );
+      PlaySample( do_16b1c11k, DO_16B1C11K_SZ,
+        I2S_AUDIOFREQ_11K, 16, Mode_mono );
 
-    WaitForSampleEnd();
+      WaitForTrigger( TRIGGER_CLR );  // Wait for trigger to clear before stopping audio
+      StopPlayback();
+      while( GetPlaybackState()) {
+        HAL_Delay( 1 );  // Wait for playback to fully stop before starting next sample
+      }
+
+      PlaySample( dc_16b1c11k, DC_16B1C11K_SZ,
+        I2S_AUDIOFREQ_11K, 16, Mode_mono );
+      WaitForTrigger( TRIGGER_SET ); // Wait for trigger to set before stopping audio
+      StopPlayback();
+      while( GetPlaybackState()) {
+        HAL_Delay( 1 );  // Wait for playback to fully stop before starting next sample
+      }
+    }
+
     ShutDownAudio();
 
     // Handle permanent stop if auto-trigger is disabled
@@ -757,7 +780,11 @@ void HAL_IncTick( void )
   if( trig_counter > TC_HIGH_THRESHOLD )  trig_status = TRIGGER_SET;
 }
 
-
+void AudioEngine_OnPlaybackEnd( void )
+{
+    callback_count++;
+  /* Default implementation does nothing - override in application if needed */
+}
 /* USER CODE END 4 */
 
 /**
