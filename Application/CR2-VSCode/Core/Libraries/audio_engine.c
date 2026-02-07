@@ -1339,6 +1339,31 @@ void SetPlaybackSpeed( uint32_t speed )
  * ============================================================================
  */
 
+static inline void EndPlaybackCleanup( void )
+{
+  pb_state = PB_Idle;
+  memset( pb_buffer, MIDPOINT_S16, sizeof( pb_buffer ) );
+  if( stop_requested ) {
+    HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );
+    ResetPlaybackState();
+  }
+  if( !playback_end_callback_called ) {
+    playback_end_callback_called = 1;
+    AudioEngine_OnPlaybackEnd();
+  }
+}
+
+static inline void StopImmediate( void )
+{
+  pb_state = PB_Idle;
+  ResetPlaybackState();
+  MIDPOINT_FILL_BUFFER();
+  if( !playback_end_callback_called ) {
+    playback_end_callback_called = 1;
+    AudioEngine_OnPlaybackEnd();
+  }
+}
+
 /** Common DMA callback processing logic
   *
   * Helper function to handle buffer refilling for both half-complete and 
@@ -1354,7 +1379,8 @@ static inline void ProcessDMACallback( uint8_t which_half )
     /* Only handle stop if we're in a playable state */
     if( pb_state == PB_Paused ) {
       /* If paused, stop immediately */
-      STOP_IMMEDIATE();
+      StopImmediate();
+      return;
     }
     
     /* For playing states, initiate fade-out by shortening the sample duration */
@@ -1394,7 +1420,8 @@ static inline void ProcessDMACallback( uint8_t which_half )
 
   if( pb_mode == 16 || pb_mode == 8 ) {
     if( ( pb_mode == 16 && pb_p16 >= pb_end16 ) || ( pb_mode == 8 && pb_p8 >= pb_end8 ) ) {
-      END_PLAYBACK_CLEANUP();   // Cleanup and stop playback if we've reached the end of the sample data.
+      EndPlaybackCleanup();   // Cleanup and stop playback if we've reached the end of the sample data.
+      return;
     }
     if( ( pb_mode == 16 && ProcessNextWaveChunk( (int16_t *) pb_p16 ) != PB_Playing ) ||
         ( pb_mode == 8  && ProcessNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PB_Playing ) ) {
