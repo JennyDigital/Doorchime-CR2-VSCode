@@ -319,9 +319,6 @@ This project includes extensive documentation to help you understand and use the
 - [AIR_EFFECT_QUICK_REFERENCE.md](AIR_EFFECT_QUICK_REFERENCE.md) - High-shelf brightening filter guide
 - [AIR_EFFECT_INTEGRATION.md](AIR_EFFECT_INTEGRATION.md) - Integration examples
 
-#### 📓 Change History
-- [CHANGELOG.md](../CHANGELOG.md) - Comprehensive change log with all updates
-
 ### Using the Documentation
 
 **New to the project?** See [DOCUMENTATION_GUIDE.md](DOCUMENTATION_GUIDE.md) for a complete guide to navigating all documentation.
