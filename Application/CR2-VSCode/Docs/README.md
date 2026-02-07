@@ -271,6 +271,9 @@ typedef struct {
 
 Optional treble boost above the cutoff (default α ≈ 0.75). Enable and tune at runtime:
 
+Compile-time: set `AUDIO_ENGINE_ENABLE_AIR_EFFECT` to `0` in `audio_engine.h` to
+compile out Air Effect support and save flash (~272 bytes in our build).
+
 ```c
 FilterConfig_TypeDef cfg;
 GetFilterConfig(&cfg);
@@ -293,6 +296,9 @@ SetAirEffectGainDb(2.0f);             // +2 dB boost at ω=π
 | **Memory (Flash)** | ≈12.9 KB (.text/.rodata, Release build) |
 | **Max Sample Rate** | I2S can exceed 48 kHz; MAX98347A is limited to 96 kHz and higher rates are not recommended on embedded targets |
 | **Typical Sample Rate** | 22 kHz (11 kHz Nyquist) |
+
+**DMA callback inlining:** Set `AUDIO_ENGINE_INLINE_DMA_CALLBACK` in `audio_engine.h` to trade size for speed.
+Disabling inlining saved ~376 bytes of flash at the cost of a small cycle increase.
 
 ## 📖 Documentation
 

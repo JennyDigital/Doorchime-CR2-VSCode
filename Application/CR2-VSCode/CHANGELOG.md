@@ -8,6 +8,7 @@ All notable changes to the CR2-VSCode Audio Engine project are documented here.
 - **audio_engine.c**: Consolidated per-channel filter state into structs and normalized channel identifiers.
 - **audio_engine.c**: Introduced shared helpers and constants to reduce duplication and magic numbers.
 - **audio_engine.c**: Clarified DMA stop/reset flow with a shared helper and refined inline docs.
+- **audio_engine.h/.c**: Added compile-time switch to disable Air Effect (~272 bytes flash saved).
 
 ### Documentation
 - Updated documentation summaries to reflect the latest refactor and update date.

@@ -53,6 +53,13 @@
 #define NOISE_GATE_ATTENUATION_Q15 3277
 #define SAMPLE8_MIDPOINT         128U
 
+
+#if AUDIO_ENGINE_INLINE_DMA_CALLBACK
+#define DMA_CALLBACK_INLINE inline __attribute__((always_inline))
+#else
+#define DMA_CALLBACK_INLINE __attribute__((noinline))
+#endif
+
 /* Forward declarations for internal helper functions */
 
 // Fade and volume helpers
@@ -197,6 +204,7 @@ volatile  uint32_t        dither_state                = DITHER_SEED_DEFAULT;
 /* Biquad filter state for 16-bit samples */
 volatile  uint16_t        lpf_16bit_alpha             = LPF_16BIT_SOFT;
 
+#if AUDIO_ENGINE_ENABLE_AIR_EFFECT
 /* Air Effect runtime shelf gain (Q16). Defaults to AIR_EFFECT_SHELF_GAIN */
 volatile  int32_t         air_effect_shelf_gain_q16   = AIR_EFFECT_SHELF_GAIN;
 
@@ -204,6 +212,7 @@ volatile  int32_t         air_effect_shelf_gain_q16   = AIR_EFFECT_SHELF_GAIN;
 static const float        air_effect_presets_db[]     = { 1.0f, 2.0f, 3.0f };
 #define AIR_EFFECT_PRESET_COUNT ( (uint8_t)( sizeof(air_effect_presets_db) / sizeof(air_effect_presets_db[0]) ) )
 static volatile uint8_t   air_effect_preset_idx       = 1; // default +2 dB
+#endif
 
 /* Pause/resume state tracking */
 volatile  const void      *paused_sample_ptr          = NULL;
@@ -404,6 +413,7 @@ LPF_Level GetLpf8BitLevel(void)
 }
 
 
+#if AUDIO_ENGINE_ENABLE_AIR_EFFECT
 /** Sets whether to use the air effect or not
   * @param: enabled - Non-zero to enable, zero to disable.
   * @retval: none
@@ -542,6 +552,65 @@ float GetAirEffectPresetDb( uint8_t preset_index )
   }
   return air_effect_presets_db[preset_index];
 }
+#else
+void SetAirEffectEnable( uint8_t enabled )
+{
+  (void)enabled;
+  filter_cfg.enable_air_effect = 0;
+}
+
+uint8_t GetAirEffectEnable( void )
+{
+  return 0;
+}
+
+void SetAirEffectGainQ16( uint32_t gain_q16 )
+{
+  (void)gain_q16;
+}
+
+uint32_t GetAirEffectGainQ16( void )
+{
+  return 0;
+}
+
+void SetAirEffectGainDb( float db )
+{
+  (void)db;
+}
+
+float GetAirEffectGainDb( void )
+{
+  return 0.0f;
+}
+
+void SetAirEffectPresetDb( uint8_t preset_index )
+{
+  (void)preset_index;
+  filter_cfg.enable_air_effect = 0;
+}
+
+uint8_t CycleAirEffectPresetDb( void )
+{
+  return 0;
+}
+
+uint8_t GetAirEffectPresetIndex( void )
+{
+  return 0;
+}
+
+uint8_t GetAirEffectPresetCount( void )
+{
+  return 0;
+}
+
+float GetAirEffectPresetDb( uint8_t preset_index )
+{
+  (void)preset_index;
+  return 0.0f;
+}
+#endif
 
 
 /** Set LPF makeup gain 
@@ -1139,6 +1208,7 @@ static int16_t ApplyLowPassFilter16Bit( int16_t input, volatile int32_t *x1, vol
   * @param: y1 - Pointer to previous output sample
   * @retval: int16_t - Filtered signed 16-bit audio sample
   */
+#if AUDIO_ENGINE_ENABLE_AIR_EFFECT
 static int16_t ApplyAirEffect( int16_t input, volatile int32_t *x1, volatile int32_t *y1 )
 {
   // Air effect uses high-shelf filter to brighten treble
@@ -1167,6 +1237,7 @@ static int16_t ApplyAirEffect( int16_t input, volatile int32_t *x1, volatile int
   
   return (int16_t)output;
 }
+#endif
 
 
 /** Apply full filter chain to 16-bit sample
@@ -1221,9 +1292,11 @@ static inline int16_t ApplyPostFilters( int16_t sample, AudioChannelId channel_i
     sample = ApplyDCBlockingFilter( sample, dc_prev_input, dc_prev_output );
   }
   
+#if AUDIO_ENGINE_ENABLE_AIR_EFFECT
   if( filter_cfg.enable_air_effect ) {
     sample = ApplyAirEffect( sample, &channel->air_x1, &channel->air_y1 );
   }
+#endif
   
   sample = ApplyFadeIn( sample );
   sample = ApplyFadeOut( sample );
@@ -1411,7 +1484,7 @@ static inline void StopImmediate( void )
   * @param: which_half - Which half of buffer to fill (FIRST or SECOND)
   * @retval: none
   */
-static inline void ProcessDMACallback( uint8_t which_half )
+static DMA_CALLBACK_INLINE void ProcessDMACallback( uint8_t which_half )
 {
   /* Handle pending stop request at the beginning of DMA callback (safest place to modify state) */
   if( stop_requested && pb_state != PB_Idle ) {

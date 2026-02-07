@@ -254,6 +254,7 @@ int main(void)
     //
     SetLpf16BitLevel( LPF_VerySoft );
     SetSoftClippingEnable( 1 );
+    SetAirEffectPresetDb(2);  // +3 dB preset for testing
 
     // PlaySample( rooster16b2c, ROOSTER16B2C_SZ,
     //   I2S_AUDIOFREQ_22K, 16, Mode_stereo );

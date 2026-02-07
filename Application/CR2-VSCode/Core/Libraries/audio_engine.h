@@ -57,6 +57,16 @@ extern "C" {
 #define AUDIO_ENGINE_I2S_HANDLE hi2s2
 #endif
 
+/* Set to 0 to avoid inlining ProcessDMACallback (reduces code size). */
+#ifndef AUDIO_ENGINE_INLINE_DMA_CALLBACK
+#define AUDIO_ENGINE_INLINE_DMA_CALLBACK 0
+#endif
+
+/* Set to 0 to compile out Air Effect support and save flash. */
+#ifndef AUDIO_ENGINE_ENABLE_AIR_EFFECT
+#define AUDIO_ENGINE_ENABLE_AIR_EFFECT 1
+#endif
+
 /* DAC control values */
 #define DAC_OFF               false
 #define DAC_ON                true
