@@ -109,7 +109,7 @@ HEADER_DOCUMENTATION.md → Open audio_engine.h → Hover for docs
 | Initialization | 1 | [API_REFERENCE.md#initialization](API_REFERENCE.md#initialization) |
 | Playback Control | 7 | [API_REFERENCE.md#playback-control](API_REFERENCE.md#playback-control) |
 | Filter Configuration | 5 | [API_REFERENCE.md#filter-configuration](API_REFERENCE.md#filter-configuration) |
-| 8-bit LPF | 2 | [API_REFERENCE.md#8-bit-lpf-functions](API_REFERENCE.md#8-bit-lpf-functions) |
+| 8-bit LPF | 5 | [API_REFERENCE.md#8-bit-lpf-functions](API_REFERENCE.md#8-bit-lpf-functions) |
 | 16-bit LPF | 4 | [API_REFERENCE.md#16-bit-lpf-functions](API_REFERENCE.md#16-bit-lpf-functions) |
 | Air Effect | 11 | [API_REFERENCE.md#air-effect-control](API_REFERENCE.md#air-effect-control) |
 | Fade Times | 8 | [API_REFERENCE.md#fade-time-control](API_REFERENCE.md#fade-time-control) |

@@ -86,6 +86,9 @@
 #include "doors_opening.h"
 #include "doors_opening11k.h"
 #include "dalby_tritoneJan26.h"
+#include "big_gong.h"
+#include "big_gong8b16k.h"
+#include "big_gong8b1c11k.h"
 
 /* USER CODE END Includes */
 
@@ -122,7 +125,7 @@ volatile  uint16_t        adc_raw                       = 0;
 // External variables from audio_engine
 extern FilterConfig_TypeDef filter_cfg;
 
-// Test veriable to count playback end callbacks
+// Test variable to count playback end callbacks
 volatile uint32_t callback_count = 0;
 
 /* USER CODE END PV */
@@ -216,9 +219,9 @@ int main(void)
   SetDAC_Control( 0 );                // 0 = manual control, 1 = auto control by audio engine
 
   // FilterConfig_TypeDef filter_cfg;
-  filter_cfg.enable_noise_gate            = 0;  // Noise gate disabled by default; enable as needed
+  filter_cfg.enable_noise_gate            = 1;  // Noise gate disabled by default; enable as needed
   filter_cfg.enable_16bit_biquad_lpf      = 0;  // 16-bit biquad LPF disabled by default; enable as needed
-  filter_cfg.enable_8bit_lpf              = 0;  // 8-bit LPF disabled by default; enable as needed
+  filter_cfg.enable_8bit_lpf              = 1;  // 8-bit LPF disabled by default; enable as needed
   filter_cfg.enable_soft_dc_filter_16bit  = 0;  // Soft DC blocking filter for 16-bit samples enabled by default
   filter_cfg.enable_soft_clipping         = 1;  // Soft clipping enabled by default
   filter_cfg.enable_air_effect            = 0;  // Air effect (high-shelf brightening) disabled by default; enable as needed
@@ -244,18 +247,21 @@ int main(void)
 
     // Wait for playback trigger (if enabled)
     //
-// #ifndef TEST_CYCLING
-//     if( GetTriggerOption() == AUTO_TRIG_ENABLED ) {
-//       WaitForTrigger( TRIGGER_SET );
-//     }
-// #endif
+#ifndef TEST_CYCLING
+    if( GetTriggerOption() == AUTO_TRIG_ENABLED ) {
+      WaitForTrigger( TRIGGER_SET );
+    }
+#endif
  
     // Start playback of samples
     //
-    SetLpf16BitLevel( LPF_VerySoft );
+    // SetLpf16BitLevel( LPF_Custom );
+    // SetLpf16BitCustomAlpha( CalcLpf16BitAlphaFromCutoff( 9000, I2S_AUDIOFREQ_22K ) );
     SetSoftClippingEnable( 1 );
     SetAirEffectPresetDb(2);  // +3 dB preset for testing
-
+    SetLpf8BitLevel( LPF_Off );
+    //SetLpfMakeupGain8Bit( 1.2f );  // Comp
+    //SetLpf8BitCustomAlpha( CalcLpf8BitAlphaFromCutoff( 500, I2S_AUDIOFREQ_11K ) );
     // PlaySample( rooster16b2c, ROOSTER16B2C_SZ,
     //   I2S_AUDIOFREQ_22K, 16, Mode_stereo );
     // WaitForSampleEnd();
@@ -283,19 +289,23 @@ int main(void)
     //   }
     // }
 
-    PlaySample( KillBill11k, KILLBILL11K_SZ,
-      I2S_AUDIOFREQ_11K, 16, Mode_mono );
-    HAL_Delay( 2000 );  // Delay between samples for testing
-    PausePlayback();
-    HAL_Delay( 1000 );  // Pause duration for testing
-    ResumePlayback();
+    PlaySample( big_gong8b1c11k, BIG_GONG8B1C11K_SZ,
+      I2S_AUDIOFREQ_11K, 8, Mode_mono );
     WaitForSampleEnd();
-    HAL_Delay( 1500 );  // Delay between samples for testing
 
-    PlaySample( KillBill11k, KILLBILL11K_SZ,
-      I2S_AUDIOFREQ_11K, 16, Mode_mono );
-    HAL_Delay( 3000 );  // Delay between samples for testing
-    StopPlayback();
+    // PlaySample( KillBill11k, KILLBILL11K_SZ,
+    //   I2S_AUDIOFREQ_11K, 16, Mode_mono );
+    // HAL_Delay( 2000 );  // Delay between samples for testing
+    // PausePlayback();
+    // HAL_Delay( 1000 );  // Pause duration for testing
+    // ResumePlayback();
+    // WaitForSampleEnd();
+    // HAL_Delay( 1500 );  // Delay between samples for testing
+
+    // PlaySample( KillBill11k, KILLBILL11K_SZ,
+    //   I2S_AUDIOFREQ_11K, 16, Mode_mono );
+    // HAL_Delay( 3000 );  // Delay between samples for testing
+    // StopPlayback();
 
     ShutDownAudio();
 

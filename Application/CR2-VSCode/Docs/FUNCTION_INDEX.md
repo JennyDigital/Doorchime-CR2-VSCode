@@ -7,6 +7,7 @@ Complete alphabetical index of all 44+ public functions in the Audio Engine API,
 <a id="audioengine_init"></a>
 <a id="audioengine_onplaybackend"></a>
 <a id="calclpf16bitalphafromotoff"></a>
+<a id="calclpf8bitalphafromcutoff"></a>
 <a id="calcsampleoffsetsamples"></a>
 <a id="cycleaireffectpresetdb"></a>
 <a id="getaireffectenable"></a>
@@ -20,6 +21,7 @@ Complete alphabetical index of all 44+ public functions in the Audio Engine API,
 <a id="getfadeouttime"></a>
 <a id="getfilterconfig"></a>
 <a id="gethalftofill"></a>
+<a id="getlpf8bitcustomalpha"></a>
 <a id="getlpf8bitlevel"></a>
 <a id="getlpf16bitcustomalphafromotoff"></a>
 <a id="getpausefadetime"></a>
@@ -42,6 +44,7 @@ Complete alphabetical index of all 44+ public functions in the Audio Engine API,
 <a id="setfadeouttime"></a>
 <a id="setfilterconfig"></a>
 <a id="sethalftofill"></a>
+<a id="setlpf8bitcustomalpha"></a>
 <a id="setlpf8bitlevel"></a>
 <a id="setlpf16bitcustomalpha"></a>
 <a id="setlpf16bitlevel"></a>
@@ -63,6 +66,7 @@ Complete alphabetical index of all 44+ public functions in the Audio Engine API,
 | [`AudioEngine_Init()`](#audioengine_init) | Initialization | Initialize engine with hardware callbacks |
 | [`AudioEngine_OnPlaybackEnd()`](#audioengine_onplaybackend) | Callback | Weak callback for playback end event |
 | [`CalcLpf16BitAlphaFromCutoff()`](#calclpf16bitalphafromotoff) | 16-bit LPF | Calculate alpha from cutoff frequency |
+| [`CalcLpf8BitAlphaFromCutoff()`](#calclpf8bitalphafromcutoff) | 8-bit LPF | Calculate alpha from cutoff frequency |
 | [`CalcSampleOffsetSamples()`](#calcsampleoffsetsamples) | Playback Control | Calculate sample offset from time, rate, and mode |
 | [`CycleAirEffectPresetDb()`](#cycleaireffectpresetdb) | Air Effect | Cycle through air effect presets |
 | [`GetAirEffectEnable()`](#getaireffectenable) | Air Effect | Read air effect enable state |
@@ -76,6 +80,7 @@ Complete alphabetical index of all 44+ public functions in the Audio Engine API,
 | [`GetFadeOutTime()`](#getfadeouttime) | Fade Time | Get fade-out duration in seconds |
 | [`GetFilterConfig()`](#getfilterconfig) | Filter Config | Read current filter configuration |
 | [`GetHalfToFill()`](#gethalftofill) | Internal State | Get which buffer half to fill next |
+| [`GetLpf8BitCustomAlpha()`](#getlpf8bitcustomalpha) | 8-bit LPF | Get custom 8-bit LPF alpha |
 | [`GetLpf8BitLevel()`](#getlpf8bitlevel) | 8-bit LPF | Get 8-bit LPF aggressiveness level |
 | [`GetLpf16BitCustomAlphaFromCutoff()`](#getlpf16bitcustomalphafromotoff) | 16-bit LPF | Get alpha from cutoff frequency |
 | [`GetPauseFadeTime()`](#getpausefadetime) | Fade Time | Get pause fade duration in seconds |
@@ -99,6 +104,7 @@ Complete alphabetical index of all 44+ public functions in the Audio Engine API,
 | [`SetFadeOutTime()`](#setfadeouttime) | Fade Time | Set fade-out duration in seconds |
 | [`SetFilterConfig()`](#setfilterconfig) | Filter Config | Apply complete filter configuration |
 | [`SetHalfToFill()`](#sethalftofill) | Internal State | Set which buffer half to fill next |
+| [`SetLpf8BitCustomAlpha()`](#setlpf8bitcustomalpha) | 8-bit LPF | Set custom alpha coefficient |
 | [`SetLpf8BitLevel()`](#setlpf8bitlevel) | 8-bit LPF | Set 8-bit LPF aggressiveness level |
 | [`SetLpf16BitCustomAlpha()`](#setlpf16bitcustomalpha) | 16-bit LPF | Set custom alpha coefficient |
 | [`SetLpf16BitLevel()`](#setlpf16bitlevel) | 16-bit LPF | Set 16-bit LPF aggressiveness level |
@@ -140,9 +146,12 @@ Complete alphabetical index of all 44+ public functions in the Audio Engine API,
 - [`GetSoftClippingEnable()`](#getsoftclippingenable) - Read soft clipping enable state
 - [`SetLpfMakeupGain8Bit()`](#setlpfmakeupgain8bit) - Set makeup gain after 8-bit LPF
 
-### 8-bit LPF Control (2 functions)
+### 8-bit LPF Control (5 functions)
 - [`SetLpf8BitLevel()`](#setlpf8bitlevel) - Set 8-bit LPF aggressiveness level
 - [`GetLpf8BitLevel()`](#getlpf8bitlevel) - Get 8-bit LPF aggressiveness level
+- [`SetLpf8BitCustomAlpha()`](#setlpf8bitcustomalpha) - Set custom 8-bit LPF alpha
+- [`GetLpf8BitCustomAlpha()`](#getlpf8bitcustomalpha) - Get custom 8-bit LPF alpha
+- [`CalcLpf8BitAlphaFromCutoff()`](#calclpf8bitalphafromcutoff) - Calculate alpha from cutoff frequency
 
 ### 16-bit LPF Control (4 functions)
 - [`SetLpf16BitLevel()`](#setlpf16bitlevel) - Set 16-bit LPF aggressiveness level

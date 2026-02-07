@@ -174,10 +174,10 @@ The audio playback system follows a clear data flow from flash memory through DS
    - TPDF (Triangular PDF) dithering reduces quantization noise
    - Upsamples to internal 16-bit working format
 
-2. **Biquad Low-Pass Filter** *(Optional - enable_8bit_lpf)*
-   - Same architecture as 16-bit path
-   - Separate aggressiveness levels for 8-bit audio
-    - Cutoff range (22 kHz fs, approx): ~2.6 kHz (Aggressive), ~1.7 kHz (Medium), ~0.9 kHz (Soft), ~0.4 kHz (Very Soft)
+2. **One-Pole Low-Pass Filter** *(Optional - enable_8bit_lpf)*
+  - One-pole IIR (alpha range: 0.625 to 0.9375)
+  - Separate aggressiveness levels for 8-bit audio
+  - Custom alpha supported via `SetLpf8BitCustomAlpha()` or `CalcLpf8BitAlphaFromCutoff()`
 
 3. **Makeup Gain** *(Always Active when LPF enabled)*
    - Post-LPF amplitude compensation (~1.08x default)
@@ -217,7 +217,7 @@ typedef enum {
 ```
 
 #### `LPF_Level`
-Low-pass filter aggressiveness level for biquad filters.
+Low-pass filter aggressiveness level for 16-bit and 8-bit LPFs.
 
 ```c
 typedef enum {
@@ -227,7 +227,7 @@ typedef enum {
   LPF_Medium,        // Balanced filtering (α = 0.875)
   LPF_Firm,          // Firm filtering (α ≈ 0.92)
   LPF_Aggressive,    // Strong filtering (α ≈ 0.97)
-  LPF_Custom         // Use custom alpha (set via SetLpf16BitCustomAlpha)
+  LPF_Custom         // Use custom alpha (SetLpf16BitCustomAlpha or SetLpf8BitCustomAlpha)
 } LPF_Level;
 ```
 
@@ -240,17 +240,24 @@ Runtime filter configuration structure.
 typedef struct {
   uint8_t enable_16bit_biquad_lpf;  // Enable/disable 16-bit biquad LPF
   uint8_t enable_soft_dc_filter_16bit;  // Use softer DC blocking (22 Hz vs 44 Hz)
-  uint8_t enable_8bit_lpf;          // Enable/disable 8-bit biquad LPF
+  uint8_t enable_8bit_lpf;          // Enable/disable 8-bit one-pole LPF
   uint8_t enable_noise_gate;        // Enable/disable noise gate
   uint8_t enable_soft_clipping;     // Enable/disable soft clipping
+  uint8_t enable_air_effect;        // Enable/disable air effect
   uint32_t lpf_makeup_gain_q16;     // Post-LPF gain in Q16 fixed-point
   LPF_Level lpf_16bit_level;        // 16-bit LPF aggressiveness
+  uint16_t lpf_16bit_custom_alpha;  // Custom alpha for 16-bit LPF
+  LPF_Level lpf_8bit_level;         // 8-bit LPF aggressiveness
+  uint16_t lpf_8bit_custom_alpha;   // Custom alpha for 8-bit LPF
 } FilterConfig_TypeDef;
 ```
 
 **Field Descriptions:**
 - `lpf_makeup_gain_q16`: Gain value in Q16 format (65536 = 1.0x). Default: 70779 (~1.08x)
 - `lpf_16bit_level`: Filter aggressiveness affects cutoff frequency and stop-band attenuation
+- `lpf_16bit_custom_alpha`: Custom alpha used when `lpf_16bit_level = LPF_Custom`
+- `lpf_8bit_level`: Filter aggressiveness for the 8-bit one-pole LPF
+- `lpf_8bit_custom_alpha`: Custom alpha used when `lpf_8bit_level = LPF_Custom`
 
 #### `AudioEngine_HandleTypeDef`
 Audio engine state handle (for initialization).
@@ -483,8 +490,12 @@ FilterConfig_TypeDef cfg = {
   .enable_8bit_lpf = 1,
   .enable_noise_gate = 0,
   .enable_soft_clipping = 1,
+  .enable_air_effect = 0,
   .lpf_makeup_gain_q16 = 70779,
-  .lpf_16bit_level = LPF_Medium
+  .lpf_16bit_level = LPF_Medium,
+  .lpf_16bit_custom_alpha = LPF_16BIT_MEDIUM,
+  .lpf_8bit_level = LPF_Medium,
+  .lpf_8bit_custom_alpha = LPF_MEDIUM
 };
 SetFilterConfig(&cfg);
 ```
@@ -516,6 +527,40 @@ void SetLpf16BitLevel(LPF_Level level);
 **Example:**
 ```c
 SetLpf16BitLevel(LPF_Aggressive);  // Strong filtering
+```
+
+##### `SetLpf8BitCustomAlpha()`
+Set custom alpha for the 8-bit one-pole LPF.
+
+```c
+void SetLpf8BitCustomAlpha(uint16_t alpha);
+```
+
+**Example:**
+```c
+SetLpf8BitLevel(LPF_Custom);
+SetLpf8BitCustomAlpha(LPF_MEDIUM);
+```
+
+##### `GetLpf8BitCustomAlpha()`
+Read the current 8-bit LPF custom alpha value.
+
+```c
+uint16_t GetLpf8BitCustomAlpha(void);
+```
+
+##### `CalcLpf8BitAlphaFromCutoff()`
+Compute 8-bit LPF alpha from cutoff and sample rate.
+
+```c
+uint16_t CalcLpf8BitAlphaFromCutoff(float cutoff_hz, float sample_rate_hz);
+```
+
+**Example:**
+```c
+uint16_t alpha = CalcLpf8BitAlphaFromCutoff(4500.0f, 11000.0f);
+SetLpf8BitLevel(LPF_Custom);
+SetLpf8BitCustomAlpha(alpha);
 ```
 
 ##### `SetLpfMakeupGain8Bit()`

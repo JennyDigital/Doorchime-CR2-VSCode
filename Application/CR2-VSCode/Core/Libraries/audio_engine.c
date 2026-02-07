@@ -146,7 +146,9 @@ volatile FilterConfig_TypeDef filter_cfg = {
   .enable_air_effect            = 0,
   .lpf_makeup_gain_q16          = LPF_MAKEUP_GAIN_Q16,
   .lpf_16bit_level              = LPF_Custom,
-  .lpf_16bit_custom_alpha       = LPF_16BIT_SOFT
+  .lpf_16bit_custom_alpha       = LPF_16BIT_SOFT,
+  .lpf_8bit_level               = LPF_Medium,
+  .lpf_8bit_custom_alpha        = LPF_MEDIUM
 };
 
 /* Playback state variables */
@@ -315,6 +317,8 @@ PB_StatusTypeDef AudioEngine_Init( DAC_SwitchFunc dac_switch,
   filter_cfg.enable_air_effect              = 0;
   filter_cfg.lpf_makeup_gain_q16            = LPF_MAKEUP_GAIN_Q16;
   filter_cfg.lpf_16bit_level                = LPF_Soft;
+  filter_cfg.lpf_8bit_level                 = LPF_Medium;
+  filter_cfg.lpf_8bit_custom_alpha          = LPF_MEDIUM;
   
   return PB_Idle;  // Success - ready to play but not currently playing
 }
@@ -408,6 +412,18 @@ void SetLpf8BitLevel( LPF_Level level )
 LPF_Level GetLpf8BitLevel(void)
 {
   return filter_cfg.lpf_8bit_level;
+}
+
+void SetLpf8BitCustomAlpha( uint16_t alpha )
+{
+  filter_cfg.lpf_8bit_custom_alpha = alpha;
+  filter_cfg.lpf_8bit_level = LPF_Custom;
+  lpf_8bit_alpha = alpha;
+}
+
+uint16_t GetLpf8BitCustomAlpha( void )
+{
+  return filter_cfg.lpf_8bit_custom_alpha;
 }
 
 
@@ -645,6 +661,26 @@ uint16_t CalcLpf16BitAlphaFromCutoff( float cutoff_hz, float sample_rate_hz )
   if( cutoff_hz <= 0.0f || sample_rate_hz <= 0.0f ) { return 0; }
 
   float alpha_f = expf( -2.0f * 3.14159265359f * cutoff_hz / sample_rate_hz );
+  if( alpha_f < 0.0f ) alpha_f = 0.0f;
+  if( alpha_f > 0.99998f ) alpha_f = 0.99998f; // avoid overflow
+  return (uint16_t)( alpha_f * 65536.0f + 0.5f );
+}
+
+/**
+ * @brief Calculate Q16 alpha for 8-bit LPF from -3dB cutoff and sample rate
+ *
+ * 1-pole IIR: alpha = 1 - exp(-2*pi*fc/fs)
+ *
+ * @param cutoff_hz - Desired -3dB cutoff frequency in Hz
+ * @param sample_rate_hz - Sample rate in Hz
+ * @return Q16 alpha coefficient for SetLpf8BitCustomAlpha
+ */
+uint16_t CalcLpf8BitAlphaFromCutoff( float cutoff_hz, float sample_rate_hz )
+{
+  /* Validate input parameters */
+  if( cutoff_hz <= 0.0f || sample_rate_hz <= 0.0f ) { return 0; }
+
+  float alpha_f = 1.0f - expf( -2.0f * 3.14159265359f * cutoff_hz / sample_rate_hz );
   if( alpha_f < 0.0f ) alpha_f = 0.0f;
   if( alpha_f > 0.99998f ) alpha_f = 0.99998f; // avoid overflow
   return (uint16_t)( alpha_f * 65536.0f + 0.5f );
@@ -909,11 +945,11 @@ static int16_t ApplyLowPassFilter8Bit( int16_t sample, volatile int32_t *y1 )
   int32_t output = ( ( alpha * sample) >> 16 ) + 
                    ( ( one_minus_alpha * ( *y1 ) ) >> 16 );
   // Apply makeup gain
-  output = ( output * (int32_t)filter_cfg.lpf_makeup_gain_q16 ) >> 16;
-  *y1 = output;
-  if( output > AUDIO_INT16_MAX ) output = AUDIO_INT16_MAX;
-  if( output < AUDIO_INT16_MIN ) output = AUDIO_INT16_MIN;
-  return (int16_t) output;
+  int64_t output64 = ( (int64_t)output * (int64_t)filter_cfg.lpf_makeup_gain_q16 ) >> 16;
+  if( output64 > AUDIO_INT16_MAX ) output64 = AUDIO_INT16_MAX;
+  if( output64 < AUDIO_INT16_MIN ) output64 = AUDIO_INT16_MIN;
+  *y1 = (int32_t)output64;
+  return (int16_t) output64;
 }
 
 
@@ -1897,7 +1933,7 @@ PB_StatusTypeDef WaitForSampleEnd( void )
   * @brief Pause playback with a smooth fade-out
   * 
   * Saves the current playback position and initiates a fade-out over PAUSE_FADEOUT_SAMPLES.
-  * After fade-out completes, playback halts without stopping DMA (ready for resume).
+  * float alpha_f = 1.0f - expf( -2.0f * 3.14159265359f * cutoff_hz / sample_rate_hz );
   * Call ResumePlayback() to continue from where it paused.
   * 
   * @retval PB_StatusTypeDef - Current playback state (PB_Playing while fading, PB_Paused when done)
@@ -2079,7 +2115,7 @@ static inline uint16_t GetLpf8BitAlpha( LPF_Level lpf_level )
 {
     switch (lpf_level) {
         case LPF_Custom:
-            return filter_cfg.lpf_16bit_custom_alpha;
+      return filter_cfg.lpf_8bit_custom_alpha;
             
         case LPF_VerySoft:
             return LPF_VERY_SOFT;

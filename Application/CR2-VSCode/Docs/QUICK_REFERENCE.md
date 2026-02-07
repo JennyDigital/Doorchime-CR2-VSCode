@@ -144,6 +144,12 @@ uint16_t alpha = CalcLpf16BitAlphaFromCutoff(5000.0f, 22000.0f);
 // Apply custom alpha
 SetLpf16BitLevel(LPF_Custom);
 SetLpf16BitCustomAlpha(alpha);
+
+// 8-bit custom alpha
+uint16_t alpha8 = CalcLpf8BitAlphaFromCutoff(4500.0f, 11000.0f);
+SetLpf8BitLevel(LPF_Custom);
+SetLpf8BitCustomAlpha(alpha8);
+GetLpf8BitCustomAlpha();
 ```
 
 ## Status Queries
@@ -251,7 +257,7 @@ void main_loop(void) {
 
 **Soft Clipping** (2): `SetSoftClippingEnable`, `GetSoftClippingEnable`
 
-**8-bit LPF** (2): `SetLpf8BitLevel`, `GetLpf8BitLevel`
+**8-bit LPF** (5): `SetLpf8BitLevel`, `GetLpf8BitLevel`, `SetLpf8BitCustomAlpha`, `GetLpf8BitCustomAlpha`, `CalcLpf8BitAlphaFromCutoff`
 
 **16-bit LPF** (4): `SetLpf16BitLevel`, `SetLpf16BitCustomAlpha`, `CalcLpf16BitAlphaFromCutoff`, `GetLpf16BitCustomAlphaFromCutoff`
 

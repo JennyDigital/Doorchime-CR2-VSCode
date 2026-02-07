@@ -350,12 +350,21 @@ def parse_table(table_lines):
 
 
 def create_table_flowable(headers, rows, styles):
-    """Create a formatted table flowable."""
-    data = [headers] + rows
-    
-    # Calculate column widths
-    col_widths = [A4[0] / len(headers) - 1*cm for _ in headers]
-    
+    """Create a formatted table flowable with wrapped cell text."""
+    table_style = ParagraphStyle('TableCell', fontSize=8, fontName='Helvetica')
+    header_style = ParagraphStyle('TableHeader', fontSize=9, fontName='Helvetica-Bold')
+
+    header_paras = [Paragraph(process_inline_code(h), header_style) for h in headers]
+    row_paras = []
+    for row in rows:
+        row_paras.append([Paragraph(process_inline_code(cell), table_style) for cell in row])
+
+    data = [header_paras] + row_paras
+
+    # Calculate column widths based on page margins
+    available_width = A4[0] - 4*cm
+    col_widths = [available_width / len(headers) for _ in headers]
+
     table = Table(data, colWidths=col_widths)
     table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), HexColor('#0366d6')),
@@ -429,6 +438,9 @@ def build_pdf_content(sections, styles):
             style_name = 'CustomHeading2'
         else:
             style_name = 'CustomHeading3'
+
+        if title.strip() == '8-bit LPF Aggressiveness Levels':
+            story.append(PageBreak())
         
         story.append(Paragraph(title, styles[style_name]))
         

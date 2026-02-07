@@ -411,7 +411,7 @@ void SetFilterConfig(const FilterConfig_TypeDef *cfg);
 **Parameters:**
 - `cfg`: Pointer to `FilterConfig_TypeDef` structure containing:
   - `enable_16bit_biquad_lpf`: 1 to enable 16-bit LPF, 0 to disable
-  - `enable_8bit_lpf`: 1 to enable 8-bit LPF, 0 to disable
+  - `enable_8bit_lpf`: 1 to enable 8-bit one-pole LPF, 0 to disable
   - `enable_soft_dc_filter_16bit`: 1 to enable DC blocking, 0 to disable
   - `enable_noise_gate`: 1 to suppress low-level noise, 0 to disable
   - `enable_soft_clipping`: 1 to prevent distortion, 0 to disable
@@ -420,6 +420,7 @@ void SetFilterConfig(const FilterConfig_TypeDef *cfg);
   - `lpf_8bit_level`: Filter aggressiveness for 8-bit (LPF_VerySoft to LPF_Aggressive)
   - `lpf_16bit_level`: Filter aggressiveness for 16-bit (LPF_VerySoft to LPF_Aggressive)
   - `lpf_16bit_custom_alpha`: Custom alpha coefficient (used if `lpf_16bit_level = LPF_Custom`)
+  - `lpf_8bit_custom_alpha`: Custom alpha coefficient (used if `lpf_8bit_level = LPF_Custom`)
 
 **Example:**
 ```c
@@ -428,6 +429,9 @@ FilterConfig_TypeDef cfg = {
   .enable_8bit_lpf = 1,
   .enable_soft_clipping = 1,
   .lpf_16bit_level = LPF_Soft,
+  .lpf_16bit_custom_alpha = LPF_16BIT_SOFT,
+  .lpf_8bit_level = LPF_Medium,
+  .lpf_8bit_custom_alpha = LPF_MEDIUM,
   .lpf_makeup_gain_q16 = 65536  // 1.0x gain
 };
 SetFilterConfig(&cfg);
@@ -498,7 +502,7 @@ void SetLpf8BitLevel(LPF_Level level);
   - `LPF_Medium`: Balanced (~2300 Hz cutoff)
   - `LPF_Firm`: Firm filtering (~2000 Hz cutoff)
   - `LPF_Aggressive`: Strong filtering (~1800 Hz cutoff)
-  - `LPF_Custom`: Use custom alpha (not typical for 8-bit)
+  - `LPF_Custom`: Use custom alpha (set via `SetLpf8BitCustomAlpha()`)
   - `LPF_Off`: Disable 8-bit LPF
 
 **Notes:**
@@ -515,6 +519,47 @@ LPF_Level GetLpf8BitLevel(void);
 ```
 
 **Returns:** Current `LPF_Level` setting
+
+#### `SetLpf8BitCustomAlpha()`
+
+Set a custom alpha coefficient for the 8-bit one-pole LPF.
+
+```c
+void SetLpf8BitCustomAlpha(uint16_t alpha);
+```
+
+**Parameters:**
+- `alpha`: Q16 fixed-point coefficient (0-65535)
+
+**Notes:**
+- Automatically sets `lpf_8bit_level` to `LPF_Custom`
+
+#### `GetLpf8BitCustomAlpha()`
+
+Read the current 8-bit LPF custom alpha.
+
+```c
+uint16_t GetLpf8BitCustomAlpha(void);
+```
+
+**Returns:** Q16 alpha coefficient
+
+#### `CalcLpf8BitAlphaFromCutoff()`
+
+Compute an 8-bit LPF alpha from cutoff frequency and sample rate.
+
+```c
+uint16_t CalcLpf8BitAlphaFromCutoff(float cutoff_hz, float sample_rate_hz);
+```
+
+**Returns:** Q16 alpha coefficient
+
+**Example:**
+```c
+uint16_t alpha = CalcLpf8BitAlphaFromCutoff(4500.0f, 11000.0f);
+SetLpf8BitLevel(LPF_Custom);
+SetLpf8BitCustomAlpha(alpha);
+```
 
 #### `SetLpfMakeupGain8Bit()`
 
@@ -1214,8 +1259,11 @@ void demo_interactive_control(void) {
 | `SetFilterConfig()`                  | Filter     | Apply complete filter configuration   |
 | `SetLpf16BitCustomAlpha()`           | LPF        | Set custom 16-bit LPF alpha           |
 | `SetLpf16BitLevel()`                 | LPF        | Set 16-bit filter aggressiveness      |
+| `SetLpf8BitCustomAlpha()`            | LPF        | Set custom 8-bit LPF alpha            |
+| `GetLpf8BitCustomAlpha()`            | LPF        | Get custom 8-bit LPF alpha            |
 | `SetLpf8BitLevel()`                  | LPF        | Set 8-bit filter aggressiveness       |
 | `SetLpfMakeupGain8Bit()`             | LPF        | Set 8-bit LPF makeup gain             |
+| `CalcLpf8BitAlphaFromCutoff()`       | LPF        | Calculate 8-bit LPF alpha from cutoff |
 | `SetPauseFadeTime()`                 | Fade       | Set pause fade-out duration           |
 | `SetResumeFadeTime()`                | Fade       | Set resume fade-in duration           |
 | `SetSoftClippingEnable()`            | Filter     | Enable/disable soft clipping          |

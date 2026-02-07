@@ -172,6 +172,7 @@ typedef struct {
   LPF_Level lpf_16bit_level;                // Filter level for 16-bit biquad LPF
   uint16_t lpf_16bit_custom_alpha;          // Q16 alpha for custom 16-bit LPF
   LPF_Level lpf_8bit_level;                 // Filter level for 8-bit LPF
+  uint16_t lpf_8bit_custom_alpha;           // Q16 alpha for custom 8-bit LPF
 } FilterConfig_TypeDef;
 
 /* Global audio engine state exposed for hardware initialization */
@@ -262,7 +263,7 @@ uint8_t             GetSoftClippingEnable             ( void );
 /**
  * @brief Set the aggressiveness level of the 8-bit low-pass filter
  * @param[in] level One of: LPF_Off, LPF_VerySoft, LPF_Soft, LPF_Medium, LPF_Firm, LPF_Aggressive, LPF_Custom
- * @note Custom alpha can be set separately via SetLpf16BitCustomAlpha()
+ * @note Custom alpha can be set separately via SetLpf8BitCustomAlpha()
  */
 void                SetLpf8BitLevel                   ( LPF_Level level );
 
@@ -271,6 +272,19 @@ void                SetLpf8BitLevel                   ( LPF_Level level );
  * @return Current LPF_Level (Off, VerySoft, Soft, Medium, Firm, Aggressive, or Custom)
  */
 LPF_Level           GetLpf8BitLevel                   ( void );
+
+/**
+ * @brief Set a custom alpha coefficient for the 8-bit low-pass filter
+ * @param[in] alpha Q16 fixed-point alpha value (0-65535), where 65535 = 0.99999, 32768 = 0.5
+ * @note This sets level to LPF_Custom and uses the provided alpha directly
+ */
+void                SetLpf8BitCustomAlpha             ( uint16_t alpha );
+
+/**
+ * @brief Get the current custom alpha coefficient for the 8-bit low-pass filter
+ * @return Q16 fixed-point alpha value
+ */
+uint16_t            GetLpf8BitCustomAlpha             ( void );
 
 /* 16-bit sample low-pass filter configuration */
 /**
@@ -294,6 +308,15 @@ void                SetLpf16BitCustomAlpha            ( uint16_t alpha );
  * @note Formula: alpha = 2*pi*fc / sr, clamped to [0, 65535]
  */
 uint16_t            CalcLpf16BitAlphaFromCutoff       ( float cutoff_hz, float sample_rate_hz );
+
+/**
+ * @brief Calculate Q16 alpha coefficient for 8-bit LPF from desired cutoff frequency
+ * @param[in] cutoff_hz Cutoff frequency in Hz
+ * @param[in] sample_rate_hz Sample rate in Hz
+ * @return Q16 alpha value suitable for SetLpf8BitCustomAlpha()
+ * @note Formula: alpha = 1 - exp(-2*pi*fc / fs), clamped to [0, 65535]
+ */
+uint16_t            CalcLpf8BitAlphaFromCutoff        ( float cutoff_hz, float sample_rate_hz );
 
 /**
  * @brief Get the cutoff frequency corresponding to the current 16-bit LPF custom alpha
