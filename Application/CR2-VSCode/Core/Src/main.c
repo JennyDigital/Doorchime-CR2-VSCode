@@ -36,6 +36,7 @@
 #include <stdbool.h>
 #include <math.h>
 #include "cmsis_gcc.h"
+#include "stm32g4xx_hal.h"
 #include "stm32g4xx_hal_adc_ex.h"
 #include "stm32g4xx_hal_tim_ex.h"
 #include "stm32g4xx_hal_tim.h"
@@ -254,29 +255,46 @@ int main(void)
     SetLpf16BitLevel( LPF_VerySoft );
     SetSoftClippingEnable( 1 );
 
+    // PlaySample( rooster16b2c, ROOSTER16B2C_SZ,
+    //   I2S_AUDIOFREQ_22K, 16, Mode_stereo );
+    // WaitForSampleEnd();
     // PlaySample( custom_tritone16k, CUSTOM_TRITONE16K_SZ,
     //   I2S_AUDIOFREQ_16K, 16, Mode_mono ); 
-    while( true ) {
-      WaitForTrigger( TRIGGER_SET );
-      PlaySample( do_16b1c11k, DO_16B1C11K_SZ,
-        I2S_AUDIOFREQ_11K, 16, Mode_mono );
+    // while( true ) {
+    //   WaitForTrigger( TRIGGER_SET );
+    //   PlaySample( do_16b1c11k, DO_16B1C11K_SZ,
+    //     I2S_AUDIOFREQ_11K, 16, Mode_mono );
 
-      WaitForTrigger( TRIGGER_CLR );  // Wait for trigger to clear before stopping audio
-      StopPlayback();
+    //   WaitForTrigger( TRIGGER_CLR );  // Wait for trigger to clear before stopping audio
+    //   StopPlayback();
 
-      while( GetPlaybackState()) {
-        HAL_Delay( 1 );  // Wait for playback to fully stop before starting next sample
-      }
+    //   while( GetPlaybackState()) {
+    //     HAL_Delay( 1 );  // Wait for playback to fully stop before starting next sample
+    //   }
 
-      PlaySample( dc_16b1c11k, DC_16B1C11K_SZ,
-        I2S_AUDIOFREQ_11K, 16, Mode_mono );
-      WaitForTrigger( TRIGGER_SET ); // Wait for trigger to set before stopping audio
-      StopPlayback();
+    //   PlaySample( dc_16b1c11k, DC_16B1C11K_SZ,
+    //     I2S_AUDIOFREQ_11K, 16, Mode_mono );
+    //   WaitForTrigger( TRIGGER_SET ); // Wait for trigger to set before stopping audio
+    //   StopPlayback();
 
-      while( GetPlaybackState()) {
-        HAL_Delay( 1 );  // Wait for playback to fully stop before starting next sample
-      }
-    }
+    //   while( GetPlaybackState()) {
+    //     HAL_Delay( 1 );  // Wait for playback to fully stop before starting next sample
+    //   }
+    // }
+
+    PlaySample( KillBill11k, KILLBILL11K_SZ,
+      I2S_AUDIOFREQ_11K, 16, Mode_mono );
+    HAL_Delay( 2000 );  // Delay between samples for testing
+    PausePlayback();
+    HAL_Delay( 1000 );  // Pause duration for testing
+    ResumePlayback();
+    WaitForSampleEnd();
+    HAL_Delay( 1500 );  // Delay between samples for testing
+
+    PlaySample( KillBill11k, KILLBILL11K_SZ,
+      I2S_AUDIOFREQ_11K, 16, Mode_mono );
+    HAL_Delay( 3000 );  // Delay between samples for testing
+    StopPlayback();
 
     ShutDownAudio();
 

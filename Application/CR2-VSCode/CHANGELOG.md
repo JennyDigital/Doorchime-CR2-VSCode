@@ -2,6 +2,16 @@
 
 All notable changes to the CR2-VSCode Audio Engine project are documented here.
 
+## [2026-02-07] - Readability Refactor
+
+### Changed
+- **audio_engine.c**: Consolidated per-channel filter state into structs and normalized channel identifiers.
+- **audio_engine.c**: Introduced shared helpers and constants to reduce duplication and magic numbers.
+- **audio_engine.c**: Clarified DMA stop/reset flow with a shared helper and refined inline docs.
+
+### Documentation
+- Updated documentation summaries to reflect the latest refactor and update date.
+
 ## [2026-02-01] - Complete Documentation & API Reference
 
 ### Fixed

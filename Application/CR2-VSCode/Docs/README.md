@@ -192,7 +192,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-  classDef box fill:#dbeafe,stroke:#3b82f6,stroke-width:1px,color:#0f172a;
+  classDef box fill:#60608e,stroke:#3b82f6,stroke-width:1px,color:#0f172a;
   A["Input Sample (8-bit unsigned)"] --> B["8-bit to 16-bit Conversion<br/>+ TPDF Dithering<br/>Reduces quantization noise"]
   B --> C["One-Pole Low-Pass Filter<br/>(Very Soft / Soft / Medium / Agg.)<br/>Simpler than biquad for stability"]
   C --> D["Then follow 16-bit pipeline steps 2-6"]

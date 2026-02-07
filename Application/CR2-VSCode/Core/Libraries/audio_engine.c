@@ -43,6 +43,16 @@
 #include <string.h>         // Needed for memset
 #include <stdbool.h>        // For true/false values in filter config, we like our C modern, clean and readable.
 
+#define AUDIO_INT16_MAX          32767
+#define AUDIO_INT16_MIN          (-32768)
+#define Q16_SCALE                65536U
+#define Q16_SCALE_F              65536.0f
+#define SOFT_CLIP_THRESHOLD      28000
+#define DITHER_SEED_DEFAULT      12345U
+#define DEFAULT_VOLUME_INPUT     32U
+#define NOISE_GATE_ATTENUATION_Q15 3277
+#define SAMPLE8_MIDPOINT         128U
+
 /* Forward declarations for internal helper functions */
 
 // Fade and volume helpers
@@ -59,12 +69,13 @@ static          int16_t   ApplySoftClipping           ( int16_t sample );
 static inline   int32_t   ComputeSoftClipCurve        ( int32_t excess, int32_t range );
 
 // DC blocking filters
-static          int16_t   ApplyDCBlockingFilter       (
+static inline   int16_t   ApplyDCFilterWithAlpha     (
                                                         volatile int16_t input,
                                                         volatile int32_t *prev_input,
-                                                        volatile int32_t *prev_output
+                                                        volatile int32_t *prev_output,
+                                                        uint32_t alpha_q16
                                                       );
-static          int16_t   ApplySoftDCFilter16Bit      (
+static          int16_t   ApplyDCBlockingFilter       (
                                                         volatile int16_t input,
                                                         volatile int32_t *prev_input,
                                                         volatile int32_t *prev_output
@@ -89,8 +100,12 @@ static          int16_t   ApplyLowPassFilter8Bit      (
                                                         int16_t sample,
                                                         volatile int32_t *y1
                                                       );
-static          int16_t   ApplyFilterChain16Bit       ( int16_t sample, uint8_t is_left_channel );
-static          int16_t   ApplyFilterChain8Bit        ( int16_t sample, uint8_t is_left_channel );
+static inline   int16_t   ApplyPostFilters            ( int16_t sample, AudioChannelId channel_id );
+static          int16_t   ApplyFilterChain16Bit       ( int16_t sample, AudioChannelId channel_id );
+static          int16_t   ApplyFilterChain8Bit        ( int16_t sample, AudioChannelId channel_id );
+
+// DMA stop helper
+static inline   void      StopDmaAndResetPlaybackState( uint8_t reset_state );
 
 /* External variables that need to be defined by the application */
 extern I2S_HandleTypeDef AUDIO_ENGINE_I2S_HANDLE;
@@ -157,47 +172,30 @@ volatile  uint32_t        fadeout_samples_remaining   = 0;
           uint32_t        pause_fadeout_samples       = 2200;    // Calculated from time and speed
           uint32_t        pause_fadein_samples        = 2200;    // Calculated from time and speed
 
-/* DC filter state */
-volatile  int32_t         dc_filter_prev_input_left   = 0;
-volatile  int32_t         dc_filter_prev_input_right  = 0;
-volatile  int32_t         dc_filter_prev_output_left  = 0;
-volatile  int32_t         dc_filter_prev_output_right = 0;
+typedef struct AudioFilterChannelState {
+  volatile int32_t dc_prev_input;
+  volatile int32_t dc_prev_output;
+  volatile int32_t lpf8_x1;
+  volatile int32_t lpf8_x2;
+  volatile int32_t lpf8_y1;
+  volatile int32_t lpf8_y2;
+  volatile int32_t lpf16_x1;
+  volatile int32_t lpf16_x2;
+  volatile int32_t lpf16_y1;
+  volatile int32_t lpf16_y2;
+  volatile int32_t air_x1;
+  volatile int32_t air_y1;
+} AudioFilterChannelState;
+
+static AudioFilterChannelState filter_state[CHANNEL_COUNT] = {0};
 
 /* Dither state */
-volatile  uint32_t        dither_state                = 12345;
-
-/* Biquad filter state for 8-bit samples */
-volatile  int32_t         lpf_8bit_x1_left            = 0;
-volatile  int32_t         lpf_8bit_x2_left            = 0;
-volatile  int32_t         lpf_8bit_y1_left            = 0;
-volatile  int32_t         lpf_8bit_y2_left            = 0;
-
-volatile  int32_t         lpf_8bit_x1_right           = 0;
-volatile  int32_t         lpf_8bit_x2_right           = 0;
-volatile  int32_t         lpf_8bit_y1_right           = 0;
-volatile  int32_t         lpf_8bit_y2_right           = 0;
+volatile  uint32_t        dither_state                = DITHER_SEED_DEFAULT;
 
           uint16_t        lpf_8bit_alpha              = LPF_MEDIUM;
 
 /* Biquad filter state for 16-bit samples */
 volatile  uint16_t        lpf_16bit_alpha             = LPF_16BIT_SOFT;
-
-volatile  int32_t         lpf_16bit_x1_left           = 0;
-volatile  int32_t         lpf_16bit_x2_left           = 0;
-volatile  int32_t         lpf_16bit_y1_left           = 0;
-volatile  int32_t         lpf_16bit_y2_left           = 0;
-
-volatile  int32_t         lpf_16bit_x1_right          = 0;
-volatile  int32_t         lpf_16bit_x2_right          = 0;
-volatile  int32_t         lpf_16bit_y1_right          = 0;
-volatile  int32_t         lpf_16bit_y2_right          = 0;
-
-/* Air Effect (High-Shelf) filter state for 16-bit samples */
-volatile  int32_t         air_effect_x1_left          = 0;
-volatile  int32_t         air_effect_y1_left          = 0;
-
-volatile  int32_t         air_effect_x1_right         = 0;
-volatile  int32_t         air_effect_y1_right         = 0;
 
 /* Air Effect runtime shelf gain (Q16). Defaults to AIR_EFFECT_SHELF_GAIN */
 volatile  int32_t         air_effect_shelf_gain_q16   = AIR_EFFECT_SHELF_GAIN;
@@ -219,43 +217,46 @@ volatile  uint8_t         playback_end_callback_called = 0;
 /* DAC power control flag */
 volatile  uint8_t         dac_power_control           = 1;  // Default to enabled
 
-/* ===== Filter State Reset Macros ===== */
+/* ===== Filter State Reset Helpers ===== */
+/** Reset per-channel filter state to zero
+  *
+  * @param: state - Channel state to clear
+  */
+static inline void ResetFilterChannelState( AudioFilterChannelState *state )
+{
+  state->dc_prev_input = 0;
+  state->dc_prev_output = 0;
+  state->lpf8_x1 = 0;
+  state->lpf8_x2 = 0;
+  state->lpf8_y1 = 0;
+  state->lpf8_y2 = 0;
+  state->lpf16_x1 = 0;
+  state->lpf16_x2 = 0;
+  state->lpf16_y1 = 0;
+  state->lpf16_y2 = 0;
+  state->air_x1 = 0;
+  state->air_y1 = 0;
+}
 
-#define RESET_DC_FILTER_STATE() \
-  do { \
-    dc_filter_prev_input_left   = 0;  dc_filter_prev_input_right  = 0; \
-    dc_filter_prev_output_left  = 0;  dc_filter_prev_output_right = 0; \
-  } while(0)
+/** Reset all per-channel filter state to zero
+  *
+  * @param: none
+  */
+static inline void ResetAllFilterState( void )
+{
+  ResetFilterChannelState( &filter_state[CHANNEL_LEFT] );
+  ResetFilterChannelState( &filter_state[CHANNEL_RIGHT] );
+}
 
-#define RESET_8BIT_BIQUAD_STATE() \
-  do { \
-    lpf_8bit_x1_left  = 0;  lpf_8bit_x1_right = 0; \
-    lpf_8bit_x2_left  = 0;  lpf_8bit_x2_right = 0; \
-    lpf_8bit_y1_left  = 0;  lpf_8bit_y1_right = 0; \
-    lpf_8bit_y2_left  = 0;  lpf_8bit_y2_right = 0; \
-  } while(0)
-
-#define RESET_16BIT_BIQUAD_STATE() \
-  do { \
-    lpf_16bit_x1_left  = 0;  lpf_16bit_x1_right = 0; \
-    lpf_16bit_x2_left  = 0;  lpf_16bit_x2_right = 0; \
-    lpf_16bit_y1_left  = 0;  lpf_16bit_y1_right = 0; \
-    lpf_16bit_y2_left  = 0;  lpf_16bit_y2_right = 0; \
-  } while(0)
-
-#define RESET_AIR_EFFECT_STATE() \
-  do { \
-    air_effect_x1_left  = 0;  air_effect_x1_right = 0; \
-    air_effect_y1_left  = 0;  air_effect_y1_right = 0; \
-  } while(0)
-
-#define RESET_ALL_FILTER_STATE() \
-  do { \
-    RESET_DC_FILTER_STATE(); \
-    RESET_8BIT_BIQUAD_STATE(); \
-    RESET_16BIT_BIQUAD_STATE(); \
-    RESET_AIR_EFFECT_STATE(); \
-  } while(0)
+/** Get pointer to channel filter state
+  *
+  * @param: channel_id - CHANNEL_LEFT or CHANNEL_RIGHT
+  * @retval: AudioFilterChannelState* - Channel state pointer
+  */
+static inline AudioFilterChannelState *GetChannelState( AudioChannelId channel_id )
+{
+  return &filter_state[channel_id];
+}
 
 /* ===== Audio Engine Initialization ===== */
 
@@ -285,7 +286,7 @@ PB_StatusTypeDef AudioEngine_Init( DAC_SwitchFunc dac_switch,
   AudioEngine_I2SInit     = i2s_init;
   
   /* Reset all filter state variables to clean state */
-  RESET_ALL_FILTER_STATE();
+  ResetAllFilterState();
   
   /* Reset playback state variables */
   pb_state                                  = PB_Idle;
@@ -293,10 +294,10 @@ PB_StatusTypeDef AudioEngine_Init( DAC_SwitchFunc dac_switch,
   fadeout_samples_remaining                 = 0;
   fadein_samples_remaining                  = 0;
   paused_sample_ptr                         = NULL;
-  vol_input                                 = 32;  // Safe default above noise floor
+  vol_input                                 = DEFAULT_VOLUME_INPUT;  // Safe default above noise floor
   
   /* Reset dither state to non-zero seed */
-  dither_state = 12345;
+  dither_state = DITHER_SEED_DEFAULT;
   
   /* Initialize default filter configuration */
   filter_cfg.enable_16bit_biquad_lpf        = 1;
@@ -454,12 +455,12 @@ uint32_t GetAirEffectGainQ16( void )
   */
 void SetAirEffectGainDb( float db )
 {
-  const float alpha               = (float)AIR_EFFECT_CUTOFF / 65536.0f;
+  const float alpha               = (float)AIR_EFFECT_CUTOFF / Q16_SCALE_F;
   const float one_minus_alpha     = 1.0f - alpha;
   const float Hpi                 = powf( 10.0f, db / 20.0f );
   float G                         = (Hpi * ( 2.0f - alpha ) - alpha ) / ( 2.0f * one_minus_alpha );
   if( G < 0.0f ) G = 0.0f;
-  uint32_t gain_q16               = (uint32_t)(G * 65536.0f + 0.5f);
+  uint32_t gain_q16               = (uint32_t)(G * Q16_SCALE_F + 0.5f);
   if( gain_q16 > AIR_EFFECT_SHELF_GAIN_MAX ) {
     gain_q16                      = AIR_EFFECT_SHELF_GAIN_MAX;
   }
@@ -473,9 +474,9 @@ void SetAirEffectGainDb( float db )
   */
 float GetAirEffectGainDb( void )
 {
-  const float alpha               = (float) AIR_EFFECT_CUTOFF / 65536.0f;
+  const float alpha               = (float) AIR_EFFECT_CUTOFF / Q16_SCALE_F;
   const float one_minus_alpha     = 1.0f - alpha;
-  const float G                   = (float) air_effect_shelf_gain_q16 / 65536.0f;
+  const float G                   = (float) air_effect_shelf_gain_q16 / Q16_SCALE_F;
   const float Hpi                 = ( alpha + 2.0f * one_minus_alpha * G ) / ( 2.0f - alpha );
   return 20.0f * log10f( Hpi );
 }
@@ -813,7 +814,7 @@ uint32_t GetPlaybackSpeed( void )
 static int16_t Apply8BitDithering( uint8_t sample8 )
 {
   // Convert unsigned 8-bit (0..255) to signed 16-bit
-  int16_t sample16  = (int16_t)( sample8 - 128 ) << 8;
+  int16_t sample16  = (int16_t)( sample8 - SAMPLE8_MIDPOINT ) << 8;
   
   // Generate TPDF (Triangular Probability Density Function) dither
   dither_state      = dither_state * DITHER_LCG_MULTIPLIER + DITHER_LCG_INCREMENT;
@@ -837,14 +838,14 @@ static int16_t Apply8BitDithering( uint8_t sample8 )
 static int16_t ApplyLowPassFilter8Bit( int16_t sample, volatile int32_t *y1 )
 {
   int32_t alpha = lpf_8bit_alpha;
-  int32_t one_minus_alpha = 65536 - alpha;
+  int32_t one_minus_alpha = (int32_t)(Q16_SCALE - alpha);
   int32_t output = ( ( alpha * sample) >> 16 ) + 
                    ( ( one_minus_alpha * ( *y1 ) ) >> 16 );
   // Apply makeup gain
   output = ( output * (int32_t)filter_cfg.lpf_makeup_gain_q16 ) >> 16;
   *y1 = output;
-  if( output > 32767 )  output = 32767;
-  if( output < -32768 ) output = -32768;
+  if( output > AUDIO_INT16_MAX )  output = AUDIO_INT16_MAX;
+  if( output < AUDIO_INT16_MIN )  output = AUDIO_INT16_MIN;
   return (int16_t) output;
 }
 
@@ -872,8 +873,8 @@ static int16_t ApplyFadeIn( int16_t sample )
     int64_t result      = ( (int64_t)sample * fade_mult ) / fade_total;
 
     // Clamp to valid 16-bit range
-    if( result > 32767 )  result = 32767;
-    if( result < -32768 ) result = -32768;
+    if( result > AUDIO_INT16_MAX )  result = AUDIO_INT16_MAX;
+    if( result < AUDIO_INT16_MIN ) result = AUDIO_INT16_MIN;
 
     return (int16_t)result;
   }
@@ -921,8 +922,8 @@ static int16_t ApplyFadeOut( int16_t sample )
     int64_t result      = ( (int64_t)sample * fade_mult ) / fade_total;
 
     // Clamp to valid 16-bit range
-    if( result > 32767 )  result = 32767;
-    if( result < -32768 ) result = -32768;
+    if( result > AUDIO_INT16_MAX ) result = AUDIO_INT16_MAX;
+    if( result < AUDIO_INT16_MIN ) result = AUDIO_INT16_MIN;
 
     return (int16_t)result;
   }
@@ -941,7 +942,7 @@ static int16_t ApplyNoiseGate( int16_t sample )
   if( abs_sample < NOISE_GATE_THRESHOLD ) {
     // Soft gate: attenuate signal using fixed-point integer math (Q15)
     // Example: 0.1 attenuation = 3277 (0.1 * 32768)
-    const int16_t attenuation_q15 = 3277; // ~0.1 in Q15
+    const int16_t attenuation_q15 = NOISE_GATE_ATTENUATION_Q15; // ~0.1 in Q15
     return (int16_t)((sample * attenuation_q15) >> 15);
   }
   return sample;
@@ -956,19 +957,19 @@ static inline void UpdateFadeCounters( uint32_t samples_processed )
 {
   /* Track how many samples remain in the file */
   if( samples_remaining > 0 ) {
-    samples_remaining = (samples_remaining > samples_processed) ? 
+    samples_remaining = ( samples_remaining > samples_processed ) ? 
                         samples_remaining - samples_processed : 0;
   }
   
   /* Fade in: ramp up from silence */
   if( fadein_samples_remaining > 0 ) {
-    fadein_samples_remaining = (fadein_samples_remaining > samples_processed) ? 
+    fadein_samples_remaining = ( fadein_samples_remaining > samples_processed ) ? 
                                fadein_samples_remaining - samples_processed : 0;
   }
   
   /* Fade out: applied during pause or at end of normal playback */
   if( fadeout_samples_remaining > 0 ) {
-    fadeout_samples_remaining = (fadeout_samples_remaining > samples_processed) ? 
+    fadeout_samples_remaining = ( fadeout_samples_remaining > samples_processed ) ? 
                                 fadeout_samples_remaining - samples_processed : 0;
   }
 }
@@ -980,12 +981,14 @@ static inline void UpdateFadeCounters( uint32_t samples_processed )
   */
 static inline void WarmupBiquadFilter16Bit( int16_t sample )
 {
+  AudioFilterChannelState *left = &filter_state[CHANNEL_LEFT];
+  AudioFilterChannelState *right = &filter_state[CHANNEL_RIGHT];
   // Run multiple passes to let aggressive filters settle smoothly
   for( uint8_t i = 0; i < BIQUAD_WARMUP_CYCLES; i++ ) {
-    ApplyLowPassFilter16Bit( sample, &lpf_16bit_x1_left, &lpf_16bit_x2_left,
-                             &lpf_16bit_y1_left, &lpf_16bit_y2_left );
-    ApplyLowPassFilter16Bit( sample, &lpf_16bit_x1_right, &lpf_16bit_x2_right,
-                             &lpf_16bit_y1_right, &lpf_16bit_y2_right );
+    ApplyLowPassFilter16Bit( sample, &left->lpf16_x1, &left->lpf16_x2,
+                             &left->lpf16_y1, &left->lpf16_y2 );
+    ApplyLowPassFilter16Bit( sample, &right->lpf16_x1, &right->lpf16_x2,
+                             &right->lpf16_y1, &right->lpf16_y2 );
   }
 }
 
@@ -1001,8 +1004,8 @@ static inline void WarmupBiquadFilter16Bit( int16_t sample )
   */
 static inline int32_t ComputeSoftClipCurve( int32_t excess, int32_t range )
 {
-  int32_t x = excess * 65536 / range;
-  if( x > 65536 ) x = 65536;
+  int32_t x = excess * (int32_t)Q16_SCALE / range;
+  if( x > (int32_t)Q16_SCALE ) x = (int32_t)Q16_SCALE;
   int32_t x2 = ( x * x ) >> 16;
   int32_t x3 = ( x2 * x ) >> 16;
 
@@ -1017,8 +1020,8 @@ static inline int32_t ComputeSoftClipCurve( int32_t excess, int32_t range )
   */
 static int16_t ApplySoftClipping( int16_t sample )
 {
-  const int32_t threshold = 28000;
-  const int32_t max_val   = 32767;
+  const int32_t threshold = SOFT_CLIP_THRESHOLD;
+  const int32_t max_val   = AUDIO_INT16_MAX;
   
   int32_t s = sample;
   
@@ -1042,6 +1045,32 @@ static int16_t ApplySoftClipping( int16_t sample )
 }
 
 
+/** Apply a DC filter with a configurable alpha coefficient
+  *
+  * @param: input - Signed 16-bit audio sample
+  * @param: prev_input - Pointer to previous input sample
+  * @param: prev_output - Pointer to previous output sample
+  * @param: alpha_q16 - Q16 alpha coefficient
+  * @retval: int16_t - Filtered signed 16-bit audio sample
+  */
+static inline int16_t ApplyDCFilterWithAlpha( volatile int16_t input,
+                                              volatile int32_t *prev_input,
+                                              volatile int32_t *prev_output,
+                                              uint32_t alpha_q16 )
+{
+  int32_t output = input - *prev_input +
+                   ( ( *prev_output * (int32_t)alpha_q16 ) >> DC_FILTER_SHIFT );
+  
+  *prev_input   = input;
+  *prev_output  = output;
+  
+  if ( output > AUDIO_INT16_MAX ) output = AUDIO_INT16_MAX;
+  if ( output < AUDIO_INT16_MIN ) output = AUDIO_INT16_MIN;
+  
+  return (int16_t)output;
+}
+
+
 /** Apply DC blocking filter to audio sample
   * 
   * @param: input - Signed 16-bit audio sample
@@ -1051,38 +1080,20 @@ static int16_t ApplySoftClipping( int16_t sample )
   */
 static int16_t ApplyDCBlockingFilter( volatile int16_t input, volatile int32_t *prev_input, volatile int32_t *prev_output )
 {
-  int32_t output = input - *prev_input + 
-                   ( ( *prev_output * DC_FILTER_ALPHA ) >> DC_FILTER_SHIFT );
-  
-  *prev_input   = input;
-  *prev_output  = output;
-  
-  if ( output > 32767 )   output = 32767;
-  if ( output < -32768 )  output = -32768;
-  
-  return ( int16_t ) output;
+  return ApplyDCFilterWithAlpha( input, prev_input, prev_output, DC_FILTER_ALPHA );
 }
 
 
 /** Apply soft DC filter to audio sample
   * 
-  * @param: input -lpf_16bit_alpha;  // Use runtime-configurable alphaudio sample
+  * @param: input - Signed 16-bit audio sample
   * @param: prev_input - Pointer to previous input sample
   * @param: prev_output - Pointer to previous output sample
   * @retval: int16_t - Soft DC-filtered signed 16-bit audio sample
   */
 static int16_t ApplySoftDCFilter16Bit( volatile int16_t input, volatile int32_t *prev_input, volatile int32_t *prev_output )
 {
-  int32_t output = input - *prev_input + 
-                   ( ( *prev_output * SOFT_DC_FILTER_ALPHA ) >> DC_FILTER_SHIFT );
-  
-  *prev_input   = input;
-  *prev_output  = output;
-  
-  if ( output > 32767 )   output = 32767;
-  if ( output < -32768 )  output = -32768;
-  
-  return ( int16_t ) output;
+  return ApplyDCFilterWithAlpha( input, prev_input, prev_output, SOFT_DC_FILTER_ALPHA );
 }
 
 
@@ -1096,7 +1107,7 @@ static int16_t ApplySoftDCFilter16Bit( volatile int16_t input, volatile int32_t 
 static int16_t ApplyLowPassFilter16Bit( int16_t input, volatile int32_t *x1, volatile int32_t *x2, volatile int32_t *y1, volatile int32_t *y2 )
 {
   uint32_t alpha = lpf_16bit_alpha;
-  int32_t b0 = ((65536 - alpha) * (65536 - alpha)) >> 17;
+  int32_t b0 = ((Q16_SCALE - alpha) * (Q16_SCALE - alpha)) >> 17;
   int32_t b1 = b0 << 1;
   int32_t b2 = b0;
   int32_t a1 = -(alpha << 1);
@@ -1112,8 +1123,8 @@ static int16_t ApplyLowPassFilter16Bit( int16_t input, volatile int32_t *x1, vol
   *x1 = input;
   *y2 = *y1;
   *y1 = output;
-  if ( output > 32767 )   output = 32767;
-  if ( output < -32768 )  output = -32768;
+  if ( output > AUDIO_INT16_MAX )   output = AUDIO_INT16_MAX;
+  if ( output < AUDIO_INT16_MIN )  output = AUDIO_INT16_MIN;
   return (int16_t)output;
 }
 
@@ -1132,7 +1143,7 @@ static int16_t ApplyAirEffect( int16_t input, volatile int32_t *x1, volatile int
 {
   // Air effect uses high-shelf filter to brighten treble
   int32_t alpha               = AIR_EFFECT_CUTOFF;              // ~0.75
-  int32_t one_minus_alpha     = 65536 - alpha;                  // ~0.25
+  int32_t one_minus_alpha     = (int32_t)(Q16_SCALE - alpha);    // ~0.25
   int32_t shelf_gain          = air_effect_shelf_gain_q16;      // runtime-adjustable boost
   
   // High-pass portion: amplify high frequencies
@@ -1144,15 +1155,15 @@ static int16_t ApplyAirEffect( int16_t input, volatile int32_t *x1, volatile int
   
   // Output = low-pass + high-pass boost
   int64_t out64   = ( ( (int64_t)alpha * (int64_t)input ) >> 16 ) +
-                  ( ( ( (int64_t)(65536 - alpha) * (int64_t)(*y1) ) >> 16 ) ) +
+                  ( ( ( (int64_t)(65536 - alpha) * (int64_t)( *y1 ) ) >> 16 ) ) +
                   (int64_t)air_boost;
   int32_t output  = (int32_t)out64;
   
   *x1 = input;
   *y1 = output;
   
-  if ( output > 32767 )  output = 32767;
-  if ( output < -32768 ) output = -32768;
+  if ( output > AUDIO_INT16_MAX ) output = AUDIO_INT16_MAX;
+  if ( output < AUDIO_INT16_MIN ) output = AUDIO_INT16_MIN;
   
   return (int16_t)output;
 }
@@ -1161,94 +1172,57 @@ static int16_t ApplyAirEffect( int16_t input, volatile int32_t *x1, volatile int
 /** Apply full filter chain to 16-bit sample
   * 
   * @param: sample - Signed 16-bit audio sample
-  * @param: is_left_channel - 1 if left channel, 0 if right channel
+  * @param: channel_id - CHANNEL_LEFT or CHANNEL_RIGHT
   * @retval: int16_t - Processed signed 16-bit audio sample
   */
-static int16_t ApplyFilterChain16Bit( int16_t sample, uint8_t is_left_channel )
+static int16_t ApplyFilterChain16Bit( int16_t sample, AudioChannelId channel_id )
 {
+  AudioFilterChannelState *channel = GetChannelState( channel_id );
   if( filter_cfg.enable_16bit_biquad_lpf ) {
-    if( is_left_channel ) {
-      sample = ApplyLowPassFilter16Bit( sample, &lpf_16bit_x1_left, &lpf_16bit_x2_left, 
-                                        &lpf_16bit_y1_left, &lpf_16bit_y2_left );
-    } else {
-      sample = ApplyLowPassFilter16Bit( sample, &lpf_16bit_x1_right, &lpf_16bit_x2_right, 
-                                        &lpf_16bit_y1_right, &lpf_16bit_y2_right );
-    }
+    sample = ApplyLowPassFilter16Bit( sample, &channel->lpf16_x1, &channel->lpf16_x2,
+                                      &channel->lpf16_y1, &channel->lpf16_y2 );
   }
   
-  if( filter_cfg.enable_soft_dc_filter_16bit ) {
-    if( is_left_channel ) {
-      sample = ApplySoftDCFilter16Bit( sample, &dc_filter_prev_input_left, &dc_filter_prev_output_left );
-    } else {
-      sample = ApplySoftDCFilter16Bit( sample, &dc_filter_prev_input_right, &dc_filter_prev_output_right );
-    }
-  } else {
-    if( is_left_channel ) {
-      sample = ApplyDCBlockingFilter( sample, &dc_filter_prev_input_left, &dc_filter_prev_output_left );
-    } else {
-      sample = ApplyDCBlockingFilter( sample, &dc_filter_prev_input_right, &dc_filter_prev_output_right );
-    }
-  }
-  
-  if( filter_cfg.enable_air_effect ) {
-    if( is_left_channel ) {
-      sample = ApplyAirEffect( sample, &air_effect_x1_left, &air_effect_y1_left );
-    } else {
-      sample = ApplyAirEffect( sample, &air_effect_x1_right, &air_effect_y1_right );
-    }
-  }
-  
-  sample = ApplyFadeIn( sample );
-  sample = ApplyFadeOut( sample );
-  
-  if( filter_cfg.enable_noise_gate ) {
-    sample = ApplyNoiseGate( sample );
-  }
-  
-  if( filter_cfg.enable_soft_clipping ) {
-    sample = ApplySoftClipping( sample );
-  }
-  
-  return sample;
+  return ApplyPostFilters( sample, channel_id );
 }
 
 
 /** Apply full filter chain to 8-bit sample
   * 
   * @param: sample - Signed 16-bit audio sample
-  * @param: is_left_channel - 1 if left channel, 0 if right channel
+  * @param: channel_id - CHANNEL_LEFT or CHANNEL_RIGHT
   * @retval: int16_t - Processed signed 16-bit audio sample
   */
-static int16_t ApplyFilterChain8Bit( int16_t sample, uint8_t is_left_channel )
+static int16_t ApplyFilterChain8Bit( int16_t sample, AudioChannelId channel_id )
 {
+  AudioFilterChannelState *channel = GetChannelState( channel_id );
   if( filter_cfg.enable_8bit_lpf ) {
-    if( is_left_channel ) {
-      sample = ApplyLowPassFilter8Bit( sample, &lpf_8bit_y1_left );
-    } else {
-      sample = ApplyLowPassFilter8Bit( sample, &lpf_8bit_y1_right );
-    }
+    sample = ApplyLowPassFilter8Bit( sample, &channel->lpf8_y1 );
   }
   
+  return ApplyPostFilters( sample, channel_id );
+}
+
+
+/** Apply post-LPF filters common to 8-bit and 16-bit chains
+  *
+  * @param: sample - Signed 16-bit audio sample
+  * @param: channel_id - CHANNEL_LEFT or CHANNEL_RIGHT
+  * @retval: int16_t - Processed signed 16-bit audio sample
+  */
+static inline int16_t ApplyPostFilters( int16_t sample, AudioChannelId channel_id )
+{
+  AudioFilterChannelState *channel = GetChannelState( channel_id );
+  volatile int32_t *dc_prev_input  = &channel->dc_prev_input;
+  volatile int32_t *dc_prev_output = &channel->dc_prev_output;
   if( filter_cfg.enable_soft_dc_filter_16bit ) {
-    if( is_left_channel ) {
-      sample = ApplySoftDCFilter16Bit( sample, &dc_filter_prev_input_left, &dc_filter_prev_output_left );
-    } else {
-      sample = ApplySoftDCFilter16Bit( sample, &dc_filter_prev_input_right, &dc_filter_prev_output_right );
-    }
+    sample = ApplySoftDCFilter16Bit( sample, dc_prev_input, dc_prev_output );
   } else {
-    if( is_left_channel ) {
-      sample = ApplyDCBlockingFilter( sample, &dc_filter_prev_input_left, &dc_filter_prev_output_left );
-    } else {
-      sample = ApplyDCBlockingFilter( sample, &dc_filter_prev_input_right, &dc_filter_prev_output_right );
-    }
+    sample = ApplyDCBlockingFilter( sample, dc_prev_input, dc_prev_output );
   }
   
   if( filter_cfg.enable_air_effect ) {
-    if( is_left_channel ) {
-      sample = ApplyAirEffect( sample, &air_effect_x1_left, &air_effect_y1_left );
-    } else {
-      sample = ApplyAirEffect( sample, &air_effect_x1_right, &air_effect_y1_right );
-    }
+    sample = ApplyAirEffect( sample, &channel->air_x1, &channel->air_y1 );
   }
   
   sample = ApplyFadeIn( sample );
@@ -1366,6 +1340,12 @@ void SetPlaybackSpeed( uint32_t speed )
  */
 
 /* Static inline helpers */
+
+/** Helper to recalculate fade sample counts based on current fade times
+  *
+  * Should be called whenever fade times or playback speed are changed to ensure fade
+  * durations remain consistent.
+  */
 static inline void RecalculateFadeSamples( void )
 {
   fadein_samples        = FadeTimeToSamples( fadein_time_seconds );
@@ -1374,17 +1354,35 @@ static inline void RecalculateFadeSamples( void )
   pause_fadein_samples  = FadeTimeToSamples( pause_fadein_time_seconds );
 }
 
+
+/** Clean up after playback ends
+  *
+  * Common cleanup logic for when playback finishes naturally or when a stop request is processed.
+  * Resets state, fills buffer with silence, halts DMA, and calls the playback
+  * end callback if it hasn't been called already.
+  */
 static inline void EndPlaybackCleanup( void )
 {
   pb_state = PB_Idle;
   memset( pb_buffer, MIDPOINT_S16, sizeof( pb_buffer ) );
-  HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );
-  if( stop_requested ) {
-    ResetPlaybackState();
-  }
+  StopDmaAndResetPlaybackState( stop_requested );
   if( !playback_end_callback_called ) {
     playback_end_callback_called = 1;
     AudioEngine_OnPlaybackEnd();
+  }
+}
+
+
+/** Stop DMA transmission and optionally reset playback state
+  *
+  * @param: reset_state - Non-zero to reset playback state
+  * @retval: none
+  */
+static inline void StopDmaAndResetPlaybackState( uint8_t reset_state )
+{
+  HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );
+  if( reset_state ) {
+    ResetPlaybackState();
   }
 }
 
@@ -1396,14 +1394,14 @@ static inline void EndPlaybackCleanup( void )
 static inline void StopImmediate( void )
 {
   pb_state = PB_Idle;
-  HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );
-  ResetPlaybackState();
+  StopDmaAndResetPlaybackState( 1U );
   MIDPOINT_FILL_BUFFER();
   if( !playback_end_callback_called ) {
     playback_end_callback_called = 1;
     AudioEngine_OnPlaybackEnd();
   }
 }
+
 
 /** Common DMA callback processing logic
   *
@@ -1570,7 +1568,7 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
     }
     else {
       leftsample = ApplyVolumeSetting( *input, vol_input );                     // Apply volume setting
-      leftsample = ApplyFilterChain16Bit( leftsample, 1 );                    // Apply complete filter chain
+      leftsample = ApplyFilterChain16Bit( leftsample, CHANNEL_LEFT );  // Apply complete filter chain
     }
     input++;
 
@@ -1581,7 +1579,7 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
       }
       else { 
         rightsample = ApplyVolumeSetting( *input, vol_input );                  // Right channel
-        rightsample = ApplyFilterChain16Bit( rightsample, 0 );                // Apply complete filter chain
+        rightsample = ApplyFilterChain16Bit( rightsample, CHANNEL_RIGHT ); // Apply complete filter chain
       }   // End of right channel processing
       input++;
     }
@@ -1632,7 +1630,7 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
       uint8_t sample8 = *input;
       leftsample = Apply8BitDithering( sample8 );                     /* Left channel with dithering */
       leftsample = ApplyVolumeSetting( leftsample, vol_input );
-      leftsample = ApplyFilterChain8Bit( leftsample, 1 );             /* Apply complete filter chain */
+      leftsample = ApplyFilterChain8Bit( leftsample, CHANNEL_LEFT ); /* Apply complete filter chain */
     }
     input++;
 
@@ -1646,7 +1644,7 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
         uint8_t sample8 = *input;
         rightsample = Apply8BitDithering( sample8 );                  /* Right channel with dithering */
         rightsample = ApplyVolumeSetting( rightsample, vol_input );
-        rightsample = ApplyFilterChain8Bit( rightsample, 0 );         /* Apply complete filter chain */
+        rightsample = ApplyFilterChain8Bit( rightsample, CHANNEL_RIGHT ); /* Apply complete filter chain */
       }
       input++;
     }
@@ -1724,7 +1722,7 @@ PB_StatusTypeDef PlaySample (
   paused_sample_ptr = NULL;
   
   // Reset all filter state for new sample
-  RESET_ALL_FILTER_STATE();
+  ResetAllFilterState();
   
   // Warm up 16-bit biquad filter state from first sample to avoid startup transient
   if( sample_depth == 16 && filter_cfg.enable_16bit_biquad_lpf ) {
@@ -1971,10 +1969,9 @@ static inline int16_t ApplyVolumeSetting( int16_t sample, uint16_t volume_settin
 void ShutDownAudio( void )
 {
   // Hard stop: immediately halt DMA and reset playback state
-  HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );
+  StopDmaAndResetPlaybackState( 1U );
   MIDPOINT_FILL_BUFFER();
   pb_state = PB_Idle;
-  ResetPlaybackState();
 
   if( dac_power_control == true ) {
     AudioEngine_DACSwitch( DAC_OFF );

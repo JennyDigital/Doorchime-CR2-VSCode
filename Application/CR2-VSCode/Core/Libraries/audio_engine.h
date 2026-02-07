@@ -124,6 +124,13 @@ typedef enum {
   Mode_mono
 } PB_ModeTypeDef;
 
+/* Audio channel identifier */
+typedef enum {
+  CHANNEL_LEFT = 0U,
+  CHANNEL_RIGHT = 1U,
+  CHANNEL_COUNT = 2U
+} AudioChannelId;
+
 /* Low-pass filter aggressiveness type */
 typedef enum {
   LPF_Off,
