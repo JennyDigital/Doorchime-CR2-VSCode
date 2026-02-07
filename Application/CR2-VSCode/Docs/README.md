@@ -177,7 +177,7 @@ The PDF report includes:
 
 ```mermaid
 flowchart TD
-  classDef box fill:#60608e,stroke:#3b82f6,stroke-width:1px,color:#0f172a;
+  classDef box fill:#70708e,stroke:#3b82f6,stroke-width:1px,color:#0f172a;
   A["Input Sample (16-bit)"] --> B["Biquad Low-Pass Filter<br/>(Very Soft / Soft / Medium / Agg.)<br/>Runtime configurable"]
   B --> C["DC Blocking Filter<br/>(Standard: 44 Hz / Soft: 22 Hz)<br/>Removes DC offset"]
   C --> D["Fade In / Fade Out<br/>(Quadratic curve, ~93 ms)<br/>Smooth transitions"]
@@ -192,7 +192,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-  classDef box fill:#60608e,stroke:#3b82f6,stroke-width:1px,color:#0f172a;
+  classDef box fill:#70708e,stroke:#3b82f6,stroke-width:1px,color:#0f172a;
   A["Input Sample (8-bit unsigned)"] --> B["8-bit to 16-bit Conversion<br/>+ TPDF Dithering<br/>Reduces quantization noise"]
   B --> C["One-Pole Low-Pass Filter<br/>(Very Soft / Soft / Medium / Agg.)<br/>Simpler than biquad for stability"]
   C --> D["Then follow 16-bit pipeline steps 2-6"]
