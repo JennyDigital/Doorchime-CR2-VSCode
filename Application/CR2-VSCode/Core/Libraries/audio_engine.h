@@ -114,11 +114,12 @@ extern "C" {
 /* Noise gate configuration */
 #define NOISE_GATE_THRESHOLD  512      // ~1.5% of full scale
 
-/* Audio silence midpoint */
-#define MIDPOINT_S16          0
+/* Audio silence midpoints */
+#define SAMPLE8_MIDPOINT      128U
+#define SAMPLE16_MIDPOINT     0
 
 /* Fill half buffer macro */
-#define MIDPOINT_FILL_BUFFER() memset( pb_buffer, MIDPOINT_S16, sizeof( pb_buffer ) );
+#define MIDPOINT_FILL_BUFFER() memset( pb_buffer, SAMPLE16_MIDPOINT, sizeof( pb_buffer ) );
 
 /* Playback status type */
 typedef enum {

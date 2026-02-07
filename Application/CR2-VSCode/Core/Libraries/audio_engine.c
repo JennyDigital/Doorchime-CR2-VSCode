@@ -43,16 +43,14 @@
 #include <string.h>         // Needed for memset
 #include <stdbool.h>        // For true/false values in filter config, we like our C modern, clean and readable.
 
-#define AUDIO_INT16_MAX          32767
-#define AUDIO_INT16_MIN          (-32768)
-#define Q16_SCALE                65536U
-#define Q16_SCALE_F              65536.0f
-#define SOFT_CLIP_THRESHOLD      28000
-#define DITHER_SEED_DEFAULT      12345U
-#define DEFAULT_VOLUME_INPUT     32U
-#define NOISE_GATE_ATTENUATION_Q15 3277
-#define SAMPLE8_MIDPOINT         128U
-
+#define AUDIO_INT16_MAX             32767
+#define AUDIO_INT16_MIN             (-32768)
+#define Q16_SCALE                   65536U
+#define Q16_SCALE_F                 65536.0f
+#define SOFT_CLIP_THRESHOLD         28000
+#define DITHER_SEED_DEFAULT         12345U
+#define DEFAULT_VOLUME_INPUT        32U
+#define NOISE_GATE_ATTENUATION_Q15  3277
 
 #if AUDIO_ENGINE_INLINE_DMA_CALLBACK
 #define DMA_CALLBACK_INLINE inline __attribute__((always_inline))
@@ -136,7 +134,7 @@ volatile uint8_t  volume_response_nonlinear = 1;  // Default: enabled
 volatile float    volume_response_gamma     = 2.0f; // Default: quadratic (human perception)
 
 /* Playback buffer */
-int16_t pb_buffer[PB_BUFF_SZ] = {MIDPOINT_S16};  // Initialize to silence (midpoint for unsigned samples)
+int16_t pb_buffer[PB_BUFF_SZ] = {SAMPLE16_MIDPOINT};  // Initialize to silence (midpoint for unsigned samples)
 
 /* Filter configuration (runtime-tunable) */
 volatile FilterConfig_TypeDef filter_cfg = {
@@ -1655,7 +1653,7 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
   for( uint16_t i = 0; i < HALFCHUNK_SZ; i++ )
   {
     if( (uint16_t *) input >=  pb_end16_ptr ) {                                   // Check for end of sample data
-      leftsample = MIDPOINT_S16;                                              // Pad with silence if at end 
+      leftsample = SAMPLE16_MIDPOINT;                                         // Pad with silence if at end 
     }
     else {
       leftsample = ApplyVolumeSetting( *input, vol_input );                     // Apply volume setting
@@ -1666,7 +1664,7 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
     if( channels == Mode_mono ) { rightsample = leftsample; }                 // Right channel is the same as left.
     else {
       if( (uint16_t *) input >=  pb_end16_ptr ) {                                 // Check for end of sample data
-        rightsample = MIDPOINT_S16;                                           // Pad with silence if at end
+        rightsample = SAMPLE16_MIDPOINT;                                      // Pad with silence if at end
       }
       else { 
         rightsample = ApplyVolumeSetting( *input, vol_input );                  // Right channel
@@ -1715,7 +1713,7 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
   for( uint16_t i = 0; i < HALFCHUNK_SZ; i++ )
   {
     if( (uint8_t *) input >=  pb_end8_ptr ) {                             /* Check for end of sample data */
-      leftsample = MIDPOINT_S16;                                      /* Pad with silence if at end */
+      leftsample = SAMPLE16_MIDPOINT;                                 /* Pad with silence if at end */
     }
     else {
       /* Convert unsigned 8-bit (0..255) -> signed 16-bit with dithering */
@@ -1729,7 +1727,7 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
     if( channels == Mode_mono ) { rightsample = leftsample; }         // Right channel is the same as left.
     else {    
       if( (uint8_t *) input >=  pb_end8_ptr ) {                           /* Check for end of sample data */
-        rightsample = MIDPOINT_S16;                                   /* Pad with silence if at end */
+        rightsample = SAMPLE16_MIDPOINT;                              /* Pad with silence if at end */
       }
       else {               
         /* Convert unsigned 8-bit (0..255) -> signed 16-bit with dithering */
