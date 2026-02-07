@@ -35,6 +35,12 @@
   ******************************************************************************
   */
 
+
+/** WARNING!
+  *
+  * SysTick interrupt priority must be set higher (numerically) than the DMA interrupt priority
+  * to avoid application lockup upon stopping playback.
+*/
 #ifndef __AUDIO_ENGINE_H
 #define __AUDIO_ENGINE_H
 
