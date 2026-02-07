@@ -86,8 +86,6 @@ void Error_Handler(void);
 #define TC_MAX                360U
 #define TRIGGER_SET           1
 #define TRIGGER_CLR           0
-//#define TRIG_TIMEOUT_MAX      5000U
-
 #define TRIG_TIMEOUT_MS       1000U
 
 // Special development/customer switches
@@ -97,7 +95,7 @@ void Error_Handler(void);
 #define NO_SLEEP_MODE
 
 // Uncomment to use digital GPIOs for volume instead of ADC
-//#define VOLUME_INPUT_DIGITAL
+#define VOLUME_INPUT_DIGITAL
 
 // Volume response configuration
 // NOTE: Non-linear volume response is now managed by the audio engine library.
