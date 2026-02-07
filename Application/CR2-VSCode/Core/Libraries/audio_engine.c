@@ -1392,21 +1392,17 @@ static inline void ProcessDMACallback( uint8_t which_half )
 
   half_to_fill = which_half;
 
-  if( pb_mode == 16 ) {
-    if( pb_p16 >= pb_end16 ) {
-      END_PLAYBACK_CLEANUP();   // Cleanup and stop playback if we've reached the end of the sample data, also returns from the callback to prevent further processing.
+  if( pb_mode == 16 || pb_mode == 8 ) {
+    if( ( pb_mode == 16 && pb_p16 >= pb_end16 ) || ( pb_mode == 8 && pb_p8 >= pb_end8 ) ) {
+      END_PLAYBACK_CLEANUP();   // Cleanup and stop playback if we've reached the end of the sample data.
     }
-    if( ProcessNextWaveChunk( (int16_t *) pb_p16 ) != PB_Playing ) {
+    if( ( pb_mode == 16 && ProcessNextWaveChunk( (int16_t *) pb_p16 ) != PB_Playing ) ||
+        ( pb_mode == 8  && ProcessNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PB_Playing ) ) {
       return;
     }
-  }
-  else if( pb_mode == 8 ) {
-    if( pb_p8 >= pb_end8 ) {
-      END_PLAYBACK_CLEANUP();   // Cleanup and stop playback if we've reached the end of the sample data, also returns from the callback to prevent further processing.
-    }
-    if( ProcessNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PB_Playing ) {
-      return;
-    }
+  } else {
+    MIDPOINT_FILL_BUFFER();
+    return;
   }
   
   AdvanceSamplePointer();
@@ -1634,9 +1630,6 @@ PB_StatusTypeDef PlaySample (
     return PB_Error;
   }
 
-  // Reset callback guard for new playback session
-  playback_end_callback_called = 0;
-
   // Set low-pass filter alpha coefficient based on filter config
   lpf_8bit_alpha = GetLpf8BitAlpha( filter_cfg.lpf_8bit_level );
   
@@ -1663,6 +1656,8 @@ PB_StatusTypeDef PlaySample (
   
   // Reset callback guard for new playback session
   playback_end_callback_called = 0;
+  stop_requested = 0;
+  paused_sample_ptr = NULL;
   
   // Reset all filter state for new sample
   RESET_ALL_FILTER_STATE();
