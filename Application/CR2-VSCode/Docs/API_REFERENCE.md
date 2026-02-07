@@ -26,9 +26,9 @@ Initialize the audio engine with required hardware interface callbacks.
 
 ```c
 PB_StatusTypeDef AudioEngine_Init(
-    DAC_SwitchFunc dac_switch,      // Function to control amplifier on/off
-    ReadVolumeFunc read_volume,     // Function to read volume setting (0-255)
-    I2S_InitFunc i2s_init           // Function to re-initialize I2S if needed
+  DAC_SwitchFunc dac_switch,      // Function to control amplifier on/off
+  ReadVolumeFunc read_volume,     // Function to read volume setting (0-255)
+  I2S_InitFunc i2s_init           // Function to re-initialize I2S if needed
 );
 ```
 
@@ -48,14 +48,14 @@ PB_StatusTypeDef AudioEngine_Init(
 **Example:**
 ```c
 PB_StatusTypeDef status = AudioEngine_Init(
-    DAC_MasterSwitch,
-    ReadVolume,
-    MX_I2S2_Init
+  DAC_MasterSwitch,
+  ReadVolume,
+  MX_I2S2_Init
 );
 
 if (status != PB_Idle) {
-    printf("Audio engine initialization failed!\n");
-    return;
+  printf("Audio engine initialization failed!\n");
+  return;
 }
 ```
 
@@ -69,11 +69,11 @@ Start playback of an audio sample.
 
 ```c
 PB_StatusTypeDef PlaySample(
-    const void *sample_to_play,     // Pointer to audio data (8-bit or 16-bit)
-    uint32_t sample_set_sz,         // Size in bytes
-    uint32_t playback_speed,        // Sample rate in Hz (typically 22000)
-    uint8_t sample_depth,           // 8 or 16 (bits per sample)
-    PB_ModeTypeDef mode             // Mode_mono or Mode_stereo
+  const void *sample_to_play,     // Pointer to audio data (8-bit or 16-bit)
+  uint32_t sample_set_sz,         // Size in bytes
+  uint32_t playback_speed,        // Sample rate in Hz (typically 22000)
+  uint8_t sample_depth,           // 8 or 16 (bits per sample)
+  PB_ModeTypeDef mode             // Mode_mono or Mode_stereo
 );
 ```
 
@@ -99,15 +99,15 @@ extern const uint8_t doorbell_16bit_mono[];
 extern const uint32_t doorbell_16bit_mono_size;
 
 PB_StatusTypeDef result = PlaySample(
-    doorbell_16bit_mono,
-    doorbell_16bit_mono_size,
-    22000,
-    16,
-    Mode_mono
+  doorbell_16bit_mono,
+  doorbell_16bit_mono_size,
+  22000,
+  16,
+  Mode_mono
 );
 
 if (result == PB_Playing) {
-    WaitForSampleEnd();
+  WaitForSampleEnd();
 }
 ```
 
@@ -187,7 +187,7 @@ StopPlayback();  // Request stop (returns immediately)
 
 // Wait for stop to complete
 while (GetPlaybackState() != PB_Idle) {
-    // Can do other work here while fading out
+  // Can do other work here while fading out
 }
 ```
 
@@ -253,9 +253,9 @@ uint8_t GetDAC_Control(void);
 **Example:**
 ```c
 if (GetDAC_Control()) {
-    printf("DAC power control is automatic\n");
+  printf("DAC power control is automatic\n");
 } else {
-    printf("DAC power control is manual\n");
+  printf("DAC power control is manual\n");
 }
 ```
 
@@ -393,11 +393,11 @@ void SetFilterConfig(const FilterConfig_TypeDef *cfg);
 **Example:**
 ```c
 FilterConfig_TypeDef cfg = {
-    .enable_16bit_biquad_lpf = 1,
-    .enable_8bit_lpf = 1,
-    .enable_soft_clipping = 1,
-    .lpf_16bit_level = LPF_Soft,
-    .lpf_makeup_gain_q16 = 65536  // 1.0x gain
+  .enable_16bit_biquad_lpf = 1,
+  .enable_8bit_lpf = 1,
+  .enable_soft_clipping = 1,
+  .lpf_16bit_level = LPF_Soft,
+  .lpf_makeup_gain_q16 = 65536  // 1.0x gain
 };
 SetFilterConfig(&cfg);
 ```
@@ -556,8 +556,8 @@ Calculate alpha from desired cutoff frequency and sample rate (helper).
 
 ```c
 uint16_t CalcLpf16BitAlphaFromCutoff(
-    float cutoff_hz,
-    float sample_rate_hz
+  float cutoff_hz,
+  float sample_rate_hz
 );
 ```
 
@@ -775,8 +775,8 @@ float GetAirEffectPresetDb(uint8_t preset_index);
 **Example:**
 ```c
 for (uint8_t i = 0; i < GetAirEffectPresetCount(); i++) {
-    float db = GetAirEffectPresetDb(i);
-    printf("Preset %d: %.1f dB\n", i, db);
+  float db = GetAirEffectPresetDb(i);
+  printf("Preset %d: %.1f dB\n", i, db);
 }
 // Output:
 // Preset 0: 0.0 dB    (disabled)
@@ -995,21 +995,21 @@ volatile uint8_t playback_complete = 0;
 // Override the weak callback
 void AudioEngine_OnPlaybackEnd(void)
 {
-    playback_complete = 1;  // Set flag for main loop
+  playback_complete = 1;  // Set flag for main loop
 }
 
 // In main loop:
 void main(void)
 {
-    PlaySample(sample, size, 22000, 16, Mode_mono);
-    
-    while (!playback_complete) {
-        // Do other work
-        UpdateDisplay();
-        CheckButtons();
-    }
-    
-    printf("Playback finished!\n");
+  PlaySample(sample, size, 22000, 16, Mode_mono);
+  
+  while (!playback_complete) {
+    // Do other work
+    UpdateDisplay();
+    CheckButtons();
+  }
+  
+  printf("Playback finished!\n");
 }
 ```
 
@@ -1019,7 +1019,7 @@ extern osEventFlagsId_t audio_events;
 
 void AudioEngine_OnPlaybackEnd(void)
 {
-    osEventFlagsSet(audio_events, AUDIO_DONE_FLAG);
+  osEventFlagsSet(audio_events, AUDIO_DONE_FLAG);
 }
 ```
 
@@ -1030,11 +1030,11 @@ const uint8_t max_tracks = 5;
 
 void AudioEngine_OnPlaybackEnd(void)
 {
-    current_track++;
-    if (current_track < max_tracks) {
-        // Signal main loop to start next track
-        next_track_ready = 1;
-    }
+  current_track++;
+  if (current_track < max_tracks) {
+    // Signal main loop to start next track
+    next_track_ready = 1;
+  }
 }
 ```
 
@@ -1059,7 +1059,7 @@ uint8_t GetPlaybackState(void);
 **Example:**
 ```c
 if (GetPlaybackState() == PB_Playing) {
-    printf("Audio is playing...\n");
+  printf("Audio is playing...\n");
 }
 ```
 
@@ -1091,52 +1091,52 @@ printf("Playback speed: %lu Hz\n", sr);
 #include "audio_engine.h"
 
 void demo_interactive_control(void) {
-    // Initialize
-    AudioEngine_Init(DAC_MasterSwitch, ReadVolume, MX_I2S2_Init);
-    
-    // Configure filters
-    FilterConfig_TypeDef cfg;
-    GetFilterConfig(&cfg);
-    cfg.enable_16bit_biquad_lpf = 1;
-    cfg.enable_soft_clipping = 1;
-    SetFilterConfig(&cfg);
-    
-    // Load audio
-    extern const uint8_t my_sound[];
-    extern const uint32_t my_sound_size;
-    
-    // Play
-    PlaySample(my_sound, my_sound_size, 22000, 16, Mode_mono);
-    
-    // User controls (e.g., in button ISR)
+  // Initialize
+  AudioEngine_Init(DAC_MasterSwitch, ReadVolume, MX_I2S2_Init);
+  
+  // Configure filters
+  FilterConfig_TypeDef cfg;
+  GetFilterConfig(&cfg);
+  cfg.enable_16bit_biquad_lpf = 1;
+  cfg.enable_soft_clipping = 1;
+  SetFilterConfig(&cfg);
+  
+  // Load audio
+  extern const uint8_t my_sound[];
+  extern const uint32_t my_sound_size;
+  
+  // Play
+  PlaySample(my_sound, my_sound_size, 22000, 16, Mode_mono);
+  
+  // User controls (e.g., in button ISR)
+  HAL_Delay(500);
+  
+  // Pause
+  printf("Pausing...\n");
+  PausePlayback();
+  HAL_Delay(1000);
+  
+  // Resume with custom fade
+  SetResumeFadeTime(0.500f);
+  printf("Resuming...\n");
+  ResumePlayback();
+  HAL_Delay(1000);
+  
+  // Cycle air effect presets
+  for (int i = 0; i < 4; i++) {
+    printf("Air preset: %u (%.1f dB)\n", 
+         GetAirEffectPresetIndex(), 
+         GetAirEffectGainDb());
+    CycleAirEffectPresetDb();
     HAL_Delay(500);
-    
-    // Pause
-    printf("Pausing...\n");
-    PausePlayback();
-    HAL_Delay(1000);
-    
-    // Resume with custom fade
-    SetResumeFadeTime(0.500f);
-    printf("Resuming...\n");
-    ResumePlayback();
-    HAL_Delay(1000);
-    
-    // Cycle air effect presets
-    for (int i = 0; i < 4; i++) {
-        printf("Air preset: %u (%.1f dB)\n", 
-               GetAirEffectPresetIndex(), 
-               GetAirEffectGainDb());
-        CycleAirEffectPresetDb();
-        HAL_Delay(500);
-    }
-    
-    // Wait for completion
-    WaitForSampleEnd();
-    
-    // Shutdown
-    ShutDownAudio();
-    printf("Done\n");
+  }
+  
+  // Wait for completion
+  WaitForSampleEnd();
+  
+  // Shutdown
+  ShutDownAudio();
+  printf("Done\n");
 }
 ```
 

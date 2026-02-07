@@ -33,21 +33,21 @@ SetAirEffectPresetDb( 0 );
 ✗ Already bright samples → may sound harsh  
 
 ## Filter Chain Order
-```
+```c
 Input Sample
-    ↓
+  ↓
 16/8-bit Low-Pass Filter (if enabled)
-    ↓
+  ↓
 DC Blocking Filter (if enabled)
-    ↓
+  ↓
 AIR EFFECT ← YOU ARE HERE (if enabled)
-    ↓
+  ↓
 Fade In/Out
-    ↓
+  ↓
 Noise Gate (if enabled)
-    ↓
+  ↓
 Soft Clipping (if enabled)
-    ↓
+  ↓
 Output Sample
 ```
 

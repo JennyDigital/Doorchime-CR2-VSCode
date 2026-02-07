@@ -39,22 +39,22 @@ Complete overview of the Audio Engine Documentation Suite.
 ## 🎯 Quick Start Paths
 
 ### I Want to Play Audio (15 minutes)
-```
+```c
 README.md → QUICK_REFERENCE.md (Simple Play pattern) → Implement
 ```
 
 ### I Want to Understand the System (1 hour)
-```
+```c
 README.md → AUDIO_ENGINE_MANUAL.md → Filter_Report_Enhanced.pdf
 ```
 
 ### I Need API Reference (5 minutes)
-```
+```c
 FUNCTION_INDEX.md → Find function → API_REFERENCE.md → Example
 ```
 
 ### I Want IDE Integration (5 minutes)
-```
+```c
 HEADER_DOCUMENTATION.md → Open audio_engine.h → Hover for docs
 ```
 

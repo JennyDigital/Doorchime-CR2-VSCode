@@ -28,47 +28,63 @@ The header is organized into logical groups of related functions:
    - Sets up the audio engine with hardware callbacks
    - Must be called before any playback
 
-2. **Filter Configuration** (9 functions)
+2. **Application Callbacks** (1 function)
+   - `AudioEngine_OnPlaybackEnd()` - Playback end notification callback
+
+3. **Filter Configuration** (7 functions)
    - `SetFilterConfig()` / `GetFilterConfig()` - Batch configuration
-   - `SetAirEffectEnable()` / `GetAirEffectEnable()` - Air effect control
+   - `SetLpfMakeupGain8Bit()` - 8-bit LPF makeup gain
+   - `SetAirEffectEnable()` / `GetAirEffectEnable()` - Air effect enable
    - `SetSoftClippingEnable()` / `GetSoftClippingEnable()` - Clipping control
+
+4. **8-bit LPF Control** (2 functions)
    - `SetLpf8BitLevel()` / `GetLpf8BitLevel()` - 8-bit LPF aggressiveness
+
+5. **16-bit LPF Control** (4 functions)
    - `SetLpf16BitLevel()` / `SetLpf16BitCustomAlpha()` - 16-bit LPF control
    - `CalcLpf16BitAlphaFromCutoff()` - Frequency-based LPF configuration
    - `GetLpf16BitCustomAlphaFromCutoff()` - Query LPF cutoff frequency
 
-3. **Fade Time Configuration** (8 functions)
+6. **Fade Time Configuration** (8 functions)
    - `SetFadeInTime()` / `GetFadeInTime()` - Playback start fade
    - `SetFadeOutTime()` / `GetFadeOutTime()` - Playback stop fade
    - `SetPauseFadeTime()` / `GetPauseFadeTime()` - Pause fade
    - `SetResumeFadeTime()` / `GetResumeFadeTime()` - Resume fade
 
-4. **Playback Control** (5 functions)
+7. **Playback Control** (6 functions)
    - `PlaySample()` - Start playback
    - `WaitForSampleEnd()` - Block until playback completes
    - `PausePlayback()` - Pause with fade-out
    - `ResumePlayback()` - Resume with fade-in
+   - `StopPlayback()` - Stop with fade-out
    - `ShutDownAudio()` - Stop all audio hardware
 
-5. **Chunk Processing (DMA Callbacks)** (3 functions)
+8. **Chunk Processing (DMA Callbacks)** (3 functions)
    - `ProcessNextWaveChunk()` - 16-bit sample processing
    - `ProcessNextWaveChunk_8_bit()` - 8-bit sample processing
    - `AdvanceSamplePointer()` - Update playback position
 
-6. **Air Effect Control** (8 functions)
+9. **DAC Power Control** (2 functions)
+   - `SetDAC_Control()` / `GetDAC_Control()` - DAC power control
+
+10. **Volume Response Control** (3 functions)
+   - `SetVolumeResponseNonlinear()` / `GetVolumeResponseNonlinear()` - Enable/disable non-linear response
+   - `SetVolumeResponseGamma()` / `GetVolumeResponseGamma()` - Gamma curve control
+
+11. **Air Effect Control** (9 functions)
    - `SetAirEffectGainQ16()` / `GetAirEffectGainQ16()` - Fine-grain gain control
    - `SetAirEffectGainDb()` / `GetAirEffectGainDb()` - Decibel-based control
-   - `SetAirEffectPresetDb()` - Simple preset selection with auto-enable
+   - `SetAirEffectPresetDb()` - Preset selection with auto-enable
    - `CycleAirEffectPresetDb()` - Cycle through presets (UI control)
    - `GetAirEffectPresetIndex()` - Query current preset
    - `GetAirEffectPresetCount()` - Query available presets
    - `GetAirEffectPresetDb()` - Query specific preset's dB level
 
-7. **DMA Callbacks** (2 functions)
+12. **DMA Callbacks** (2 functions)
    - `HAL_I2S_TxHalfCpltCallback()` - Half-buffer complete
    - `HAL_I2S_TxCpltCallback()` - Full-buffer complete
 
-8. **Playback State (Internal)** (4 functions)
+13. **Playback State (Internal)** (6 functions)
    - `GetPlaybackState()` / `SetPlaybackState()`
    - `GetHalfToFill()` / `SetHalfToFill()`
    - `GetPlaybackSpeed()` / `SetPlaybackSpeed()`
@@ -187,9 +203,9 @@ Functions return:
 - `PB_Error` - Playback failed or invalid operation
 
 ### Volume Control Note
-The `ReadVolume` callback returns 1-255 (not 0-255):
+The `ReadVolume` callback returns 1-65535:
 - 0 is never returned (would mute audio)
-- 1-255 maps linearly to the I2S DMA processing
+- 1-65535 maps linearly to the I2S DMA processing
 - See [AUDIO_ENGINE_MANUAL.md](AUDIO_ENGINE_MANUAL.md) for non-linear response details
 
 ## Integration with Other Documentation
@@ -210,16 +226,21 @@ The `ReadVolume` callback returns 1-255 (not 0-255):
 
 ## Function Count Summary
 
-Total documented functions: **40+**
+Total documented functions: **55**
 
 - **Initialization**: 1
-- **Filter Configuration**: 9
+- **Application Callbacks**: 1
+- **Filter Configuration**: 7
+- **8-bit LPF Control**: 2
+- **16-bit LPF Control**: 4
 - **Fade Control**: 8
-- **Playback Control**: 5
+- **Playback Control**: 6
+- **DAC Power Control**: 2
+- **Volume Response Control**: 3
 - **Chunk Processing**: 3
-- **Air Effect**: 8
+- **Air Effect**: 9
 - **DMA Callbacks**: 2
-- **Internal State**: 4+
+- **Internal State**: 6
 
 ## Standards Used
 
@@ -251,5 +272,5 @@ The documentation follows these standards:
 
 ---
 
-*Last updated: 2026-02-01*
+*Last updated: 2026-02-07*
 *Part of the Audio Engine Documentation Suite*

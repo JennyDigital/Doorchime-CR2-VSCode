@@ -71,12 +71,12 @@ extern const uint8_t doorbell_sound[];
 extern const uint32_t doorbell_sound_size;
 
 PlaySample(
-    doorbell_sound,          // Audio data pointer
-    doorbell_sound_size,     // Size in bytes
-    22000,                   // Sample rate (Hz)
-    16,                      // Bit depth (8 or 16)
-    Mode_mono,               // Mono/Stereo
-    LPF_Soft                 // Filter aggressiveness
+  doorbell_sound,          // Audio data pointer
+  doorbell_sound_size,     // Size in bytes
+  22000,                   // Sample rate (Hz)
+  16,                      // Bit depth (8 or 16)
+  Mode_mono,               // Mono/Stereo
+  LPF_Soft                 // Filter aggressiveness
 );
 
 WaitForSampleEnd();          // Block until playback complete
@@ -176,56 +176,28 @@ The PDF report includes:
 
 ### 16-bit Audio Processing Pipeline
 
-```
-Input Sample (16-bit)
-    ↓
-┌───────────────────────────────────────┐
-│ 1. Biquad Low-Pass Filter             │  ← Runtime configurable
-│    (Very Soft / Soft / Medium / Agg.) │
-└───────────────┬───────────────────────┘
-                ↓
-┌───────────────────────────────────────┐
-│ 2. DC Blocking Filter                 │  ← Removes DC offset
-│    (Standard: 44 Hz / Soft: 22 Hz)    │
-└───────────────┬───────────────────────┘
-                ↓
-┌───────────────────────────────────────┐
-│ 3. Fade In / Fade Out                 │  ← Smooth transitions
-│    (Quadratic curve, ~93 ms)          │
-└───────────────┬───────────────────────┘
-                ↓
-┌───────────────────────────────────────┐
-│ 4. Noise Gate (optional)              │  ← Silence < ±512
-└───────────────┬───────────────────────┘
-                ↓
-┌───────────────────────────────────────┐
-│ 5. Soft Clipping                      │  ← Prevents distortion
-│    (Cubic curve above ±28,000)        │
-└───────────────┬───────────────────────┘
-                ↓
-┌───────────────────────────────────────┐
-│ 6. Volume Scaling                     │  ← 0–3x gain
-└───────────────┬───────────────────────┘
-                ↓
-            I2S DMA Output
+```mermaid
+flowchart TD
+  classDef box fill:#60608e,stroke:#3b82f6,stroke-width:1px,color:#0f172a;
+  A["Input Sample (16-bit)"] --> B["Biquad Low-Pass Filter<br/>(Very Soft / Soft / Medium / Agg.)<br/>Runtime configurable"]
+  B --> C["DC Blocking Filter<br/>(Standard: 44 Hz / Soft: 22 Hz)<br/>Removes DC offset"]
+  C --> D["Fade In / Fade Out<br/>(Quadratic curve, ~93 ms)<br/>Smooth transitions"]
+  D --> E["Noise Gate (optional)<br/>Silence < +/-512"]
+  E --> F["Soft Clipping<br/>(Cubic curve above +/-28000)<br/>Prevents distortion"]
+  F --> G["Volume Scaling<br/>0-3x gain"]
+  G --> H["I2S DMA Output"]
+  class A,B,C,D,E,F,G,H box;
 ```
 
 ### 8-bit Audio Processing Pipeline
 
-```
-Input Sample (8-bit unsigned)
-    ↓
-┌───────────────────────────────────────┐
-│ 1. 8-bit → 16-bit Conversion          │
-│    + TPDF Dithering                   │  ← Reduces quantization noise
-└───────────────┬───────────────────────┘
-                ↓
-┌───────────────────────────────────────┐
-│ 2. One-Pole Low-Pass Filter           │  ← Simpler than biquad
-│    (Very Soft / Soft / Medium / Agg.) │     for stability
-└───────────────┬───────────────────────┘
-                ↓
-        [Same as 16-bit: steps 2-6]
+```mermaid
+flowchart TD
+  classDef box fill:#dbeafe,stroke:#3b82f6,stroke-width:1px,color:#0f172a;
+  A["Input Sample (8-bit unsigned)"] --> B["8-bit to 16-bit Conversion<br/>+ TPDF Dithering<br/>Reduces quantization noise"]
+  B --> C["One-Pole Low-Pass Filter<br/>(Very Soft / Soft / Medium / Agg.)<br/>Simpler than biquad for stability"]
+  C --> D["Then follow 16-bit pipeline steps 2-6"]
+  class A,B,C,D box;
 ```
 
 ## 🔧 Hardware Setup
@@ -261,12 +233,12 @@ Note: Pin assignments vary by STM32 model. Consult your device's datasheet for I
 
 ```c
 PB_StatusTypeDef PlaySample(
-    const void *sample_to_play,     // Pointer to audio data
-    uint32_t sample_set_sz,         // Size in bytes
-    uint32_t playback_speed,        // Sample rate (Hz)
-    uint8_t sample_depth,           // 8 or 16 bits
-    PB_ModeTypeDef mode,            // Mode_mono / Mode_stereo
-    LPF_Level lpf_level             // Filter aggressiveness
+  const void *sample_to_play,     // Pointer to audio data
+  uint32_t sample_set_sz,         // Size in bytes
+  uint32_t playback_speed,        // Sample rate (Hz)
+  uint8_t sample_depth,           // 8 or 16 bits
+  PB_ModeTypeDef mode,            // Mode_mono / Mode_stereo
+  LPF_Level lpf_level             // Filter aggressiveness
 );
 
 PB_StatusTypeDef WaitForSampleEnd(void);
@@ -287,13 +259,13 @@ void SetLpfMakeupGain8Bit(float gain);      // 0.1 to 2.0
 
 ```c
 typedef struct {
-    uint8_t enable_16bit_biquad_lpf;      // Enable 16-bit biquad LPF
-    uint8_t enable_soft_dc_filter_16bit;  // Use soft DC filter (22 Hz vs 44 Hz)
-    uint8_t enable_8bit_lpf;              // Enable 8-bit one-pole LPF
-    uint8_t enable_noise_gate;            // Enable noise gate
-    uint8_t enable_soft_clipping;         // Enable soft clipping
-    uint32_t lpf_makeup_gain_q16;         // Q16 gain after 8-bit LPF
-    LPF_Level lpf_16bit_level;            // Filter aggressiveness level
+  uint8_t enable_16bit_biquad_lpf;      // Enable 16-bit biquad LPF
+  uint8_t enable_soft_dc_filter_16bit;  // Use soft DC filter (22 Hz vs 44 Hz)
+  uint8_t enable_8bit_lpf;              // Enable 8-bit one-pole LPF
+  uint8_t enable_noise_gate;            // Enable noise gate
+  uint8_t enable_soft_clipping;         // Enable soft clipping
+  uint32_t lpf_makeup_gain_q16;         // Q16 gain after 8-bit LPF
+  LPF_Level lpf_16bit_level;            // Filter aggressiveness level
 } FilterConfig_TypeDef;
 ```
 
@@ -394,12 +366,12 @@ Located in `Core/Libraries/audio_engine.h`:
 #include "doorbell_sound.h"
 
 void play_doorbell(void) {
-    SetLpf16BitLevel(LPF_Soft);
-    
-    PlaySample(doorbell_sound, DOORBELL_SIZE, 
-               22000, 16, Mode_mono, LPF_Soft);
-    
-    WaitForSampleEnd();
+  SetLpf16BitLevel(LPF_Soft);
+  
+  PlaySample(doorbell_sound, DOORBELL_SIZE, 
+         22000, 16, Mode_mono, LPF_Soft);
+  
+  WaitForSampleEnd();
 }
 ```
 
@@ -407,20 +379,20 @@ void play_doorbell(void) {
 
 ```c
 void play_music_sample(void) {
-    FilterConfig_TypeDef cfg;
-    GetFilterConfig(&cfg);
-    
-    cfg.enable_16bit_biquad_lpf = 1;
-    cfg.enable_soft_clipping = 1;
-    cfg.enable_soft_dc_filter_16bit = 1;  // Preserve bass
-    cfg.lpf_16bit_level = LPF_VerySoft;   // Minimal filtering
-    
-    SetFilterConfig(&cfg);
-    
-    PlaySample(music_data, MUSIC_SIZE,
-               44100, 16, Mode_stereo, LPF_VerySoft);
-    
-    WaitForSampleEnd();
+  FilterConfig_TypeDef cfg;
+  GetFilterConfig(&cfg);
+  
+  cfg.enable_16bit_biquad_lpf = 1;
+  cfg.enable_soft_clipping = 1;
+  cfg.enable_soft_dc_filter_16bit = 1;  // Preserve bass
+  cfg.lpf_16bit_level = LPF_VerySoft;   // Minimal filtering
+  
+  SetFilterConfig(&cfg);
+  
+  PlaySample(music_data, MUSIC_SIZE,
+         44100, 16, Mode_stereo, LPF_VerySoft);
+  
+  WaitForSampleEnd();
 }
 ```
 
@@ -428,19 +400,19 @@ void play_music_sample(void) {
 
 ```c
 void play_retro_sfx(void) {
-    FilterConfig_TypeDef cfg;
-    GetFilterConfig(&cfg);
-    
-    cfg.enable_8bit_lpf = 1;
-    cfg.enable_soft_clipping = 0;  // Keep retro edge
-    
-    SetLpfMakeupGain8Bit(1.2f);    // Boost slightly
-    SetFilterConfig(&cfg);
-    
-    PlaySample(retro_sfx, SFX_SIZE,
-               11025, 8, Mode_mono, LPF_Medium);
-    
-    WaitForSampleEnd();
+  FilterConfig_TypeDef cfg;
+  GetFilterConfig(&cfg);
+  
+  cfg.enable_8bit_lpf = 1;
+  cfg.enable_soft_clipping = 0;  // Keep retro edge
+  
+  SetLpfMakeupGain8Bit(1.2f);    // Boost slightly
+  SetFilterConfig(&cfg);
+  
+  PlaySample(retro_sfx, SFX_SIZE,
+         11025, 8, Mode_mono, LPF_Medium);
+  
+  WaitForSampleEnd();
 }
 ```
 

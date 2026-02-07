@@ -51,6 +51,7 @@ Complete alphabetical index of all 43+ public functions in the Audio Engine API,
 <a id="setresumefadetime"></a>
 <a id="setsoftclippingenable"></a>
 <a id="shutdownaudio"></a>
+<a id="stopplayback"></a>
 <a id="waitforsampleend"></a>
 
 ## 📑 Alphabetical Index
@@ -106,6 +107,7 @@ Complete alphabetical index of all 43+ public functions in the Audio Engine API,
 | [`SetResumeFadeTime()`](#setresumefadetime) | Fade Time | Set resume fade duration in seconds |
 | [`SetSoftClippingEnable()`](#setsoftclippingenable) | Filter Config | Enable/disable soft clipping |
 | [`ShutDownAudio()`](#shutdownaudio) | Playback Control | Shut down all audio hardware |
+| [`StopPlayback()`](#stopplayback) | Playback Control | Stop playback with fade-out |
 | [`WaitForSampleEnd()`](#waitforsampleend) | Playback Control | Block until playback completes |
 
 ## 📚 By Category
@@ -113,11 +115,12 @@ Complete alphabetical index of all 43+ public functions in the Audio Engine API,
 ### Initialization (1 function)
 - [`AudioEngine_Init()`](#audioengine_init) - Initialize engine with hardware callbacks
 
-### Playback Control (5 functions)
+### Playback Control (6 functions)
 - [`PlaySample()`](#playsample) - Start sample playback
 - [`WaitForSampleEnd()`](#waitforsampleend) - Block until playback completes
 - [`PausePlayback()`](#pauseplayback) - Pause with fade-out
 - [`ResumePlayback()`](#resumeplayback) - Resume from pause with fade-in
+- [`StopPlayback()`](#stopplayback) - Stop playback with fade-out
 - [`ShutDownAudio()`](#shutdownaudio) - Shut down all audio hardware
 
 ### DAC Power Control (2 functions)
@@ -144,7 +147,7 @@ Complete alphabetical index of all 43+ public functions in the Audio Engine API,
 - [`CalcLpf16BitAlphaFromCutoff()`](#calclpf16bitalphafromotoff) - Calculate alpha from cutoff frequency
 - [`GetLpf16BitCustomAlphaFromCutoff()`](#getlpf16bitcustomalphafromotoff) - Get alpha from cutoff frequency
 
-### Air Effect Control (8 functions)
+### Air Effect Control (11 functions)
 - [`SetAirEffectEnable()`](#setaireffectenable) - Enable/disable air effect
 - [`GetAirEffectEnable()`](#getaireffectenable) - Read air effect enable state
 - [`SetAirEffectGainQ16()`](#setaireffectgainq16) - Set air effect gain in Q16 format
@@ -192,6 +195,7 @@ Complete alphabetical index of all 43+ public functions in the Audio Engine API,
 - Simple blocking: [`PlaySample()`](#playsample) → [`WaitForSampleEnd()`](#waitforsampleend)
 - Non-blocking: [`PlaySample()`](#playsample) → poll [`GetPlaybackState()`](#getplaybackstate)
 - Pause/Resume: [`PausePlayback()`](#pauseplayback) → [`ResumePlayback()`](#resumeplayback)
+- Stop: [`StopPlayback()`](#stopplayback) → poll [`GetPlaybackState()`](#getplaybackstate)
 
 **Configure Filters:**
 - Batch config: [`GetFilterConfig()`](#getfilterconfig) → modify → [`SetFilterConfig()`](#setfilterconfig)
@@ -234,9 +238,9 @@ For complete function signatures, parameters, return values, and code examples:
 ### AudioEngine_Init()
 ```c
 PB_StatusTypeDef AudioEngine_Init(
-    DAC_SwitchFunc dac_switch,
-    ReadVolumeFunc read_volume,
-    I2S_InitFunc i2s_init
+  DAC_SwitchFunc dac_switch,
+  ReadVolumeFunc read_volume,
+  I2S_InitFunc i2s_init
 );
 ```
 Initialize the audio engine with hardware callbacks. Must be called before any playback.
@@ -246,11 +250,11 @@ Initialize the audio engine with hardware callbacks. Must be called before any p
 ### PlaySample()
 ```c
 PB_StatusTypeDef PlaySample(
-    const void *sample_to_play,
-    uint32_t sample_set_sz,
-    uint32_t playback_speed,
-    uint8_t sample_depth,
-    PB_ModeTypeDef mode
+  const void *sample_to_play,
+  uint32_t sample_set_sz,
+  uint32_t playback_speed,
+  uint8_t sample_depth,
+  PB_ModeTypeDef mode
 );
 ```
 Start playback of an audio sample from memory.

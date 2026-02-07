@@ -47,8 +47,8 @@ volatile int32_t air_effect_y1_right;  // Previous output (right)
 ### Filter Function Implementation
 ```c
 int16_t ApplyAirEffect( int16_t input, 
-                        volatile int32_t *x1, 
-                        volatile int32_t *y1 )
+            volatile int32_t *x1, 
+            volatile int32_t *y1 )
 ```
 
 **Algorithm**: One-pole high-shelf implementation
@@ -63,9 +63,9 @@ int16_t ApplyAirEffect( int16_t input,
 ```c
 if( filter_cfg.enable_air_effect ) {
   if( is_left_channel ) {
-    sample = ApplyAirEffect( sample, &air_effect_x1_left, &air_effect_y1_left );
+  sample = ApplyAirEffect( sample, &air_effect_x1_left, &air_effect_y1_left );
   } else {
-    sample = ApplyAirEffect( sample, &air_effect_x1_right, &air_effect_y1_right );
+  sample = ApplyAirEffect( sample, &air_effect_x1_right, &air_effect_y1_right );
   }
 }
 ```

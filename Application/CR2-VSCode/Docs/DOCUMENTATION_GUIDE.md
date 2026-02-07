@@ -196,7 +196,7 @@ The Audio Engine includes **comprehensive, multi-layered documentation** designe
 
 ### For Developers (Writing Code)
 
-```
+```c
 1. [README.md] → Overview
 2. [QUICK_REFERENCE.md] → Find pattern
 3. [API_REFERENCE.md] → Get examples
@@ -207,7 +207,7 @@ The Audio Engine includes **comprehensive, multi-layered documentation** designe
 
 ### For Maintainers (Understanding System)
 
-```
+```c
 1. [AUDIO_ENGINE_MANUAL.md] → Architecture
 2. [Filter_Report_Enhanced.pdf] → DSP theory
 3. [audio_engine.c] → Implementation
@@ -216,7 +216,7 @@ The Audio Engine includes **comprehensive, multi-layered documentation** designe
 
 ### For Technical Writers (Documentation Updates)
 
-```
+```c
 1. [HEADER_DOCUMENTATION.md] → Doxygen format
 2. [audio_engine.h] → Update inline docs
 3. [API_REFERENCE.md] → Update examples
@@ -225,7 +225,7 @@ The Audio Engine includes **comprehensive, multi-layered documentation** designe
 
 ### For Users (Integrating Audio Engine)
 
-```
+```c
 1. [README.md] → Quick start
 2. [QUICK_REFERENCE.md] → Common patterns
 3. [API_REFERENCE.md] → Detailed reference
