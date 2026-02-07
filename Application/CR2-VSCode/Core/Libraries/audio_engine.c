@@ -130,10 +130,10 @@ volatile FilterConfig_TypeDef filter_cfg = {
 };
 
 /* Playback state variables */
-volatile  uint8_t         *pb_p8;
-volatile  uint8_t         *pb_end8;
-volatile  uint16_t        *pb_p16;
-volatile  uint16_t        *pb_end16;
+volatile  uint8_t         *pb_p8_ptr;
+volatile  uint8_t         *pb_end8_ptr;
+volatile  uint16_t        *pb_p16_ptr;
+volatile  uint16_t        *pb_end16_ptr;
 
 volatile  uint8_t         pb_state                    = PB_Idle;
 volatile  uint8_t         half_to_fill;
@@ -877,9 +877,9 @@ static int16_t ApplyFadeOut( int16_t sample )
     uint32_t remaining_in_file = 0;
     
     if( pb_mode == 16 ) {
-      remaining_in_file = (uint32_t)( pb_end16 - pb_p16 );
+      remaining_in_file = (uint32_t)( pb_end16_ptr - pb_p16_ptr );
     } else {
-      remaining_in_file = (uint32_t)( pb_end8 - pb_p8 );
+      remaining_in_file = (uint32_t)( pb_end8_ptr - pb_p8_ptr );
     }
     
     if( remaining_in_file > 0 && remaining_in_file <= fadeout_samples ) {
@@ -1240,10 +1240,10 @@ static int16_t ApplyFilterChain8Bit( int16_t sample, uint8_t is_left_channel )
 }
 
 
-/**
- * Reset playback state variables to idle condition.
- * Resets mode, pointers, and counters.
- */
+/** Reset playback state variables to idle condition.
+  * 
+  * Resets mode, pointers, and counters.
+  */
 static void ResetPlaybackState( void ) {
   pb_mode = 0;
   paused_sample_ptr = NULL;
@@ -1362,6 +1362,11 @@ static inline void EndPlaybackCleanup( void )
   }
 }
 
+
+/** Immediate stop of playback, halting DMA and resetting state without waiting for buffer to drain 
+  *
+  * Use when stopping from paused state or when an immediate halt is required.  Will not apply fade-out.
+  */
 static inline void StopImmediate( void )
 {
   pb_state = PB_Idle;
@@ -1398,14 +1403,14 @@ static inline void ProcessDMACallback( uint8_t which_half )
       /* If not already pausing, set state to pausing and prepare for fade */
       pb_state = PB_Pausing;
       if( pb_mode == 16 ) {
-        uint32_t remaining = (uint32_t)(pb_end16 - pb_p16);
+        uint32_t remaining = (uint32_t)(pb_end16_ptr - pb_p16_ptr);
         if( remaining > fadeout_samples ) {
-          pb_end16 = pb_p16 + fadeout_samples;
+          pb_end16_ptr = pb_p16_ptr + fadeout_samples;
         }
       } else if( pb_mode == 8 ) {
-        uint32_t remaining = (uint32_t)(pb_end8 - pb_p8);
+        uint32_t remaining = (uint32_t)(pb_end8_ptr - pb_p8_ptr);
         if( remaining > fadeout_samples ) {
-          pb_end8 = pb_p8 + fadeout_samples;
+          pb_end8_ptr = pb_p8_ptr + fadeout_samples;
         }
       }
     }
@@ -1429,12 +1434,12 @@ static inline void ProcessDMACallback( uint8_t which_half )
   half_to_fill = which_half;
 
   if( pb_mode == 16 || pb_mode == 8 ) {
-    if( ( pb_mode == 16 && pb_p16 >= pb_end16 ) || ( pb_mode == 8 && pb_p8 >= pb_end8 ) ) {
+    if( ( pb_mode == 16 && pb_p16_ptr >= pb_end16_ptr ) || ( pb_mode == 8 && pb_p8_ptr >= pb_end8_ptr ) ) {
       EndPlaybackCleanup();   // Cleanup and stop playback if we've reached the end of the sample data.
       return;
     }
-    if( ( pb_mode == 16 && ProcessNextWaveChunk( (int16_t *) pb_p16 ) != PB_Playing ) ||
-        ( pb_mode == 8  && ProcessNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PB_Playing ) ) {
+    if( ( pb_mode == 16 && ProcessNextWaveChunk( (int16_t *) pb_p16_ptr ) != PB_Playing ) ||
+        ( pb_mode == 8  && ProcessNextWaveChunk_8_bit( (uint8_t *) pb_p8_ptr ) != PB_Playing ) ) {
       return;
     }
   } else {
@@ -1485,15 +1490,15 @@ void HAL_I2S_TxCpltCallback( I2S_HandleTypeDef *hi2s_p )
 void AdvanceSamplePointer( void )
 {
   if( pb_mode == 16 ) {  // Advance the 16-bit sample pointer
-    pb_p16 += p_advance;
-    if( pb_p16 >= pb_end16 ) {
+    pb_p16_ptr += p_advance;
+    if( pb_p16_ptr >= pb_end16_ptr ) {
       pb_state = PB_Idle;
       return;
     }
   }
   else if( pb_mode == 8 ) {  // Or advance the 8-bit sample pointer
-    pb_p8 += p_advance;
-    if( pb_p8 >= pb_end8 ) {
+    pb_p8_ptr += p_advance;
+    if( pb_p8_ptr >= pb_end8_ptr ) {
       pb_state = PB_Idle;
       return;
     }
@@ -1534,7 +1539,7 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
   //
   for( uint16_t i = 0; i < HALFCHUNK_SZ; i++ )
   {
-    if( (uint16_t *) input >=  pb_end16 ) {                                   // Check for end of sample data
+    if( (uint16_t *) input >=  pb_end16_ptr ) {                                   // Check for end of sample data
       leftsample = MIDPOINT_S16;                                              // Pad with silence if at end 
     }
     else {
@@ -1545,7 +1550,7 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
 
     if( channels == Mode_mono ) { rightsample = leftsample; }                 // Right channel is the same as left.
     else {
-      if( (uint16_t *) input >=  pb_end16 ) {                                 // Check for end of sample data
+      if( (uint16_t *) input >=  pb_end16_ptr ) {                                 // Check for end of sample data
         rightsample = MIDPOINT_S16;                                           // Pad with silence if at end
       }
       else { 
@@ -1593,7 +1598,7 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
 
   for( uint16_t i = 0; i < HALFCHUNK_SZ; i++ )
   {
-    if( (uint8_t *) input >=  pb_end8 ) {                             /* Check for end of sample data */
+    if( (uint8_t *) input >=  pb_end8_ptr ) {                             /* Check for end of sample data */
       leftsample = MIDPOINT_S16;                                      /* Pad with silence if at end */
     }
     else {
@@ -1607,7 +1612,7 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
 
     if( channels == Mode_mono ) { rightsample = leftsample; }         // Right channel is the same as left.
     else {    
-      if( (uint8_t *) input >=  pb_end8 ) {                           /* Check for end of sample data */
+      if( (uint8_t *) input >=  pb_end8_ptr ) {                           /* Check for end of sample data */
         rightsample = MIDPOINT_S16;                                   /* Pad with silence if at end */
       }
       else {               
@@ -1703,13 +1708,13 @@ PB_StatusTypeDef PlaySample (
   }
   
   if( sample_depth == 16 ) {            // For 16-bit, initialize 16-bit sample playback pointers
-    pb_p16    = (uint16_t *) sample_to_play;
-    pb_end16  = pb_p16 + sample_set_sz;
+    pb_p16_ptr    = (uint16_t *) sample_to_play;
+    pb_end16_ptr  = pb_p16_ptr + sample_set_sz;
     pb_mode   = 16;
   }
   else if( sample_depth == 8 ) {        // For 8-bit, initialize 8-bit sample playback pointers
-    pb_p8     = (uint8_t *) sample_to_play;
-    pb_end8   = pb_p8 + sample_set_sz;
+    pb_p8_ptr     = (uint8_t *) sample_to_play;
+    pb_end8_ptr   = pb_p8_ptr + sample_set_sz;
     pb_mode   = 8;
   }
   // Initialize fade counters
@@ -1721,19 +1726,19 @@ PB_StatusTypeDef PlaySample (
   // This ensures the fade-in is applied from the very first sample that plays
   half_to_fill = FIRST;
   if( pb_mode == 16 ) {
-    if( ProcessNextWaveChunk( (int16_t *) pb_p16 ) != PB_Playing ) { return PB_Error; }
-    pb_p16 += p_advance;
+    if( ProcessNextWaveChunk( (int16_t *) pb_p16_ptr ) != PB_Playing ) { return PB_Error; }
+    pb_p16_ptr += p_advance;
 
     half_to_fill = SECOND;
-    if( ProcessNextWaveChunk( (int16_t *) pb_p16 ) != PB_Playing ) { return PB_Error; }
-    pb_p16 += p_advance;
+    if( ProcessNextWaveChunk( (int16_t *) pb_p16_ptr ) != PB_Playing ) { return PB_Error; }
+    pb_p16_ptr += p_advance;
     half_to_fill = FIRST;
   }
   else if( pb_mode == 8 ) {
-    if( ProcessNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PB_Playing ) { return PB_Error; }
+    if( ProcessNextWaveChunk_8_bit( (uint8_t *) pb_p8_ptr ) != PB_Playing ) { return PB_Error; }
     half_to_fill = SECOND;
-    if( ProcessNextWaveChunk_8_bit( (uint8_t *) pb_p8 ) != PB_Playing ) { return PB_Error; }
-    pb_p8 += p_advance;
+    if( ProcessNextWaveChunk_8_bit( (uint8_t *) pb_p8_ptr ) != PB_Playing ) { return PB_Error; }
+    pb_p8_ptr += p_advance;
     half_to_fill = FIRST;
   }
   
@@ -1791,9 +1796,9 @@ PB_StatusTypeDef PausePlayback( void )
   
   /* Save current playback position before initiating pause */
   if( pb_mode == 16 ) {
-    paused_sample_ptr = (const void *)pb_p16;
+    paused_sample_ptr = (const void *)pb_p16_ptr;
   } else {
-    paused_sample_ptr = (const void *)pb_p8;
+    paused_sample_ptr = (const void *)pb_p8_ptr;
   }
   
   /* Calculate current volume level if fading in */
@@ -1809,9 +1814,9 @@ PB_StatusTypeDef PausePlayback( void )
     /* Check if we're in the middle of end-of-file fadeout */
     uint32_t remaining_in_file = 0;
     if( pb_mode == 16 ) {
-      remaining_in_file = (uint32_t)(pb_end16 - pb_p16);
+      remaining_in_file = (uint32_t)(pb_end16_ptr - pb_p16_ptr);
     } else {
-      remaining_in_file = (uint32_t)(pb_end8 - pb_p8);
+      remaining_in_file = (uint32_t)(pb_end8_ptr - pb_p8_ptr);
     }
     
     if( remaining_in_file > 0 && remaining_in_file <= fadeout_samples ) {
@@ -1848,9 +1853,9 @@ PB_StatusTypeDef ResumePlayback( void )
   /* Restore playback position from where it was paused */
   if( paused_sample_ptr != NULL ) {
     if( pb_mode == 16 ) {
-      pb_p16 = (uint16_t *)paused_sample_ptr;
+      pb_p16_ptr  = (uint16_t *)paused_sample_ptr;
     } else {
-      pb_p8 = (uint8_t *)paused_sample_ptr;
+      pb_p8_ptr   = (uint8_t *)paused_sample_ptr;
     }
   }
   
