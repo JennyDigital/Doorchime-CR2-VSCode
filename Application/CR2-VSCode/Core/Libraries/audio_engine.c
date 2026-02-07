@@ -659,14 +659,6 @@ static uint32_t FadeTimeToSamples( float seconds )
   return ( samples == 0 ) ? 1 : samples;
 }
 
-static inline void RecalculateFadeSamples( void )
-{
-  fadein_samples        = FadeTimeToSamples( fadein_time_seconds );
-  fadeout_samples       = FadeTimeToSamples( fadeout_time_seconds );
-  pause_fadeout_samples = FadeTimeToSamples( pause_fadeout_time_seconds );
-  pause_fadein_samples  = FadeTimeToSamples( pause_fadein_time_seconds );
-}
-
 
 /** Set fade-in time in seconds
   * 
@@ -1346,6 +1338,15 @@ void SetPlaybackSpeed( uint32_t speed )
  * DMA Callbacks
  * ============================================================================
  */
+
+/* Static inline helpers */
+static inline void RecalculateFadeSamples( void )
+{
+  fadein_samples        = FadeTimeToSamples( fadein_time_seconds );
+  fadeout_samples       = FadeTimeToSamples( fadeout_time_seconds );
+  pause_fadeout_samples = FadeTimeToSamples( pause_fadeout_time_seconds );
+  pause_fadein_samples  = FadeTimeToSamples( pause_fadein_time_seconds );
+}
 
 static inline void EndPlaybackCleanup( void )
 {
