@@ -43,6 +43,7 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "stm32g4xx_hal.h"
 
 /* I2S handle selection (default: hi2s2). Override in application if needed. */
@@ -51,8 +52,8 @@ extern "C" {
 #endif
 
 /* DAC control values */
-#define DAC_OFF               0
-#define DAC_ON                1
+#define DAC_OFF               false
+#define DAC_ON                true
 
 /* Playback engine buffer configuration */
 #define PB_BUFF_SZ            2048U

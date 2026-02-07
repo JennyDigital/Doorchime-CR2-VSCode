@@ -76,10 +76,6 @@ void Error_Handler(void);
 #define OPT_AUTO_TRIG     0b1000
 #define OPT_VOLUME        0b0111
 
-// DAC Switch defines
-#define DAC_ON            1
-#define DAC_OFF           0
-
 // Trigger Option macros
 #define AUTO_TRIG_ENABLED     1
 #define AUTO_TRIG_DISABLED    0

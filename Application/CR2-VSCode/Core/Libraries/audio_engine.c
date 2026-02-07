@@ -1352,8 +1352,8 @@ static inline void EndPlaybackCleanup( void )
 {
   pb_state = PB_Idle;
   memset( pb_buffer, MIDPOINT_S16, sizeof( pb_buffer ) );
+  HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );
   if( stop_requested ) {
-    HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );
     ResetPlaybackState();
   }
   if( !playback_end_callback_called ) {
@@ -1365,6 +1365,7 @@ static inline void EndPlaybackCleanup( void )
 static inline void StopImmediate( void )
 {
   pb_state = PB_Idle;
+  HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );
   ResetPlaybackState();
   MIDPOINT_FILL_BUFFER();
   if( !playback_end_callback_called ) {
@@ -1739,10 +1740,11 @@ PB_StatusTypeDef PlaySample (
   // Start playback of the recording
   //
     if( dac_power_control == true ) {
-      AudioEngine_DACSwitch( true );  // Ensure DAC is powered on before starting playback
+      AudioEngine_DACSwitch( DAC_ON );  // Ensure DAC is powered on before starting playback
     }
   pb_state = PB_Playing;
   if( HAL_I2S_Transmit_DMA( &AUDIO_ENGINE_I2S_HANDLE, (uint16_t *) pb_buffer, PB_BUFF_SZ ) != HAL_OK ) {
+    pb_state = PB_PlayingFailed;
     return PB_PlayingFailed;
   }
   return PB_Playing;

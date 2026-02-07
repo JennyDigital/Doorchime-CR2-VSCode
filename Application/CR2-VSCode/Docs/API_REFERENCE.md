@@ -911,6 +911,8 @@ PlaySample(sample_data, size, 22000, 16, Mode_mono);
 
 These functions are called from I2S DMA interrupt handlers. **Do not call directly from application code.**
 
+**Interrupt Priority Note:** Ensure `SysTick` has higher priority (numerically lower) than the I2S DMA IRQ. HAL stop routines invoked from DMA callbacks rely on `HAL_GetTick()` for timeouts, and these can stall if SysTick cannot preempt DMA. See [Core/Inc/stm32g4xx_hal_conf.h](../Core/Inc/stm32g4xx_hal_conf.h) and [Core/Src/main.c](../Core/Src/main.c).
+
 ### `ProcessNextWaveChunk()`
 
 Process one chunk of 16-bit samples from DMA buffer.
