@@ -62,6 +62,8 @@ extern "C" {
 #define DAC_ON                true
 
 /* Playback engine buffer configuration */
+// Larger buffer sizes can reduce CPU load but increase latency and RAM usage. Adjust as needed.
+// and must be a multiple of 2 correct DMA buffer size requirements.
 #define PB_BUFF_SZ            2048U
 #define CHUNK_SZ              ( PB_BUFF_SZ / 2 )
 #define HALFCHUNK_SZ          ( CHUNK_SZ / 2 )

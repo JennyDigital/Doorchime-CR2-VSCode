@@ -289,9 +289,9 @@ SetAirEffectGainDb(2.0f);             // +2 dB boost at ω=π
 |--------|-------|
 | **CPU Usage** | ~15% @ 170 MHz (during playback, full filter chain) |
 | **Latency** | ~93 ms total (~50 ms buffer + warm-up @ 22 kHz) |
-| **Memory (RAM)** | ~4 KB (playback buffer) |
+| **Memory (RAM)** | ~4 KB (playback buffer size is set by macro in audio_engine.h) |
 | **Memory (Flash)** | ≈12.9 KB (.text/.rodata, Release build) |
-| **Max Sample Rate** | 48 kHz (I2S limit) |
+| **Max Sample Rate** | I2S can exceed 48 kHz; MAX98347A is limited to 96 kHz and higher rates are not recommended on embedded targets |
 | **Typical Sample Rate** | 22 kHz (11 kHz Nyquist) |
 
 ## 📖 Documentation
