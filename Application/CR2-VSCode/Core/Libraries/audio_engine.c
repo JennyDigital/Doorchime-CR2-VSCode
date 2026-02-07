@@ -913,8 +913,8 @@ static int16_t ApplyLowPassFilter8Bit( int16_t sample, volatile int32_t *y1 )
   // Apply makeup gain
   output = ( output * (int32_t)filter_cfg.lpf_makeup_gain_q16 ) >> 16;
   *y1 = output;
-  if( output > AUDIO_INT16_MAX )  output = AUDIO_INT16_MAX;
-  if( output < AUDIO_INT16_MIN )  output = AUDIO_INT16_MIN;
+  if( output > AUDIO_INT16_MAX ) output = AUDIO_INT16_MAX;
+  if( output < AUDIO_INT16_MIN ) output = AUDIO_INT16_MIN;
   return (int16_t) output;
 }
 
@@ -942,7 +942,7 @@ static int16_t ApplyFadeIn( int16_t sample )
     int64_t result      = ( (int64_t)sample * fade_mult ) / fade_total;
 
     // Clamp to valid 16-bit range
-    if( result > AUDIO_INT16_MAX )  result = AUDIO_INT16_MAX;
+    if( result > AUDIO_INT16_MAX ) result = AUDIO_INT16_MAX;
     if( result < AUDIO_INT16_MIN ) result = AUDIO_INT16_MIN;
 
     return (int16_t)result;
@@ -1122,7 +1122,8 @@ static int16_t ApplySoftClipping( int16_t sample )
   * @param: alpha_q16 - Q16 alpha coefficient
   * @retval: int16_t - Filtered signed 16-bit audio sample
   */
-static inline int16_t ApplyDCFilterWithAlpha( volatile int16_t input,
+static inline int16_t ApplyDCFilterWithAlpha(
+                                              volatile int16_t input,
                                               volatile int32_t *prev_input,
                                               volatile int32_t *prev_output,
                                               uint32_t alpha_q16 )
@@ -1147,7 +1148,11 @@ static inline int16_t ApplyDCFilterWithAlpha( volatile int16_t input,
   * @param: prev_output - Pointer to previous output sample
   * @retval: int16_t - DC-blocked signed 16-bit audio sample
   */
-static int16_t ApplyDCBlockingFilter( volatile int16_t input, volatile int32_t *prev_input, volatile int32_t *prev_output )
+static int16_t ApplyDCBlockingFilter(
+                                      volatile int16_t input,
+                                      volatile int32_t *prev_input,
+                                      volatile int32_t *prev_output
+                                    )
 {
   return ApplyDCFilterWithAlpha( input, prev_input, prev_output, DC_FILTER_ALPHA );
 }
@@ -1160,7 +1165,11 @@ static int16_t ApplyDCBlockingFilter( volatile int16_t input, volatile int32_t *
   * @param: prev_output - Pointer to previous output sample
   * @retval: int16_t - Soft DC-filtered signed 16-bit audio sample
   */
-static int16_t ApplySoftDCFilter16Bit( volatile int16_t input, volatile int32_t *prev_input, volatile int32_t *prev_output )
+static int16_t ApplySoftDCFilter16Bit (
+                                        volatile int16_t input,
+                                        volatile int32_t *prev_input,
+                                        volatile int32_t *prev_output
+                                      )
 {
   return ApplyDCFilterWithAlpha( input, prev_input, prev_output, SOFT_DC_FILTER_ALPHA );
 }
@@ -1173,7 +1182,13 @@ static int16_t ApplySoftDCFilter16Bit( volatile int16_t input, volatile int32_t 
   * @param: y1, y2 - Pointers to previous output samples
   * @retval: int16_t - Filtered signed 16-bit audio sample
   */
-static int16_t ApplyLowPassFilter16Bit( int16_t input, volatile int32_t *x1, volatile int32_t *x2, volatile int32_t *y1, volatile int32_t *y2 )
+static int16_t ApplyLowPassFilter16Bit(
+                                        int16_t input,
+                                        volatile int32_t *x1,
+                                        volatile int32_t *x2,
+                                        volatile int32_t *y1,
+                                        volatile int32_t *y2
+                                      )
 {
   uint32_t alpha = lpf_16bit_alpha;
   int32_t b0 = ((Q16_SCALE - alpha) * (Q16_SCALE - alpha)) >> 17;
@@ -1192,8 +1207,8 @@ static int16_t ApplyLowPassFilter16Bit( int16_t input, volatile int32_t *x1, vol
   *x1 = input;
   *y2 = *y1;
   *y1 = output;
-  if ( output > AUDIO_INT16_MAX )   output = AUDIO_INT16_MAX;
-  if ( output < AUDIO_INT16_MIN )  output = AUDIO_INT16_MIN;
+  if ( output > AUDIO_INT16_MAX ) output = AUDIO_INT16_MAX;
+  if ( output < AUDIO_INT16_MIN ) output = AUDIO_INT16_MIN;
   return (int16_t)output;
 }
 
@@ -1531,10 +1546,13 @@ static DMA_CALLBACK_INLINE void ProcessDMACallback( uint8_t which_half )
   half_to_fill = which_half;
 
   if( pb_mode == 16 || pb_mode == 8 ) {
-    if( ( pb_mode == 16 && pb_p16_ptr >= pb_end16_ptr ) || ( pb_mode == 8 && pb_p8_ptr >= pb_end8_ptr ) ) {
+    if( ( pb_mode == 16 && pb_p16_ptr >= pb_end16_ptr ) ||
+        ( pb_mode == 8  && pb_p8_ptr  >= pb_end8_ptr )
+      ) {
       EndPlaybackCleanup();   // Cleanup and stop playback if we've reached the end of the sample data.
       return;
     }
+    /* Only one chunk process will be used because of short-circuit evaluation. */
     if( ( pb_mode == 16 && ProcessNextWaveChunk( (int16_t *) pb_p16_ptr ) != PB_Playing ) ||
         ( pb_mode == 8  && ProcessNextWaveChunk_8_bit( (uint8_t *) pb_p8_ptr ) != PB_Playing ) ) {
       return;
@@ -1627,7 +1645,7 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
 
   vol_input = AudioEngine_ReadVolume();
   input   = chunk_p;      // Source sample pointer
-  output  = ( half_to_fill == SECOND ) ? (pb_buffer + CHUNK_SZ ) : pb_buffer;
+  output  = ( half_to_fill == SECOND ) ? ( pb_buffer + CHUNK_SZ ) : pb_buffer;
 
   // Transfer mono audio (scaled for volume) into the stereo buffer.
   // This is done both to eliminate the need for a second resistor
@@ -1684,6 +1702,7 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
   if( chunk_p == NULL ) {   // Sanity check
     return PB_Error;
   }
+
   vol_input = AudioEngine_ReadVolume();
   input = chunk_p;                                               /* Source sample pointer */
   output = ( half_to_fill == SECOND ) ? ( pb_buffer + CHUNK_SZ ) : pb_buffer;
@@ -1844,7 +1863,8 @@ PB_StatusTypeDef PlaySample (
       AudioEngine_DACSwitch( DAC_ON );  // Ensure DAC is powered on before starting playback
     }
   pb_state = PB_Playing;
-  if( HAL_I2S_Transmit_DMA( &AUDIO_ENGINE_I2S_HANDLE, (uint16_t *) pb_buffer, PB_BUFF_SZ ) != HAL_OK ) {
+  if( HAL_I2S_Transmit_DMA( &AUDIO_ENGINE_I2S_HANDLE, (uint16_t *) pb_buffer, PB_BUFF_SZ )
+      != HAL_OK ) {
     pb_state = PB_PlayingFailed;
     return PB_PlayingFailed;
   }
