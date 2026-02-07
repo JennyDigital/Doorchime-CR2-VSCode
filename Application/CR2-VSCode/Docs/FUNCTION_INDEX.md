@@ -1,12 +1,13 @@
 # Audio Engine Function Index
 
-Complete alphabetical index of all 43+ public functions in the Audio Engine API, organized by category with quick descriptions.
+Complete alphabetical index of all 44+ public functions in the Audio Engine API, organized by category with quick descriptions.
 
 <!-- Anchor targets for internal links -->
 <a id="advancesamplepointer"></a>
 <a id="audioengine_init"></a>
 <a id="audioengine_onplaybackend"></a>
 <a id="calclpf16bitalphafromotoff"></a>
+<a id="calcsampleoffsetsamples"></a>
 <a id="cycleaireffectpresetdb"></a>
 <a id="getaireffectenable"></a>
 <a id="getaireffectgaindb"></a>
@@ -62,6 +63,7 @@ Complete alphabetical index of all 43+ public functions in the Audio Engine API,
 | [`AudioEngine_Init()`](#audioengine_init) | Initialization | Initialize engine with hardware callbacks |
 | [`AudioEngine_OnPlaybackEnd()`](#audioengine_onplaybackend) | Callback | Weak callback for playback end event |
 | [`CalcLpf16BitAlphaFromCutoff()`](#calclpf16bitalphafromotoff) | 16-bit LPF | Calculate alpha from cutoff frequency |
+| [`CalcSampleOffsetSamples()`](#calcsampleoffsetsamples) | Playback Control | Calculate sample offset from time, rate, and mode |
 | [`CycleAirEffectPresetDb()`](#cycleaireffectpresetdb) | Air Effect | Cycle through air effect presets |
 | [`GetAirEffectEnable()`](#getaireffectenable) | Air Effect | Read air effect enable state |
 | [`GetAirEffectGainDb()`](#getaireffectgaindb) | Air Effect | Get air effect gain in dB |
@@ -115,7 +117,8 @@ Complete alphabetical index of all 43+ public functions in the Audio Engine API,
 ### Initialization (1 function)
 - [`AudioEngine_Init()`](#audioengine_init) - Initialize engine with hardware callbacks
 
-### Playback Control (6 functions)
+### Playback Control (7 functions)
+- [`CalcSampleOffsetSamples()`](#calcsampleoffsetsamples) - Calculate sample offset from time, rate, and mode
 - [`PlaySample()`](#playsample) - Start sample playback
 - [`WaitForSampleEnd()`](#waitforsampleend) - Block until playback completes
 - [`PausePlayback()`](#pauseplayback) - Pause with fade-out
@@ -228,7 +231,7 @@ Complete alphabetical index of all 43+ public functions in the Audio Engine API,
 
 For complete function signatures, parameters, return values, and code examples:
 
-- **Comprehensive Reference**: [API_REFERENCE.md](API_REFERENCE.md) - All 40+ functions with detailed examples
+- **Comprehensive Reference**: [API_REFERENCE.md](API_REFERENCE.md) - All 44+ functions with detailed examples
 - **Quick Guide**: [QUICK_REFERENCE.md](QUICK_REFERENCE.md) - Common patterns and fast lookup
 - **Header File**: [audio_engine.h](../Core/Libraries/audio_engine.h) - Doxygen-documented signatures (IDE integration)
 - **Manual**: [AUDIO_ENGINE_MANUAL.md](AUDIO_ENGINE_MANUAL.md) - Architecture and integration guide

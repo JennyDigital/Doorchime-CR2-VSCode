@@ -14,11 +14,11 @@ AudioEngine_Init(DAC_MasterSwitch, ReadVolume, MX_I2S2_Init);
 
 ```c
 // Play a sample (blocking until complete)
-PlaySample(sample_ptr, size_bytes, 22000, 16, Mode_mono);
+PlaySample(sample_ptr, sample_count, 22000, 16, Mode_mono);
 WaitForSampleEnd();
 
 // Play non-blocking
-PlaySample(sample_ptr, size_bytes, 22000, 16, Mode_mono);
+PlaySample(sample_ptr, sample_count, 22000, 16, Mode_mono);
 // Do other work...
 if (GetPlaybackState() == PB_Playing) { /* still playing */ }
 
@@ -28,7 +28,7 @@ ResumePlayback();     // Fade in and resume
 
 // Stop with fade (asynchronous)
 StopPlayback();       // Request stop (returns immediately)
-while (GetStopStatus() != PB_Idle) { /* wait for fade/stop to complete */ }
+while (GetPlaybackState() != PB_Idle) { /* wait for fade/stop to complete */ }
 
 // Stop all audio
 ShutDownAudio();
@@ -156,8 +156,8 @@ GetPlaybackSpeed();    // Current sample rate (Hz)
 ## Volume Control
 
 ```c
-// Read volume (1-255 scale, non-linear if enabled)
-uint8_t vol = ReadVolume();
+// Read volume (1-65535 scale, non-linear if enabled)
+uint16_t vol = ReadVolume();
 
 // Non-linear response (logarithmic) in main.h:
 #define VOLUME_RESPONSE_NONLINEAR
@@ -267,6 +267,6 @@ void main_loop(void) {
 
 ## See Also
 
-- **Full API Reference**: [API_REFERENCE.md](API_REFERENCE.md) - Complete documentation for all 40+ functions
+- **Full API Reference**: [API_REFERENCE.md](API_REFERENCE.md) - Complete documentation for all 44+ functions
 - **User Manual**: [AUDIO_ENGINE_MANUAL.md](AUDIO_ENGINE_MANUAL.md) - Architecture, examples, troubleshooting
 - **Air Effect Guide**: [AIR_EFFECT_QUICK_REFERENCE.md](AIR_EFFECT_QUICK_REFERENCE.md) - Air effect details

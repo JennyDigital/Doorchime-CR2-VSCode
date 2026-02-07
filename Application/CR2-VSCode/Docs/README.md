@@ -68,15 +68,14 @@ SetLpf16BitLevel(LPF_Soft);                 // Gentle 16-bit filtering
 ```c
 // Play a 16-bit mono sample
 extern const uint8_t doorbell_sound[];
-extern const uint32_t doorbell_sound_size;
+extern const uint32_t doorbell_sound_samples;
 
 PlaySample(
   doorbell_sound,          // Audio data pointer
-  doorbell_sound_size,     // Size in bytes
+  doorbell_sound_samples,  // Total samples (all channels combined)
   22000,                   // Sample rate (Hz)
   16,                      // Bit depth (8 or 16)
-  Mode_mono,               // Mono/Stereo
-  LPF_Soft                 // Filter aggressiveness
+  Mode_mono                // Mono/Stereo
 );
 
 WaitForSampleEnd();          // Block until playback complete
@@ -234,11 +233,10 @@ Note: Pin assignments vary by STM32 model. Consult your device's datasheet for I
 ```c
 PB_StatusTypeDef PlaySample(
   const void *sample_to_play,     // Pointer to audio data
-  uint32_t sample_set_sz,         // Size in bytes
+  uint32_t sample_set_sz,         // Total samples (all channels combined)
   uint32_t playback_speed,        // Sample rate (Hz)
   uint8_t sample_depth,           // 8 or 16 bits
-  PB_ModeTypeDef mode,            // Mode_mono / Mode_stereo
-  LPF_Level lpf_level             // Filter aggressiveness
+  PB_ModeTypeDef mode             // Mode_mono / Mode_stereo
 );
 
 PB_StatusTypeDef WaitForSampleEnd(void);
@@ -331,7 +329,7 @@ This project includes extensive documentation to help you understand and use the
 1. **First-time users**: Start with this README, then read [AUDIO_ENGINE_MANUAL.md](AUDIO_ENGINE_MANUAL.md)
 2. **Quick lookup**: Check [QUICK_REFERENCE.md](QUICK_REFERENCE.md) for common patterns
 3. **Function search**: Use [FUNCTION_INDEX.md](FUNCTION_INDEX.md) to find functions alphabetically or by category
-4. **API details**: See [API_REFERENCE.md](API_REFERENCE.md) for all 40+ functions with examples
+4. **API details**: See [API_REFERENCE.md](API_REFERENCE.md) for all 44+ functions with examples
 5. **IDE integration**: Hover over function names in your editor to see Doxygen documentation from audio_engine.h
 6. **Technical deep-dive**: Read the source code in `audio_engine.c` with inline comments
 

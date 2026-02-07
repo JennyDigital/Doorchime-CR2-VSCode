@@ -270,22 +270,22 @@ flowchart TD
   CheckMode -->|Analog| ReadADC["Read ADC:<br/>12-bit potentiometer<br/>value"]
   
   ReadGPIO --> PackBits["Pack bits:<br/>v = (OPT3<<2 | OPT2<<1 | OPT1)"]
-  ReadADC --> ScaleADC["Scale ADC:<br/>v = raw_adc / 16<br/>Cap at 220"]
+  ReadADC --> ScaleADC["Scale ADC:<br/>v = (raw_adc * 65535) / 4095"]
   
   PackBits --> InvertGPIO["Invert:<br/>v = 7 - v"]
   ScaleADC --> EnsureMin1["Ensure minimum:<br/>if (v < 1) v = 1"]
   
-  InvertGPIO --> ScaleGPIO["Scale to 1-255:<br/>v = (v × 255) / 7"]
+  InvertGPIO --> ScaleGPIO["Scale to 1-65535:<br/>v = (v * 65535) / 7"]
   
   ScaleGPIO --> NonLinearCheck{Non-Linear<br/>Response Enabled?}
   EnsureMin1 --> NonLinearCheck
   
   NonLinearCheck -->|Yes| ApplyGamma["Apply Gamma Curve:<br/>output = input^(1/γ)<br/>γ = 2.0 (default)<br/>Power law response"]
-  NonLinearCheck -->|No| ReturnLinear["Return linear<br/>volume (1-255)"]
+  NonLinearCheck -->|No| ReturnLinear["Return linear<br/>volume (1-65535)"]
   
-  ApplyGamma --> ReturnNonLinear["Return non-linear<br/>volume (1-255)"]
+  ApplyGamma --> ReturnNonLinear["Return non-linear<br/>volume (1-65535)"]
   
-  ReturnLinear --> ApplyToSample["Apply to sample:<br/>sample × (volume/255)"]
+  ReturnLinear --> ApplyToSample["Apply to sample:<br/>sample * (volume/65535)"]
   ReturnNonLinear --> ApplyToSample
   
   ApplyToSample --> Continue([Continue DSP Pipeline])

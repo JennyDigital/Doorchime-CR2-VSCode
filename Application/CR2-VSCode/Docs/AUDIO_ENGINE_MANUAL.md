@@ -15,7 +15,7 @@
 11. [Troubleshooting](#troubleshooting)
 12. [Performance Notes](#performance-notes)
 
-**📖 Complete API Reference:** See [API_REFERENCE.md](API_REFERENCE.md) for detailed documentation of all 40+ functions including getters, setters, and control functions.
+**📖 Complete API Reference:** See [API_REFERENCE.md](API_REFERENCE.md) for detailed documentation of all 44+ functions including getters, setters, and control functions.
 
 ---
 
@@ -81,18 +81,17 @@ SetFilterConfig(&my_filter_config);            // Apply complete config
 
 ```c
 // Assuming 'doorbell_sound' is a 16-bit mono WAV sample in flash memory
-// 44,100 bytes = ~2 seconds @ 22 kHz, 16-bit mono
+// 44,100 samples = ~2 seconds @ 22 kHz, 16-bit mono
 
 extern const uint8_t doorbell_sound[];
 extern const uint32_t doorbell_sound_size;
 
 PB_StatusTypeDef result = PlaySample(
   doorbell_sound,              // Pointer to audio data
-  doorbell_sound_size,         // Size in bytes
+  doorbell_sound_size,         // Total samples (all channels combined)
   22000,                       // Sample rate (Hz)
   16,                          // Bit depth (16 = 16-bit)
-  Mode_stereo,                 // Stereo playback
-  LPF_Soft                     // Low-pass filter level
+  Mode_stereo                  // Stereo playback
 );
 
 // Wait for playback to complete
@@ -321,7 +320,7 @@ void DAC_MasterSwitch(uint8_t state) {
 }
 
 uint16_t ReadVolume(void) {
-  // Return volume level 0-2
+  // Return volume level 1-65535
   return volume_setting;
 }
 
@@ -349,18 +348,16 @@ PB_StatusTypeDef PlaySample(
   uint32_t sample_set_sz,
   uint32_t playback_speed,
   uint8_t sample_depth,
-  PB_ModeTypeDef mode,
-  LPF_Level lpf_level
+  PB_ModeTypeDef mode
 );
 ```
 
 **Parameters:**
 - `sample_to_play`: Pointer to audio data in flash/RAM
-- `sample_set_sz`: Total size in bytes (not samples)
+- `sample_set_sz`: Total samples (all channels combined)
 - `playback_speed`: Sample rate in Hz (typically 22000)
 - `sample_depth`: 8 or 16 (bits per sample)
 - `mode`: `Mode_mono` or `Mode_stereo`
-- `lpf_level`: LPF aggressiveness (LPF_VerySoft to LPF_Aggressive)
 
 **Returns:**
 - `PB_Playing` if playback started successfully
@@ -369,22 +366,26 @@ PB_StatusTypeDef PlaySample(
 **Important Notes:**
 - Audio data is accessed in real-time during playback (must be in accessible memory)
 - DMA directly reads from the provided buffer
-- For 16-bit mono audio: `sample_set_sz = 2 * num_samples`
-- For 16-bit stereo audio: `sample_set_sz = 4 * num_samples` (if interleaved L/R)
+- For 16-bit mono audio: `sample_set_sz = num_samples`
+- For 16-bit stereo (interleaved): `sample_set_sz = 2 * num_frames`
+- For 8-bit mono audio: `sample_set_sz = num_samples`
+- For 8-bit stereo (interleaved): `sample_set_sz = 2 * num_frames`
 - Blocks briefly while starting DMA
+- Configure filters separately with `SetLpf16BitLevel()` or `SetFilterConfig()`
 
 **Example:**
 ```c
 extern const uint8_t alert_sound_16bit_mono[];
 extern const uint32_t alert_sound_16bit_mono_size;
 
+SetLpf16BitLevel(LPF_Medium);  // Medium filtering
+
 PB_StatusTypeDef result = PlaySample(
   alert_sound_16bit_mono,
   alert_sound_16bit_mono_size,
   22000,      // Sample rate
   16,         // 16-bit
-  Mode_mono,
-  LPF_Medium  // Medium filtering
+  Mode_mono
 );
 
 if (result != PB_Playing) {
@@ -406,7 +407,8 @@ PB_StatusTypeDef WaitForSampleEnd(void);
 
 **Example:**
 ```c
-PlaySample(my_sound, my_sound_size, 22000, 16, Mode_mono, LPF_Soft);
+SetLpf16BitLevel(LPF_Soft);
+PlaySample(my_sound, my_sound_size, 22000, 16, Mode_mono);
 WaitForSampleEnd();  // Wait until done
 printf("Playback complete\n");
 ```
@@ -761,14 +763,14 @@ The Air Effect works by separating high-frequency content and amplifying it:
 // Enable Air Effect and choose +2 dB preset
 SetAirEffectPresetDb(2); // preset 0=off, 1=+1dB, 2=+2dB, 3=+3dB
 // (Auto-disables if preset=0, auto-enables if preset>0)
+SetLpf16BitLevel(LPF_Soft);
 
 PlaySample(
   muffled_doorbell,
   sample_size,
   22000,
   16,
-  Mode_mono,
-  LPF_Soft
+  Mode_mono
 );
 
 // Adjust live (e.g., button/UART):
@@ -842,8 +844,7 @@ static void PlayAlert(void) {
     alert_16bit_mono_size,
     22000,           // Sample rate
     16,              // 16-bit depth
-    Mode_mono,       // Mono playback
-    LPF_Soft         // Gentle filtering
+    Mode_mono        // Mono playback
   );
   
   if (result == PB_Playing) {
@@ -853,7 +854,7 @@ static void PlayAlert(void) {
 
 // 3. Non-blocking playback
 static void PlayAlertNonBlocking(void) {
-  PlaySample(alert_16bit_mono, alert_16bit_mono_size, 22000, 16, Mode_mono, LPF_Soft);
+  PlaySample(alert_16bit_mono, alert_16bit_mono_size, 22000, 16, Mode_mono);
   // Returns immediately; playback happens in background
 }
 
@@ -871,14 +872,16 @@ static void CheckPlaybackStatus(void) {
 ```c
 void PlayDoorbell(void) {
   // First: chime sound (16-bit, gentle filtering)
-  PlaySample(chime_16bit, chime_size, 22000, 16, Mode_mono, LPF_Soft);
+  SetLpf16BitLevel(LPF_Soft);
+  PlaySample(chime_16bit, chime_size, 22000, 16, Mode_mono);
   WaitForSampleEnd();
   
   // Small delay between sounds
   HAL_Delay(500);
   
   // Second: bell sound (16-bit, medium filtering)
-  PlaySample(bell_16bit, bell_size, 22000, 16, Mode_mono, LPF_Medium);
+  SetLpf16BitLevel(LPF_Medium);
+  PlaySample(bell_16bit, bell_size, 22000, 16, Mode_mono);
   WaitForSampleEnd();
   
   printf("Doorbell sequence complete\n");
@@ -890,7 +893,8 @@ void PlayDoorbell(void) {
 ```c
 void InteractivePlayback(void) {
   // Start playback with default settings
-  PlaySample(my_audio, my_audio_size, 22000, 16, Mode_mono, LPF_Medium);
+  SetLpf16BitLevel(LPF_Medium);
+  PlaySample(my_audio, my_audio_size, 22000, 16, Mode_mono);
   
   while (GetPlaybackState() == PB_Playing) {
     // Monitor user input
@@ -1239,13 +1243,13 @@ extern const uint8_t doorbell_mono_16bit[];
 extern const uint32_t doorbell_mono_16bit_size;
 
 void PlayDoorbell(void) {
+  SetLpf16BitLevel(LPF_Soft);
   PB_StatusTypeDef result = PlaySample(
     doorbell_mono_16bit,
     doorbell_mono_16bit_size,
     22000,           // 22 kHz
     16,              // 16-bit
-    Mode_mono,       // Mono
-    LPF_Soft         // Gentle filtering
+    Mode_mono        // Mono
   );
   
   if (result == PB_Playing) {
@@ -1265,17 +1269,20 @@ void PlayAlert(void) {
   extern const uint32_t tone1_size, tone2_size, tone3_size;
   
   // First tone: gentle
-  PlaySample(tone1, tone1_size, 22000, 16, Mode_mono, LPF_VerySoft);
+  SetLpf16BitLevel(LPF_VerySoft);
+  PlaySample(tone1, tone1_size, 22000, 16, Mode_mono);
   WaitForSampleEnd();
   HAL_Delay(200);
   
   // Second tone: medium
-  PlaySample(tone2, tone2_size, 22000, 16, Mode_mono, LPF_Medium);
+  SetLpf16BitLevel(LPF_Medium);
+  PlaySample(tone2, tone2_size, 22000, 16, Mode_mono);
   WaitForSampleEnd();
   HAL_Delay(200);
   
   // Third tone: aggressive (emphasis)
-  PlaySample(tone3, tone3_size, 22000, 16, Mode_mono, LPF_Aggressive);
+  SetLpf16BitLevel(LPF_Aggressive);
+  PlaySample(tone3, tone3_size, 22000, 16, Mode_mono);
   WaitForSampleEnd();
 }
 ```
@@ -1295,8 +1302,7 @@ void PlayVoiceMessage(LPF_Level filter_level) {
     message_16bit_size,
     22000,
     16,
-    Mode_mono,
-    filter_level  // Use same level
+    Mode_mono
   );
   
   if (result == PB_Playing) {
@@ -1315,7 +1321,8 @@ void PlayVoiceMessage(LPF_Level filter_level) {
 volatile uint8_t pause_requested = 0;
 
 void PlaybackTask(void) {
-  PlaySample(my_audio, my_audio_size, 22000, 16, Mode_mono, LPF_Medium);
+  SetLpf16BitLevel(LPF_Medium);
+  PlaySample(my_audio, my_audio_size, 22000, 16, Mode_mono);
   
   while (GetPlaybackState() == PB_Playing) {
     if (pause_requested) {
@@ -1351,7 +1358,8 @@ void EXTI_ResumeButton_Handler(void) {
 ```c
 void NonBlockingPlayback(void) {
   // Start playing
-  PlaySample(background_music, bg_music_size, 22000, 16, Mode_stereo, LPF_VerySoft);
+  SetLpf16BitLevel(LPF_VerySoft);
+  PlaySample(background_music, bg_music_size, 22000, 16, Mode_stereo);
   
   // Do other work while audio plays
   for (int i = 0; i < 100; i++) {
@@ -1394,7 +1402,7 @@ void SetAccessibleAudio(void) {
 void play_accessible_alert(void) {
   SetAccessibleAudio();
   
-  PlaySample(alert_tone, alert_size, 22000, 16, Mode_mono, LPF_Soft);
+  PlaySample(alert_tone, alert_size, 22000, 16, Mode_mono);
   WaitForSampleEnd();
 }
 ```
@@ -1434,7 +1442,8 @@ SetAirEffectPresetDb(3);                // +3 dB (strongest preset)
 uint8_t state = GetPlaybackState();
 printf("Playback state: %d\n", state);  // 0=Idle, 2=Playing, etc.
 
-PB_StatusTypeDef result = PlaySample(my_audio, my_size, 22000, 16, Mode_mono, LPF_Soft);
+SetLpf16BitLevel(LPF_Soft);
+PB_StatusTypeDef result = PlaySample(my_audio, my_size, 22000, 16, Mode_mono);
 printf("PlaySample result: %d\n", result);
 ```
 

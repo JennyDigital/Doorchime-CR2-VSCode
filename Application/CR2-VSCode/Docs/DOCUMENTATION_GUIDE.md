@@ -62,7 +62,7 @@ The Audio Engine includes **comprehensive, multi-layered documentation** designe
 
 | File | Purpose | Best For | Length |
 |------|---------|----------|--------|
-| [API_REFERENCE.md](API_REFERENCE.md) | 40+ functions with examples | Detailed implementation | 20 min |
+| [API_REFERENCE.md](API_REFERENCE.md) | 44+ functions with examples | Detailed implementation | 20 min |
 | [FUNCTION_INDEX.md](FUNCTION_INDEX.md) | Function catalog | Quick lookup | 3 min |
 | [audio_engine.h](../Core/Libraries/audio_engine.h) | Doxygen-documented header | IDE integration | N/A |
 | [HEADER_DOCUMENTATION.md](HEADER_DOCUMENTATION.md) | Guide to header docs | Understanding Doxygen | 5 min |

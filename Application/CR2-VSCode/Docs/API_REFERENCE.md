@@ -27,14 +27,14 @@ Initialize the audio engine with required hardware interface callbacks.
 ```c
 PB_StatusTypeDef AudioEngine_Init(
   DAC_SwitchFunc dac_switch,      // Function to control amplifier on/off
-  ReadVolumeFunc read_volume,     // Function to read volume setting (0-255)
+  ReadVolumeFunc read_volume,     // Function to read volume setting (1-65535)
   I2S_InitFunc i2s_init           // Function to re-initialize I2S if needed
 );
 ```
 
 **Parameters:**
 - `dac_switch`: Callback to control DAC/amplifier GPIO (GPIO_PIN_SET or GPIO_PIN_RESET)
-- `read_volume`: Callback returning volume level 1–255
+- `read_volume`: Callback returning volume level 1-65535
 - `i2s_init`: Callback to initialize I2S peripheral (e.g., `MX_I2S2_Init`)
 
 **Returns:** `PB_Idle` on success, `PB_Error` if any callback is NULL
@@ -70,7 +70,7 @@ Start playback of an audio sample.
 ```c
 PB_StatusTypeDef PlaySample(
   const void *sample_to_play,     // Pointer to audio data (8-bit or 16-bit)
-  uint32_t sample_set_sz,         // Size in bytes
+  uint32_t sample_set_sz,         // Total samples (all channels combined)
   uint32_t playback_speed,        // Sample rate in Hz (typically 22000)
   uint8_t sample_depth,           // 8 or 16 (bits per sample)
   PB_ModeTypeDef mode             // Mode_mono or Mode_stereo
@@ -79,7 +79,7 @@ PB_StatusTypeDef PlaySample(
 
 **Parameters:**
 - `sample_to_play`: Audio data pointer (must remain valid during playback)
-- `sample_set_sz`: Total size in bytes (not samples)
+- `sample_set_sz`: Total samples (all channels combined)
 - `playback_speed`: Sample rate in Hz (22000 recommended, up to 48000)
 - `sample_depth`: 8 or 16
 - `mode`: `Mode_mono` or `Mode_stereo`
@@ -89,18 +89,20 @@ PB_StatusTypeDef PlaySample(
 **Notes:**
 - Audio data must be in accessible memory (not discarded until playback completes)
 - DMA directly accesses the buffer; no copy is made
-- For 16-bit mono: `size = 2 × num_samples`
-- For 16-bit stereo (interleaved): `size = 4 × num_samples`
+- For 16-bit mono: `sample_set_sz = num_samples`
+- For 16-bit stereo (interleaved): `sample_set_sz = 2 × num_frames`
+- For 8-bit mono: `sample_set_sz = num_samples`
+- For 8-bit stereo (interleaved): `sample_set_sz = 2 × num_frames`
 - Briefly blocks while starting DMA
 
 **Example:**
 ```c
 extern const uint8_t doorbell_16bit_mono[];
-extern const uint32_t doorbell_16bit_mono_size;
+extern const uint32_t doorbell_16bit_mono_samples;
 
 PB_StatusTypeDef result = PlaySample(
   doorbell_16bit_mono,
-  doorbell_16bit_mono_size,
+  doorbell_16bit_mono_samples,
   22000,
   16,
   Mode_mono
@@ -109,6 +111,35 @@ PB_StatusTypeDef result = PlaySample(
 if (result == PB_Playing) {
   WaitForSampleEnd();
 }
+```
+
+### `CalcSampleOffsetSamples()`
+
+Calculate a sample offset from time, sample rate, and playback mode.
+
+```c
+uint32_t CalcSampleOffsetSamples(
+  float seconds,                 // Desired offset in seconds (>= 0)
+  uint32_t sample_rate_hz,        // Sample rate in Hz
+  PB_ModeTypeDef mode             // Mode_mono or Mode_stereo
+);
+```
+
+**Parameters:**
+- `seconds`: Desired offset in seconds (>= 0)
+- `sample_rate_hz`: Sample rate in Hz
+- `mode`: `Mode_mono` or `Mode_stereo`
+
+**Returns:** Sample offset in interleaved samples
+
+**Notes:**
+- Returns 0 if `seconds <= 0` or `sample_rate_hz == 0`
+- For stereo, returns 2x the mono sample count
+
+**Example:**
+```c
+uint32_t offset = CalcSampleOffsetSamples(1.25f, 22000, Mode_stereo);
+// offset is 55000 samples (1.25 * 22000 * 2)
 ```
 
 ### `WaitForSampleEnd()`

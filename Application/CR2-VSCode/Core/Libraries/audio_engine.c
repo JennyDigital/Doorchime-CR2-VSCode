@@ -594,6 +594,32 @@ uint16_t GetLpf16BitCustomAlphaFromCutoff( float cutoff_hz )
 }
 
 
+/**
+ * @brief Calculate a sample offset from time, sample rate, and mode
+ * @param seconds - Desired offset in seconds (>= 0)
+ * @param sample_rate_hz - Sample rate in Hz
+ * @param mode - Playback mode: Mode_mono or Mode_stereo
+ * @return Sample offset in interleaved samples
+ */
+uint32_t CalcSampleOffsetSamples( float seconds, uint32_t sample_rate_hz, PB_ModeTypeDef mode )
+{
+  if( seconds <= 0.0f || sample_rate_hz == 0U ) {
+    return 0U;
+  }
+
+  float samples_f = seconds * (float)sample_rate_hz;
+  if( mode == Mode_stereo ) {
+    samples_f *= 2.0f;
+  }
+
+  if( samples_f > (float)UINT32_MAX ) {
+    return UINT32_MAX;
+  }
+
+  return (uint32_t)( samples_f + 0.5f );
+}
+
+
 /** Set 16-bit LPF filter level
   * 
   * @brief Sets the aggressiveness level for the 16-bit biquad low-pass filter.
@@ -1643,11 +1669,10 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
 /** Initiates playback of your specified sample
   *
   * @param: const void* sample_to_play.  Pointer to audio sample data (8-bit or 16-bit).
-  * @param: uint32_t sample_set_sz.  Many samples to play back.
+  * @param: uint32_t sample_set_sz.  Total samples (all channels combined).
   * @param: uint32_t playback_speed.  This is the sample rate.
   * @param: uint8_t sample depth.  This should be 8 or 16 bits.
   * @param: PB_ModeTypeDef mode.  Mono or stereo playback.
-  * @param: LPF_Level lpf_level.  Low-pass filter level for 8-bit samples. It must be selected even if playing 16-bit samples.
   * @retval: PB_StatusTypeDef.  Indicates success or failure.
   *
   */

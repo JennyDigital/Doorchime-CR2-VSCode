@@ -51,7 +51,8 @@ The header is organized into logical groups of related functions:
    - `SetPauseFadeTime()` / `GetPauseFadeTime()` - Pause fade
    - `SetResumeFadeTime()` / `GetResumeFadeTime()` - Resume fade
 
-7. **Playback Control** (6 functions)
+7. **Playback Control** (7 functions)
+   - `CalcSampleOffsetSamples()` - Compute sample offset from time, rate, and mode
    - `PlaySample()` - Start playback
    - `WaitForSampleEnd()` - Block until playback completes
    - `PausePlayback()` - Pause with fade-out
@@ -100,7 +101,7 @@ One-line summaries describe what each function does in user-friendly language:
 ### @param[in] Tags
 Input parameters are documented with:
 - Type information (e.g., "float", "uint8_t", "pointer")
-- Range or valid values (e.g., "0-255", "0.0-5.0", "Mode_mono or Mode_stereo")
+- Range or valid values (e.g., "1-65535", "0.0-5.0", "Mode_mono or Mode_stereo")
 - Special meaning (e.g., "0 = off, 1 = on")
 
 ### @param[out] Tags

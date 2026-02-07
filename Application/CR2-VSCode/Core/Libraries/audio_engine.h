@@ -335,6 +335,18 @@ float               GetResumeFadeTime                 ( void );
 
 /* Playback control functions */
 /**
+ * @brief Calculate a sample offset from time, sample rate, and mode
+ * @param[in] seconds Desired offset in seconds (>= 0)
+ * @param[in] sample_rate_hz Sample rate in Hz
+ * @param[in] mode Playback mode: Mode_mono or Mode_stereo
+ * @return Sample offset in interleaved samples
+ * @note For stereo, the returned value is multiplied by 2 (left+right).
+ */
+uint32_t            CalcSampleOffsetSamples          ( float seconds,
+                                                        uint32_t sample_rate_hz,
+                                                        PB_ModeTypeDef mode );
+
+/**
  * @brief Start playback of a sample from memory
  * @param[in] sample_to_play Pointer to sample data in memory
  * @param[in] sample_set_sz Total number of samples to play (all channels combined)

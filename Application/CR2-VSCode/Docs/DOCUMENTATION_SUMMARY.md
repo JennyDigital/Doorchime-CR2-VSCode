@@ -7,18 +7,18 @@ Complete overview of the Audio Engine Documentation Suite.
 | Metric | Count |
 |--------|-------|
 | **Total Documentation Files** | 13 |
-| **Documented Functions** | 43+ |
+| **Documented Functions** | 44+ |
 | **Code Examples** | 40+ |
 | **Total Estimated Pages** | ~150 |
 | **Documentation Coverage** | 100% |
-| **Last Updated** | 2026-02-01 |
+| **Last Updated** | 2026-02-07 |
 
 ## 📁 All Documentation Files
 
 ### Core Documentation (6 files)
 1. **[README.md](README.md)** - Project overview and quick start (5 min read)
 2. **[AUDIO_ENGINE_MANUAL.md](AUDIO_ENGINE_MANUAL.md)** - Complete technical manual (30 min read)
-3. **[API_REFERENCE.md](API_REFERENCE.md)** - 43+ functions with examples (20 min reference)
+3. **[API_REFERENCE.md](API_REFERENCE.md)** - 44+ functions with examples (20 min reference)
 4. **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Fast lookup guide (5 min reference)
 5. **[FUNCTION_INDEX.md](FUNCTION_INDEX.md)** - Function catalog (3 min reference)
 6. **[DOCUMENTATION_GUIDE.md](DOCUMENTATION_GUIDE.md)** - Navigation guide (5 min read)
@@ -107,11 +107,11 @@ HEADER_DOCUMENTATION.md → Open audio_engine.h → Hover for docs
 | Category | Function Count | Reference |
 |----------|---------------|-----------|
 | Initialization | 1 | [API_REFERENCE.md#initialization](API_REFERENCE.md#initialization) |
-| Playback Control | 5 | [API_REFERENCE.md#playback-control](API_REFERENCE.md#playback-control) |
+| Playback Control | 7 | [API_REFERENCE.md#playback-control](API_REFERENCE.md#playback-control) |
 | Filter Configuration | 5 | [API_REFERENCE.md#filter-configuration](API_REFERENCE.md#filter-configuration) |
 | 8-bit LPF | 2 | [API_REFERENCE.md#8-bit-lpf-functions](API_REFERENCE.md#8-bit-lpf-functions) |
 | 16-bit LPF | 4 | [API_REFERENCE.md#16-bit-lpf-functions](API_REFERENCE.md#16-bit-lpf-functions) |
-| Air Effect | 8 | [API_REFERENCE.md#air-effect-control](API_REFERENCE.md#air-effect-control) |
+| Air Effect | 11 | [API_REFERENCE.md#air-effect-control](API_REFERENCE.md#air-effect-control) |
 | Fade Times | 8 | [API_REFERENCE.md#fade-time-control](API_REFERENCE.md#fade-time-control) |
 | Chunk Processing | 3 | [API_REFERENCE.md#chunk-processing-dma-callbacks](API_REFERENCE.md#chunk-processing-dma-callbacks) |
 | DMA Callbacks | 2 | [API_REFERENCE.md#chunk-processing-dma-callbacks](API_REFERENCE.md#chunk-processing-dma-callbacks) |
@@ -233,7 +233,7 @@ If documentation is unclear or incorrect:
 ⭐⭐⭐ [DOCUMENTATION_GUIDE.md](DOCUMENTATION_GUIDE.md) - Navigation help  
 
 ### Key Features
-- **40+ functions fully documented** with examples
+- **44+ functions fully documented** with examples
 - **100% API coverage** - every public function included
 - **Multi-layered approach** - quick reference to deep technical
 - **IDE integrated** - Doxygen tooltips in all major IDEs
