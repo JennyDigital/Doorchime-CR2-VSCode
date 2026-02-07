@@ -114,7 +114,7 @@ volatile uint8_t  volume_response_nonlinear = 1;  // Default: enabled
 volatile float    volume_response_gamma     = 2.0f; // Default: quadratic (human perception)
 
 /* Playback buffer */
-int16_t pb_buffer[PB_BUFF_SZ] = {0};
+int16_t pb_buffer[PB_BUFF_SZ] = {MIDPOINT_S16};  // Initialize to silence (midpoint for unsigned samples)
 
 /* Filter configuration (runtime-tunable) */
 volatile FilterConfig_TypeDef filter_cfg = {
@@ -1930,18 +1930,25 @@ static inline int16_t ApplyVolumeSetting( int16_t sample, uint16_t volume_settin
 }
 
 
+/** Hard shutdown
+  *
+  * Immediately halts playback and resets all state. Use in critical failure scenarios
+  * where you need to stop sound output immediately without waiting for fade-out.
+  * Use with caution as it will cut off sound abruptly.
+  * @param: none
+  * @retval: none
+   */
 void ShutDownAudio( void )
 {
-    // Calculate delay needed to drain the DMA buffer based on playback speed
-    extern uint32_t I2S_PlaybackSpeed;
-    uint32_t buffer_drain_ms = ( PB_BUFF_SZ * 1000 + I2S_PlaybackSpeed - 1 ) / I2S_PlaybackSpeed;
-    HAL_Delay( buffer_drain_ms );
+  // Hard stop: immediately halt DMA and reset playback state
+  HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );
+  MIDPOINT_FILL_BUFFER();
+  pb_state = PB_Idle;
+  ResetPlaybackState();
 
-    // Stop I2S DMA transmission
-    HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );
-    if( dac_power_control == true ) {
-      AudioEngine_DACSwitch( DAC_OFF );
-    }
+  if( dac_power_control == true ) {
+    AudioEngine_DACSwitch( DAC_OFF );
+  }
 }
 
 
