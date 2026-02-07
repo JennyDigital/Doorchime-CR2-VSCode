@@ -1452,7 +1452,7 @@ static inline void RecalculateFadeSamples( void )
 static inline void EndPlaybackCleanup( void )
 {
   pb_state = PB_Idle;
-  memset( pb_buffer, MIDPOINT_S16, sizeof( pb_buffer ) );
+  MIDPOINT_FILL_BUFFER();
   StopDmaAndResetPlaybackState( stop_requested );
   if( !playback_end_callback_called ) {
     playback_end_callback_called = 1;
