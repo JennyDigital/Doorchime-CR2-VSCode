@@ -4,11 +4,11 @@
 [![Platform](https://img.shields.io/badge/platform-STM32%20with%20I2S-orange.svg)](https://www.st.com/en/microcontrollers-microprocessors/stm32-32-bit-arm-cortex-mcus.html)
 [![Audio](https://img.shields.io/badge/audio-8bit%20%7C%2016bit-green.svg)]()
 [![Documentation](https://img.shields.io/badge/docs-comprehensive-brightgreen.svg)](DOCUMENTATION_GUIDE.md)
-[![API Functions](https://img.shields.io/badge/API-43%2B%20functions-blue.svg)](API_REFERENCE.md)
+[![API Functions](https://img.shields.io/badge/API-44%2B%20functions-blue.svg)](API_REFERENCE.md)
 
 A professional, reusable audio playback engine for STM32 microcontrollers with I2S support (including STM32G4, STM32F4, STM32H7 series and others) with runtime-configurable DSP filter chain, supporting 8-bit and 16-bit audio playback through I2S to digital amplifiers such as the MAX98357A. Includes an Air Effect high-shelf brightening filter with presets (+1, +2, +3 dB) and direct dB control.
 
-> 📚 **New to the project?** See [DOCUMENTATION_GUIDE.md](DOCUMENTATION_GUIDE.md) for complete navigation of all 13 documentation files.
+> 📚 **New to the project?** See [DOCUMENTATION_GUIDE.md](DOCUMENTATION_GUIDE.md) for complete navigation of all 15 documentation files.
 
 ## 📋 Table of Contents
 
@@ -312,7 +312,7 @@ This project includes extensive documentation to help you understand and use the
 - [QUICK_REFERENCE.md](QUICK_REFERENCE.md) - Fast lookup guide for common tasks
 
 #### 📗 API Documentation
-- [API_REFERENCE.md](API_REFERENCE.md) - Comprehensive function reference with 40+ documented functions and code examples
+- [API_REFERENCE.md](API_REFERENCE.md) - Comprehensive function reference with 44+ documented functions and code examples
 - [HEADER_DOCUMENTATION.md](HEADER_DOCUMENTATION.md) - Guide to using the Doxygen-documented header file
 - **audio_engine.h** - All public functions include Doxygen documentation for IDE integration
 
@@ -444,13 +444,6 @@ void play_retro_sfx(void) {
 ## 📝 License
 
 This project is provided under the MIT License. See LICENSE file for details.
-
-## 🙏 Credits
-
-- **Platform**: STMicroelectronics STM32 microcontrollers with I2S support
-- **Digital Amplifier**: Maxim MAX98357A and compatible
-- **DSP Algorithms**: Fixed-point biquad and one-pole IIR filters
-- **Development**: VSCode + STM32CubeMX + ARM GCC
 
 ---
 

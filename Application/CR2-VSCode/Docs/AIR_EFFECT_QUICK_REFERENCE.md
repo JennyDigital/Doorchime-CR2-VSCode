@@ -4,13 +4,13 @@
 Adds brightness and presence to audio samples by boosting high-frequency content.
 
 ## Key Parameters
-| Parameter            Value                                  | Description                       |
-|--------------------|----------------------------------------|-----------------------------------|
-| **Type**           | High-shelf one-pole filter             | Simple, CPU-efficient             |
-| **Shelf Gain**     | 0.667 Q16                              | Moderate brightening (~6dB boost) |
-| **Cutoff Alpha**   | 0.75 | ~5-6 kHz @ 22 kHz sample rate   |                                   |
-| **Default State**  | DISABLED | User selects when to enable |                                   |
-| **Bit Depth**      | 8-bit & 16-bit                         | Works with both playback paths    |
+| Parameter           | Value                                 | Description                       |
+|---------------------|---------------------------------------|-----------------------------------|
+| **Type**            | High-shelf one-pole filter            | Simple, CPU-efficient             |
+| **Shelf Gain**      | 0.667 Q16                             | Moderate brightening (~6 dB boost) |
+| **Cutoff Alpha**    | 0.75 (~5-6 kHz @ 22 kHz)              |                                   |
+| **Default State**   | DISABLED                              | User selects when to enable       |
+| **Bit Depth**       | 8-bit & 16-bit                        | Works with both playback paths    |
 
 ## Enable It
 ```c

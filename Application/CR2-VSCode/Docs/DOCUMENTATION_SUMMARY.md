@@ -6,35 +6,37 @@ Complete overview of the Audio Engine Documentation Suite.
 
 | Metric | Count |
 |--------|-------|
-| **Total Documentation Files** | 13 |
+| **Total Documentation Files** | 15 |
 | **Documented Functions** | 44+ |
 | **Code Examples** | 40+ |
 | **Total Estimated Pages** | ~150 |
 | **Documentation Coverage** | 100% |
-| **Last Updated** | 2026-02-07 |
+| **Last Updated** | 2026-02-08 |
 
 ## 📁 All Documentation Files
 
-### Core Documentation (6 files)
+### Core Documentation (7 files)
 1. **[README.md](README.md)** - Project overview and quick start (5 min read)
 2. **[AUDIO_ENGINE_MANUAL.md](AUDIO_ENGINE_MANUAL.md)** - Complete technical manual (30 min read)
 3. **[API_REFERENCE.md](API_REFERENCE.md)** - 44+ functions with examples (20 min reference)
 4. **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Fast lookup guide (5 min reference)
 5. **[FUNCTION_INDEX.md](FUNCTION_INDEX.md)** - Function catalog (3 min reference)
 6. **[DOCUMENTATION_GUIDE.md](DOCUMENTATION_GUIDE.md)** - Navigation guide (5 min read)
+7. **[DOCUMENTATION_SUMMARY.md](DOCUMENTATION_SUMMARY.md)** - Documentation overview (5 min read)
 
-### Technical Documentation (3 files)
-7. **[HEADER_DOCUMENTATION.md](HEADER_DOCUMENTATION.md)** - Doxygen header guide (5 min read)
-8. **[Filter_Report_Enhanced.pdf](Filter_Report_Enhanced.pdf)** - Filter analysis (15 min read)
-9. **[Audio_Engine_Manual.pdf](Audio_Engine_Manual.pdf)** - PDF manual (30 min read)
+### Technical Documentation (4 files)
+8. **[HEADER_DOCUMENTATION.md](HEADER_DOCUMENTATION.md)** - Doxygen header guide (5 min read)
+9. **[AUDIO_ENGINE_FLOWCHART.md](AUDIO_ENGINE_FLOWCHART.md)** - DSP flowchart reference (5 min read)
+10. **[Filter_Report_Enhanced.pdf](Filter_Report_Enhanced.pdf)** - Filter analysis (15 min read)
+11. **[Audio_Engine_Manual.pdf](Audio_Engine_Manual.pdf)** - PDF manual (30 min read)
 
 ### Feature Documentation (2 files)
-10. **[AIR_EFFECT_QUICK_REFERENCE.md](AIR_EFFECT_QUICK_REFERENCE.md)** - Air effect usage (3 min read)
-11. **[AIR_EFFECT_INTEGRATION.md](AIR_EFFECT_INTEGRATION.md)** - Air effect technical (10 min read)
+12. **[AIR_EFFECT_QUICK_REFERENCE.md](AIR_EFFECT_QUICK_REFERENCE.md)** - Air effect usage (3 min read)
+13. **[AIR_EFFECT_INTEGRATION.md](AIR_EFFECT_INTEGRATION.md)** - Air effect technical (10 min read)
 
 ### Project Documentation (2 files)
-12. **[CHANGELOG.md](../CHANGELOG.md)** - Change history (5 min read)
-13. **[audio_engine.h](../Core/Libraries/audio_engine.h)** - Doxygen-documented header (IDE reference)
+14. **[CHANGELOG.md](../CHANGELOG.md)** - Change history (5 min read)
+15. **[audio_engine.h](../Core/Libraries/audio_engine.h)** - Doxygen-documented header (IDE reference)
 
 ## 🎯 Quick Start Paths
 
@@ -109,7 +111,7 @@ HEADER_DOCUMENTATION.md → Open audio_engine.h → Hover for docs
 | Initialization | 1 | [API_REFERENCE.md#initialization](API_REFERENCE.md#initialization) |
 | Playback Control | 7 | [API_REFERENCE.md#playback-control](API_REFERENCE.md#playback-control) |
 | Filter Configuration | 5 | [API_REFERENCE.md#filter-configuration](API_REFERENCE.md#filter-configuration) |
-| 8-bit LPF | 5 | [API_REFERENCE.md#8-bit-lpf-functions](API_REFERENCE.md#8-bit-lpf-functions) |
+| 8-bit LPF | 6 | [API_REFERENCE.md#8-bit-lpf-functions](API_REFERENCE.md#8-bit-lpf-functions) |
 | 16-bit LPF | 4 | [API_REFERENCE.md#16-bit-lpf-functions](API_REFERENCE.md#16-bit-lpf-functions) |
 | Air Effect | 11 | [API_REFERENCE.md#air-effect-control](API_REFERENCE.md#air-effect-control) |
 | Fade Times | 8 | [API_REFERENCE.md#fade-time-control](API_REFERENCE.md#fade-time-control) |
@@ -126,7 +128,7 @@ HEADER_DOCUMENTATION.md → Open audio_engine.h → Hover for docs
 ✓ All constants defined  
 
 ### Multi-Format
-✓ Markdown documentation (13 files)  
+✓ Markdown documentation (12 files)  
 ✓ PDF documentation (2 files)  
 ✓ Doxygen inline comments (audio_engine.h)  
 ✓ Source code comments (audio_engine.c)  

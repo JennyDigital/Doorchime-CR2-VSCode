@@ -1,6 +1,6 @@
 # Bug Hunt Report - STM32 Doorchime CR2 Project
 
-**Last reviewed:** 2026-02-01
+**Last reviewed:** 2026-02-08
 
 ## Open Issues
 
@@ -23,7 +23,7 @@ See [Core/Libraries/audio_engine.c](Core/Libraries/audio_engine.c#L802-L860).
 See [Core/Libraries/audio_engine.c](Core/Libraries/audio_engine.c#L900-L943).
 
 ### ✅ Volume scaling range and behavior
-**Fixed/Updated:** `ReadVolume()` now scales to 1–255 with optional non-linear response.
+**Fixed/Updated:** `ReadVolume()` now scales to 1–65535 with optional non-linear response.
 See [Core/Src/main.c](Core/Src/main.c#L646-L706).
 
 ### ✅ ReadVolume NULL guard

@@ -8,7 +8,7 @@
 4. [API Reference](#api-reference)
 5. [Filter Configuration](#filter-configuration)
 6. [Playing Audio](#playing-audio)
-7. [Filter Parameters & Tuning](#filter-parameters-tuning)
+7. [Filter Parameters & Tuning](#filter-parameters--tuning)
 8. [Volume Control](#volume-control)
 9. [Hardware Integration](#hardware-integration)
 10. [Examples](#examples)
@@ -115,6 +115,11 @@ SetFilterConfig(&cfg);
 
 // Or use convenience function for LPF level
 SetLpf16BitLevel(LPF_Aggressive);     // Stronger filtering
+
+// 8-bit path: set a custom LPF alpha and read it back
+SetLpf8BitLevel(LPF_Custom);
+SetLpf8BitCustomAlpha(CalcLpf8BitAlphaFromCutoff(900.0f, 11025.0f));
+uint16_t current_alpha = GetLpf8BitCustomAlpha();
 ```
 
 ---
@@ -177,7 +182,8 @@ The audio playback system follows a clear data flow from flash memory through DS
 2. **One-Pole Low-Pass Filter** *(Optional - enable_8bit_lpf)*
   - One-pole IIR (alpha range: 0.625 to 0.9375)
   - Separate aggressiveness levels for 8-bit audio
-  - Custom alpha supported via `SetLpf8BitCustomAlpha()` or `CalcLpf8BitAlphaFromCutoff()`
+  - Custom alpha supported via `SetLpf8BitCustomAlpha()` and `CalcLpf8BitAlphaFromCutoff()`
+  - Current custom alpha can be read with `GetLpf8BitCustomAlpha()`
 
 3. **Makeup Gain** *(Always Active when LPF enabled)*
    - Post-LPF amplitude compensation (~1.08x default)

@@ -2,16 +2,36 @@
 
 All notable changes to the CR2-VSCode Audio Engine project are documented here.
 
-## [2026-02-07] - Readability Refactor
+## [2026-02-08] - New Sample + 16-bit LPF Makeup Gain
+
+### Added
+- **Core/Inc/sound_headers/chinese_flute.h/.raw**: New Chinese flute sample asset.
+- **audio_engine.h/.c**: 16-bit LPF makeup gain support with `SetLpfMakeupGain16Bit()` and `GetLpfMakeupGain16Bit()`.
+- **audio_engine.h**: Default `LPF_16BIT_MAKEUP_GAIN_Q16` constant for 16-bit LPF post-gain.
 
 ### Changed
+- **audio_engine.c**: Apply 16-bit LPF makeup gain after biquad filtering with saturation.
+- **main.c**: Updated default filter enables and fade timings for 16-bit playback tests; set 16-bit LPF cutoff and makeup gain in the example path.
+- **main.c**: Switched example playback to the Chinese flute sample at 16 kHz.
+
+## [2026-02-07] - Audio Engine Fixes, Refactors, and Doc Updates
+
+### Fixed
+- **audio_engine.c**: `ShutDownAudio()` now halts DMA and resets state immediately instead of waiting for buffer drain.
+- **audio_engine.c**: DMA interrupts stop when playback is stopped; SysTick priority guidance added to prevent stop/playback lockup.
+- **audio_engine.c**: Corrected a stray `memset` where `MIDPOINT_FILL_BUFFER()` should be used in `EndPlaybackCleanup()`.
+
+### Changed
+- **audio_engine.c**: Refactored fade sample calculation into a helper and moved cleanup helpers closer to DMA callback usage.
 - **audio_engine.c**: Consolidated per-channel filter state into structs and normalized channel identifiers.
-- **audio_engine.c**: Introduced shared helpers and constants to reduce duplication and magic numbers.
-- **audio_engine.c**: Clarified DMA stop/reset flow with a shared helper and refined inline docs.
+- **audio_engine.c**: Introduced shared helpers/constants to reduce duplication and magic numbers.
+- **audio_engine.c**: Clarified DMA stop/reset flow with shared helpers and refined inline docs.
+- **audio_engine.c**: Pointer variables renamed to use `_ptr` suffix for clarity.
 - **audio_engine.h/.c**: Added compile-time switch to disable Air Effect (~272 bytes flash saved).
 
 ### Documentation
-- Updated documentation summaries to reflect the latest refactor and update date.
+- Updated API documentation and manuals to reflect audio engine changes and fix inconsistencies.
+- Removed duplicate documentation files and cleaned up README styling/notes.
 
 ## [2026-02-01] - Complete Documentation & API Reference
 
@@ -190,10 +210,10 @@ Core/Libraries/
 #### Digital Volume GPIO Control
 - **Critical Fix**: Corrected GPIO bit packing in `ReadVolume()` 
   - Previous: Bits shifted to MSB positions (7,6,5), returned values 31–255
-  - Fixed: Bits packed as 0–2, inverted against 7, scaled to 1–255 range
+  - Fixed: Bits packed as 0–2, inverted against 7, scaled to 1–65535 range
   - Now properly supports 8 distinct volume levels
   
-- **Range Compatibility**: Scaled 3-bit digital input (0–7) to full 1–255 audio engine range
+- **Range Compatibility**: Scaled 3-bit digital input (0–7) to full 1–65535 audio engine range
   - Prevents near-silent output when digital volume control used
   - Matches analog ADC pathway output range
 
@@ -216,12 +236,12 @@ Core/Libraries/
 #### Non-Linear Volume Response Implementation
 ```c
 // In main.c
-static inline uint8_t ApplyVolumeResponse( uint8_t linear_volume )
+static inline uint16_t ApplyVolumeResponse( uint16_t linear_volume )
 {
   #ifdef VOLUME_RESPONSE_NONLINEAR
-    float normalized = (float)linear_volume / 255.0f;
+    float normalized = (float)linear_volume / 65535.0f;
     float curved = powf( normalized, 1.0f / VOLUME_RESPONSE_GAMMA );
-    return (uint8_t)( curved * 255.0f + 0.5f );
+    return (uint16_t)( curved * 65535.0f + 0.5f );
   #else
     return linear_volume;
   #endif
@@ -231,17 +251,17 @@ static inline uint8_t ApplyVolumeResponse( uint8_t linear_volume )
 #### Digital Volume Scaling
 ```c
 // OPT1 (bit 0), OPT2 (bit 1), OPT3 (bit 2)
-// Reads 3-bit GPIO value (0–7), inverts, scales to 1–255
+// Reads 3-bit GPIO value (0–7), inverts, scales to 1–65535
 uint8_t v = (gpio_bits);
 v = 7 - v;  // Invert so 0b000 = max
-uint16_t scaled = ( (uint16_t)v * 255U ) / 7U;
-return scaled ? (uint8_t)scaled : 1U;
+uint16_t scaled = ( (uint16_t)v * 65535U ) / 7U;
+return scaled ? (uint16_t)scaled : 1U;
 ```
 
 #### Audio Engine Integration
 In `audio_engine.c`, `ProcessNextWaveChunk()` and `ProcessNextWaveChunk_8_bit()`:
 - `vol_div = AudioEngine_ReadVolume()` fetches volume with non-linear response already applied
-- `ApplyVolumeSetting(sample, vol_div)` scales: `sample * vol_div / 255`
+- `ApplyVolumeSetting(sample, vol_div)` scales: `sample * vol_div / 65535`
 
 ### Files Modified
 
@@ -256,7 +276,7 @@ In `audio_engine.c`, `ProcessNextWaveChunk()` and `ProcessNextWaveChunk_8_bit()`
 
 ### Backwards Compatibility
 
-⚠️ **Breaking Change**: `ReadVolume()` range changed from 1–8 to 1–255
+⚠️ **Breaking Change**: `ReadVolume()` range changed from 1–8 to 1–65535
 - Application code reading volume directly may need updating
 - Audio engine itself handles the range correctly
 - Recommend using `ApplyVolumeResponse()` wrapper for consistent behavior

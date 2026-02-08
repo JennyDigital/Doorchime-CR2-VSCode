@@ -544,6 +544,9 @@ uint16_t GetLpf8BitCustomAlpha(void);
 
 **Returns:** Q16 alpha coefficient
 
+**Notes:**
+- Value is meaningful when `GetLpf8BitLevel()` returns `LPF_Custom`
+
 #### `CalcLpf8BitAlphaFromCutoff()`
 
 Compute an 8-bit LPF alpha from cutoff frequency and sample rate.
@@ -559,6 +562,7 @@ uint16_t CalcLpf8BitAlphaFromCutoff(float cutoff_hz, float sample_rate_hz);
 uint16_t alpha = CalcLpf8BitAlphaFromCutoff(4500.0f, 11000.0f);
 SetLpf8BitLevel(LPF_Custom);
 SetLpf8BitCustomAlpha(alpha);
+uint16_t current_alpha = GetLpf8BitCustomAlpha();
 ```
 
 #### `SetLpfMakeupGain8Bit()`
