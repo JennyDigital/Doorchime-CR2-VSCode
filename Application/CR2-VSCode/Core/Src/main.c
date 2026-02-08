@@ -38,6 +38,7 @@
 #include "cmsis_gcc.h"
 #include "stm32g4xx_hal.h"
 #include "stm32g4xx_hal_adc_ex.h"
+#include "stm32g4xx_hal_i2s.h"
 #include "stm32g4xx_hal_tim_ex.h"
 #include "stm32g4xx_hal_tim.h"
 #include "audio_engine.h"
@@ -89,6 +90,7 @@
 #include "big_gong.h"
 #include "big_gong8b16k.h"
 #include "big_gong8b1c11k.h"
+#include "chinese_flute.h"
 
 /* USER CODE END Includes */
 
@@ -219,10 +221,10 @@ int main(void)
   SetDAC_Control( 0 );                // 0 = manual control, 1 = auto control by audio engine
 
   // FilterConfig_TypeDef filter_cfg;
-  filter_cfg.enable_noise_gate            = 1;  // Noise gate disabled by default; enable as needed
-  filter_cfg.enable_16bit_biquad_lpf      = 0;  // 16-bit biquad LPF disabled by default; enable as needed
-  filter_cfg.enable_8bit_lpf              = 1;  // 8-bit LPF disabled by default; enable as needed
-  filter_cfg.enable_soft_dc_filter_16bit  = 0;  // Soft DC blocking filter for 16-bit samples enabled by default
+  filter_cfg.enable_noise_gate            = 0;  // Noise gate disabled by default; enable as needed
+  filter_cfg.enable_16bit_biquad_lpf      = 1;  // 16-bit biquad LPF disabled by default; enable as needed
+  filter_cfg.enable_8bit_lpf              = 0;  // 8-bit LPF disabled by default; enable as needed
+  filter_cfg.enable_soft_dc_filter_16bit  = 1;  // Soft DC blocking filter for 16-bit samples enabled by default
   filter_cfg.enable_soft_clipping         = 1;  // Soft clipping enabled by default
   filter_cfg.enable_air_effect            = 0;  // Air effect (high-shelf brightening) disabled by default; enable as needed
 
@@ -233,10 +235,15 @@ int main(void)
   SetAirEffectPresetDb( 0 );       // default +3 dB preset
   
   // Set fade times
-  SetFadeInTime(0.15f );                // 150 ms fade-in
+  SetFadeInTime(0.8f );                // 800 ms fade-in
   SetFadeOutTime( 0.15f );              // 150 ms fade-out
   SetPauseFadeTime( 0.15f );             // 150 ms pause fade-out
-  SetResumeFadeTime( 0.15f );            // 150 ms resume fade-in
+  SetResumeFadeTime( 0.8f );            // 800 ms resume fade-in
+
+  // Set LPF makeup gain to compensate for attenuation from filtering
+  SetSoftClippingEnable( 1 );
+  SetLpf16BitCustomAlpha( CalcLpf16BitAlphaFromCutoff( 14500, I2S_AUDIOFREQ_16K ) );  // Set 16-bit biquad LPF cutoff to 6 kHz for 16 kHz sample rate
+  SetLpfMakeupGain16Bit( 2.0f );  // Compensate for attenuation from LPF.
 
   /* USER CODE END 2 */
 
@@ -255,57 +262,9 @@ int main(void)
  
     // Start playback of samples
     //
-    // SetLpf16BitLevel( LPF_Custom );
-    // SetLpf16BitCustomAlpha( CalcLpf16BitAlphaFromCutoff( 9000, I2S_AUDIOFREQ_22K ) );
-    SetSoftClippingEnable( 1 );
-    SetAirEffectPresetDb(2);  // +3 dB preset for testing
-    SetLpf8BitLevel( LPF_Off );
-    //SetLpfMakeupGain8Bit( 1.2f );  // Comp
-    //SetLpf8BitCustomAlpha( CalcLpf8BitAlphaFromCutoff( 500, I2S_AUDIOFREQ_11K ) );
-    // PlaySample( rooster16b2c, ROOSTER16B2C_SZ,
-    //   I2S_AUDIOFREQ_22K, 16, Mode_stereo );
-    // WaitForSampleEnd();
-    // PlaySample( custom_tritone16k, CUSTOM_TRITONE16K_SZ,
-    //   I2S_AUDIOFREQ_16K, 16, Mode_mono ); 
-    // while( true ) {
-    //   WaitForTrigger( TRIGGER_SET );
-    //   PlaySample( do_16b1c11k, DO_16B1C11K_SZ,
-    //     I2S_AUDIOFREQ_11K, 16, Mode_mono );
-
-    //   WaitForTrigger( TRIGGER_CLR );  // Wait for trigger to clear before stopping audio
-    //   StopPlayback();
-
-    //   while( GetPlaybackState()) {
-    //     HAL_Delay( 1 );  // Wait for playback to fully stop before starting next sample
-    //   }
-
-    //   PlaySample( dc_16b1c11k, DC_16B1C11K_SZ,
-    //     I2S_AUDIOFREQ_11K, 16, Mode_mono );
-    //   WaitForTrigger( TRIGGER_SET ); // Wait for trigger to set before stopping audio
-    //   StopPlayback();
-
-    //   while( GetPlaybackState()) {
-    //     HAL_Delay( 1 );  // Wait for playback to fully stop before starting next sample
-    //   }
-    // }
-
-    PlaySample( big_gong8b1c11k, BIG_GONG8B1C11K_SZ,
-      I2S_AUDIOFREQ_11K, 8, Mode_mono );
+    PlaySample( chinese_flute16k16bm, CHINESE_FLUTE16K16BM_SZ,
+      I2S_AUDIOFREQ_16K, 16, CHINESE_FLUTE16K16BM_PB_FMT);
     WaitForSampleEnd();
-
-    // PlaySample( KillBill11k, KILLBILL11K_SZ,
-    //   I2S_AUDIOFREQ_11K, 16, Mode_mono );
-    // HAL_Delay( 2000 );  // Delay between samples for testing
-    // PausePlayback();
-    // HAL_Delay( 1000 );  // Pause duration for testing
-    // ResumePlayback();
-    // WaitForSampleEnd();
-    // HAL_Delay( 1500 );  // Delay between samples for testing
-
-    // PlaySample( KillBill11k, KILLBILL11K_SZ,
-    //   I2S_AUDIOFREQ_11K, 16, Mode_mono );
-    // HAL_Delay( 3000 );  // Delay between samples for testing
-    // StopPlayback();
 
     ShutDownAudio();
 

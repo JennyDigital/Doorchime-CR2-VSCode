@@ -102,7 +102,9 @@ extern "C" {
 #define BIQUAD_WARMUP_CYCLES  16
 
 /* Low-pass filter for 8-bit samples */
-#define LPF_MAKEUP_GAIN_Q16   70779    // ~1.08x post-LPF makeup (default)
+#define LPF_MAKEUP_GAIN_Q16        70779    // ~1.08x post-LPF makeup (default)
+/* Low-pass filter for 16-bit samples */
+#define LPF_16BIT_MAKEUP_GAIN_Q16  65536    // 1.00x post-LPF makeup (default)
 
 /* 8-bit low-pass filter aggressiveness levels (alpha coefficients in fixed-point) */
 #define LPF_VERY_SOFT         61440    // 0.9375 - very gentle filtering
@@ -169,6 +171,7 @@ typedef struct {
   uint8_t enable_soft_clipping;             // Soft clipping.
   uint8_t enable_air_effect;                // High-shelf brightening filter
   uint32_t lpf_makeup_gain_q16;             // Q16 gain applied after LPF
+  uint32_t lpf_makeup_gain_16bit_q16;        // Q16 gain applied after 16-bit LPF
   LPF_Level lpf_16bit_level;                // Filter level for 16-bit biquad LPF
   uint16_t lpf_16bit_custom_alpha;          // Q16 alpha for custom 16-bit LPF
   LPF_Level lpf_8bit_level;                 // Filter level for 8-bit LPF
@@ -233,6 +236,19 @@ void                GetFilterConfig                   ( FilterConfig_TypeDef *cf
  * @note Compensates for attenuation from aggressive filtering
  */
 void                SetLpfMakeupGain8Bit              ( float gain );
+
+/**
+ * @brief Set makeup gain applied after 16-bit low-pass filter
+ * @param[in] gain Linear gain (1.0 = no gain, 2.0 = 2x, etc.)
+ * @note Compensates for attenuation from aggressive filtering
+ */
+void                SetLpfMakeupGain16Bit             ( float gain );
+
+/**
+ * @brief Get makeup gain applied after 16-bit low-pass filter
+ * @return Linear gain (1.0 = no gain, 2.0 = 2x, etc.)
+ */
+float               GetLpfMakeupGain16Bit             ( void );
 
 /**
  * @brief Enable/disable the high-shelf air effect brightening filter

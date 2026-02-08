@@ -145,6 +145,7 @@ volatile FilterConfig_TypeDef filter_cfg = {
   .enable_soft_clipping         = 1,
   .enable_air_effect            = 0,
   .lpf_makeup_gain_q16          = LPF_MAKEUP_GAIN_Q16,
+  .lpf_makeup_gain_16bit_q16     = LPF_16BIT_MAKEUP_GAIN_Q16,
   .lpf_16bit_level              = LPF_Custom,
   .lpf_16bit_custom_alpha       = LPF_16BIT_SOFT,
   .lpf_8bit_level               = LPF_Medium,
@@ -316,6 +317,7 @@ PB_StatusTypeDef AudioEngine_Init( DAC_SwitchFunc dac_switch,
   filter_cfg.enable_soft_clipping           = 1;
   filter_cfg.enable_air_effect              = 0;
   filter_cfg.lpf_makeup_gain_q16            = LPF_MAKEUP_GAIN_Q16;
+  filter_cfg.lpf_makeup_gain_16bit_q16       = LPF_16BIT_MAKEUP_GAIN_Q16;
   filter_cfg.lpf_16bit_level                = LPF_Soft;
   filter_cfg.lpf_8bit_level                 = LPF_Medium;
   filter_cfg.lpf_8bit_custom_alpha          = LPF_MEDIUM;
@@ -342,6 +344,12 @@ void SetFilterConfig( const FilterConfig_TypeDef *cfg )
     }
     else if( filter_cfg.lpf_makeup_gain_q16 > AIR_EFFECT_SHELF_GAIN_MAX ) {
       filter_cfg.lpf_makeup_gain_q16 = AIR_EFFECT_SHELF_GAIN_MAX;
+    }
+    if( filter_cfg.lpf_makeup_gain_16bit_q16 == 0 ) {
+      filter_cfg.lpf_makeup_gain_16bit_q16 = LPF_16BIT_MAKEUP_GAIN_Q16;
+    }
+    else if( filter_cfg.lpf_makeup_gain_16bit_q16 > AIR_EFFECT_SHELF_GAIN_MAX ) {
+      filter_cfg.lpf_makeup_gain_16bit_q16 = AIR_EFFECT_SHELF_GAIN_MAX;
     }
   }
 }
@@ -642,6 +650,35 @@ void SetLpfMakeupGain8Bit( float gain )
   }
   uint32_t q16 = (uint32_t)( gain * 65536.0f + 0.5f );
   filter_cfg.lpf_makeup_gain_q16 = q16;
+}
+
+
+/** Set 16-bit LPF makeup gain
+  *
+  * @brief Sets the makeup gain applied after the 16-bit low-pass filter.
+  * @param: gain - Floating-point gain value (0.1 to 2.0).
+  * @retval: none
+  */
+void SetLpfMakeupGain16Bit( float gain )
+{
+  if( gain < 0.1f ) {
+    gain = 0.1f;
+  } else if( gain > 2.0f ) {
+    gain = 2.0f;
+  }
+  uint32_t q16 = (uint32_t)( gain * 65536.0f + 0.5f );
+  filter_cfg.lpf_makeup_gain_16bit_q16 = q16;
+}
+
+
+/** Get 16-bit LPF makeup gain
+  *
+  * @brief Returns the makeup gain applied after the 16-bit low-pass filter.
+  * @retval: float - Linear gain value
+  */
+float GetLpfMakeupGain16Bit( void )
+{
+  return (float)filter_cfg.lpf_makeup_gain_16bit_q16 / 65536.0f;
 }
 
 
@@ -1241,6 +1278,11 @@ static int16_t ApplyLowPassFilter16Bit(
   *x1 = input;
   *y2 = *y1;
   *y1 = output;
+  // Apply 16-bit LPF makeup gain
+  int64_t output64 = ( (int64_t)output * (int64_t)filter_cfg.lpf_makeup_gain_16bit_q16 ) >> 16;
+  if ( output64 > AUDIO_INT16_MAX ) output64 = AUDIO_INT16_MAX;
+  if ( output64 < AUDIO_INT16_MIN ) output64 = AUDIO_INT16_MIN;
+  output = (int32_t)output64;
   if ( output > AUDIO_INT16_MAX ) output = AUDIO_INT16_MAX;
   if ( output < AUDIO_INT16_MIN ) output = AUDIO_INT16_MIN;
   return (int16_t)output;
