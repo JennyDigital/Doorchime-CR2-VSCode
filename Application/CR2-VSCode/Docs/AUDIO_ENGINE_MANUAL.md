@@ -1633,11 +1633,11 @@ RAM:   ~2.5 KB (state variables + playback buffer)
 
 - **STM32G474 (typical):** ≤40 mA (core + peripherals)
 - **I2S + DMA Active:** ~10 mA additional
-- **Amplifier (MAX98357A):** ~100 mA @ 0.5W output, >500 mW capable
+- **Amplifier (MAX98357A):** ~100 mA @ 0.5W output, >1W capable
 - **Total System @ 0.5W audio:** ~150 mA @ 5V
 - **Total System @ 1W audio:** ~200 mA @ 5V
 
-**Note:** The MAX98357A amplifier can deliver over 500 mW to an 8Ω speaker, significantly exceeding the STM32's typical current draw.
+**Note:** The MAX98357A amplifier can deliver over 1W to an 8Ω speaker, significantly exceeding the STM32's typical current draw.
 
 ---
 

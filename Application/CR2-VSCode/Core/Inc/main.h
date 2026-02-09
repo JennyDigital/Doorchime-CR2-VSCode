@@ -32,6 +32,12 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "audio_engine.h"
+#include <stdint.h>                 // We like things predictable in these here ports.
+#include <stdbool.h>                // For true/false values in filter config, we like our C modern, clean and readable.
+#include <math.h>                   // Used in this translation unit for volume response curve calculations.
+#include "audio_engine.h"           // Main header for our reusable audio engine library, contains all playback and DSP filter functionality.
+#include "lock.h"                   // Used for optional readout protection of the firmware binary, to prevent unauthorized copying. Redundant now that it's open source.
+#include "interrupt_utils.h"        // Utility functions for handling GPIO interrupts, used for trigger input handling.
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/

@@ -74,51 +74,50 @@ extern "C" {
 /* Playback engine buffer configuration */
 // Larger buffer sizes can reduce CPU load but increase latency and RAM usage. Adjust as needed.
 // and must be a multiple of 2 correct DMA buffer size requirements.
-#define PB_BUFF_SZ            2048U
-#define CHUNK_SZ              ( PB_BUFF_SZ / 2 )
-#define HALFCHUNK_SZ          ( CHUNK_SZ / 2 )
-#define FIRST                 0U
-#define SECOND                1U
+#define PB_BUFF_SZ                  2048U
+#define CHUNK_SZ                    ( PB_BUFF_SZ / 2 )
+#define HALFCHUNK_SZ                ( CHUNK_SZ / 2 )
+#define FIRST                       0U
+#define SECOND                      1U
 
 /* Fade configuration */
-//#define FADEOUT_SAMPLES       2048U  // About 100ms at 22kHz
-#define PAUSE_FADEOUT_SAMPLES 5512U    // About 0.5 second at 11kHz
-#define FADEIN_SAMPLES        2048U    // About 93ms at 22kHz
+#define PAUSE_FADEOUT_SAMPLES       5512U    // About 0.5 second at 11kHz
+#define FADEIN_SAMPLES              2048U    // About 93ms at 22kHz
 
 /* DC blocking filter configuration */
-#define DC_FILTER_ALPHA       64225    // 0.98 in fixed-point (64225/65536)
-#define DC_FILTER_SHIFT       16       // Right shift for fixed-point division
-#define SOFT_DC_FILTER_ALPHA  65216    // 0.995 in fixed-point (65216/65536)
+#define DC_FILTER_ALPHA             64225    // 0.98 in fixed-point (64225/65536)
+#define DC_FILTER_SHIFT             16       // Right shift for fixed-point division
+#define SOFT_DC_FILTER_ALPHA        65216    // 0.995 in fixed-point (65216/65536)
 
 /* 16-bit biquad low-pass filter aggressiveness levels (alpha coefficients) */
 /* Lower alpha is heavier filtering for this biquad, so values are ordered heavy -> light. */
-#define LPF_16BIT_VERY_SOFT   40960    // 0.625 - minimal filtering / highest cutoff
-#define LPF_16BIT_SOFT        52429    // ~0.80 - gentle filtering
-#define LPF_16BIT_MEDIUM      57344    // 0.875 - balanced filtering
-#define LPF_16BIT_FIRM        60416    // ~0.92 - firm filtering
-#define LPF_16BIT_AGGRESSIVE  63488    // ~0.97 - strongest filtering / lowest cutoff
+#define LPF_16BIT_VERY_SOFT         40960    // 0.625 - minimal filtering / highest cutoff
+#define LPF_16BIT_SOFT              52429    // ~0.80 - gentle filtering
+#define LPF_16BIT_MEDIUM            57344    // 0.875 - balanced filtering
+#define LPF_16BIT_FIRM              60416    // ~0.92 - firm filtering
+#define LPF_16BIT_AGGRESSIVE        63488    // ~0.97 - strongest filtering / lowest cutoff
 
 /* Number of cycles to warm up biquad filter state */
-#define BIQUAD_WARMUP_CYCLES  16
+#define BIQUAD_WARMUP_CYCLES        16
 
 /* Low-pass filter for 8-bit samples */
-#define LPF_MAKEUP_GAIN_Q16        70779    // ~1.08x post-LPF makeup (default)
+#define LPF_MAKEUP_GAIN_Q16         70779   // ~1.08x post-LPF makeup (default)
 /* Low-pass filter for 16-bit samples */
-#define LPF_16BIT_MAKEUP_GAIN_Q16  65536    // 1.00x post-LPF makeup (default)
+#define LPF_16BIT_MAKEUP_GAIN_Q16   65536   // 1.00x post-LPF makeup (default)
 
 /* 8-bit low-pass filter aggressiveness levels (alpha coefficients in fixed-point) */
-#define LPF_VERY_SOFT         61440    // 0.9375 - very gentle filtering
-#define LPF_SOFT              57344    // 0.875 - gentle filtering
-#define LPF_MEDIUM            49152    // 0.75 - balanced filtering
-#define LPF_FIRM              45056    // 0.6875 - firm filtering
-#define LPF_AGGRESSIVE        40960    // 0.625 - strong filtering
+#define LPF_VERY_SOFT           61440       // 0.9375 - very gentle filtering
+#define LPF_SOFT                57344       // 0.875 - gentle filtering
+#define LPF_MEDIUM              49152       // 0.75 - balanced filtering
+#define LPF_FIRM                45056       // 0.6875 - firm filtering
+#define LPF_AGGRESSIVE          40960       // 0.625 - strong filtering
 
 /* Noise gate configuration */
-#define NOISE_GATE_THRESHOLD  512      // ~1.5% of full scale
+#define NOISE_GATE_THRESHOLD    512         // ~1.5% of full scale
 
 /* Audio silence midpoints */
-#define SAMPLE8_MIDPOINT      128U
-#define SAMPLE16_MIDPOINT     0
+#define SAMPLE8_MIDPOINT        128U
+#define SAMPLE16_MIDPOINT       0
 
 /* Fill half buffer macro */
 #define MIDPOINT_FILL_BUFFER() memset( pb_buffer, SAMPLE16_MIDPOINT, sizeof( pb_buffer ) );
@@ -158,24 +157,24 @@ typedef enum {
 } LPF_Level;
 
 /* Air Effect (High-Shelf Brightening) Filter */
-#define AIR_EFFECT_SHELF_GAIN       98304    // ~1.5 in Q16 (high-frequency shelf ~ +1.6 dB)
-#define AIR_EFFECT_SHELF_GAIN_MAX   131072   // Cap runtime boost at ~2.0x to avoid harsh clipping
-#define AIR_EFFECT_CUTOFF           49152    // ~0.75 alpha (cutoff around 5-6 kHz @ 22kHz)
+#define AIR_EFFECT_SHELF_GAIN       98304     // ~1.5 in Q16 (high-frequency shelf ~ +1.6 dB)
+#define AIR_EFFECT_SHELF_GAIN_MAX   131072    // Cap runtime boost at ~2.0x to avoid harsh clipping
+#define AIR_EFFECT_CUTOFF           49152     // ~0.75 alpha (cutoff around 5-6 kHz @ 22kHz)
 
 /* Filter chain runtime configuration */
 typedef struct {
-  uint8_t enable_16bit_biquad_lpf;          // Biquad low-pass filter for 16-bit samples
-  uint8_t enable_soft_dc_filter_16bit;      // Soft DC blocking filter for 16-bit samples
-  uint8_t enable_8bit_lpf;                  // Biquad low-pass filter for 8-bit samples
-  uint8_t enable_noise_gate;                // Noise gate. Removes low-level noise.
-  uint8_t enable_soft_clipping;             // Soft clipping.
-  uint8_t enable_air_effect;                // High-shelf brightening filter
-  uint32_t lpf_makeup_gain_q16;             // Q16 gain applied after LPF
-  uint32_t lpf_makeup_gain_16bit_q16;        // Q16 gain applied after 16-bit LPF
-  LPF_Level lpf_16bit_level;                // Filter level for 16-bit biquad LPF
-  uint16_t lpf_16bit_custom_alpha;          // Q16 alpha for custom 16-bit LPF
-  LPF_Level lpf_8bit_level;                 // Filter level for 8-bit LPF
-  uint16_t lpf_8bit_custom_alpha;           // Q16 alpha for custom 8-bit LPF
+  uint8_t enable_16bit_biquad_lpf;            // Biquad low-pass filter for 16-bit samples
+  uint8_t enable_soft_dc_filter_16bit;        // Soft DC blocking filter for 16-bit samples
+  uint8_t enable_8bit_lpf;                    // Biquad low-pass filter for 8-bit samples
+  uint8_t enable_noise_gate;                  // Noise gate. Removes low-level noise.
+  uint8_t enable_soft_clipping;               // Soft clipping.
+  uint8_t enable_air_effect;                  // High-shelf brightening filter
+  uint32_t lpf_makeup_gain_q16;               // Q16 gain applied after LPF
+  uint32_t lpf_makeup_gain_16bit_q16;         // Q16 gain applied after 16-bit LPF
+  LPF_Level lpf_16bit_level;                  // Filter level for 16-bit biquad LPF
+  uint16_t lpf_16bit_custom_alpha;            // Q16 alpha for custom 16-bit LPF
+  LPF_Level lpf_8bit_level;                   // Filter level for 8-bit LPF
+  uint16_t lpf_8bit_custom_alpha;             // Q16 alpha for custom 8-bit LPF
 } FilterConfig_TypeDef;
 
 /* Global audio engine state exposed for hardware initialization */
@@ -401,10 +400,11 @@ float               GetResumeFadeTime                 ( void );
  * @return Sample offset in interleaved samples
  * @note For stereo, the returned value is multiplied by 2 (left+right).
  */
-uint32_t            CalcSampleOffsetSamples          ( float seconds,
+uint32_t            CalcSampleOffsetSamples           (
+                                                        float seconds,
                                                         uint32_t sample_rate_hz,
-                                                        PB_ModeTypeDef mode );
-
+                                                        PB_ModeTypeDef mode 
+                                                      );
 /**
  * @brief Start playback of a sample from memory
  * @param[in] sample_to_play Pointer to sample data in memory
@@ -504,7 +504,7 @@ float               GetVolumeResponseGamma            ( void );
  * @return PB_Playing while playback continues, PB_Idle when finished
  * @note Called from DMA ISR. Applies volume, filters, fade, clipping
  */
-PB_StatusTypeDef    ProcessNextWaveChunk        ( int16_t *chunk_p );
+PB_StatusTypeDef    ProcessNextWaveChunk              ( int16_t *chunk_p );
 
 /**
  * @brief Process next 8-bit PCM chunk from DMA half-complete callback
@@ -512,13 +512,13 @@ PB_StatusTypeDef    ProcessNextWaveChunk        ( int16_t *chunk_p );
  * @return PB_Playing while playback continues, PB_Idle when finished
  * @note Called from DMA ISR. Applies volume, filters, fade, clipping
  */
-PB_StatusTypeDef    ProcessNextWaveChunk_8_bit  ( uint8_t *chunk_p );
+PB_StatusTypeDef    ProcessNextWaveChunk_8_bit        ( uint8_t *chunk_p );
 
 /**
  * @brief Advance sample pointer for next DMA transfer
  * @note Call from DMA complete callback after ProcessNextWaveChunk()
  */
-void                AdvanceSamplePointer        ( void );
+void                AdvanceSamplePointer              ( void );
 
 /* Air Effect runtime control */
 /**
@@ -526,26 +526,26 @@ void                AdvanceSamplePointer        ( void );
  * @param[in] gain_q16 Gain in Q16 format (65536 = 1.0x, 131072 = 2.0x max)
  * @note Enables air effect automatically if gain > 0
  */
-void                 SetAirEffectGainQ16        ( uint32_t gain_q16 );
+void                 SetAirEffectGainQ16              ( uint32_t gain_q16 );
 
 /**
  * @brief Get current air effect gain as Q16 fixed-point value
  * @return Current gain in Q16 format
  */
-uint32_t             GetAirEffectGainQ16        ( void );
+uint32_t             GetAirEffectGainQ16              ( void );
 
 /**
  * @brief Set air effect gain using decibels
  * @param[in] db Gain in dB (0.0 = no gain, 6.0 dB = ~2x, -6.0 dB = ~0.5x)
  * @note Enables air effect automatically if db > 0
  */
-void                 SetAirEffectGainDb         ( float db );
+void                 SetAirEffectGainDb               ( float db );
 
 /**
  * @brief Get current air effect gain in decibels
  * @return Current gain in dB
  */
-float                GetAirEffectGainDb         ( void );
+float                GetAirEffectGainDb               ( void );
 
 /**
  * @brief Set air effect using predefined preset (automatically enables/disables)
@@ -553,33 +553,33 @@ float                GetAirEffectGainDb         ( void );
  * @return 1 if enabled (preset > 0), 0 if disabled (preset == 0)
  * @note Automatically calls SetAirEffectEnable(preset_index > 0 ? 1 : 0)
  */
-void                 SetAirEffectPresetDb       ( uint8_t preset_index );
+void                 SetAirEffectPresetDb             ( uint8_t preset_index );
 
 /**
  * @brief Cycle through available air effect presets
  * @return New preset index after cycling
  * @note Wraps from highest preset back to 0 (off). Useful for UI control.
  */
-uint8_t              CycleAirEffectPresetDb     ( void );
+uint8_t              CycleAirEffectPresetDb           ( void );
 
 /**
  * @brief Get the current air effect preset index
  * @return Current preset index (0 = off, 1-N = various dB levels)
  */
-uint8_t              GetAirEffectPresetIndex    ( void );
+uint8_t              GetAirEffectPresetIndex          ( void );
 
 /**
  * @brief Get total number of available air effect presets (including off)
  * @return Number of presets (typically 4 for off, +1dB, +2dB, +3dB)
  */
-uint8_t              GetAirEffectPresetCount    ( void );
+uint8_t              GetAirEffectPresetCount          ( void );
 
 /**
  * @brief Get dB value for a specific air effect preset
  * @param[in] preset_index Preset index to query
  * @return dB gain for the preset (0.0 if preset_index is off or invalid)
  */
-float                GetAirEffectPresetDb       ( uint8_t preset_index );
+float                GetAirEffectPresetDb             ( uint8_t preset_index );
 
 
 /* Hardware callbacks (to be called from I2S DMA callbacks) */
@@ -589,7 +589,7 @@ float                GetAirEffectPresetDb       ( uint8_t preset_index );
  * @note Called from DMA ISR when first half of buffer is complete
  * @note Application must call this from HAL_I2S_TxHalfCpltCallback()
  */
-void                 HAL_I2S_TxHalfCpltCallback ( I2S_HandleTypeDef *hi2s );
+void                 HAL_I2S_TxHalfCpltCallback      ( I2S_HandleTypeDef *hi2s );
 
 /**
  * @brief DMA complete callback for I2S
@@ -597,44 +597,44 @@ void                 HAL_I2S_TxHalfCpltCallback ( I2S_HandleTypeDef *hi2s );
  * @note Called from DMA ISR when entire buffer transfer is complete
  * @note Application must call this from HAL_I2S_TxCpltCallback()
  */
-void                 HAL_I2S_TxCpltCallback     ( I2S_HandleTypeDef *hi2s );
+void                 HAL_I2S_TxCpltCallback         ( I2S_HandleTypeDef *hi2s );
 
 /* Playback state accessors (for internal use or advanced applications) */
 /**
  * @brief Get current playback state
  * @return PB_Idle, PB_Error, PB_Playing, PB_Paused, or PB_PlayingFailed
  */
-uint8_t             GetPlaybackState            ( void );
+uint8_t             GetPlaybackState                ( void );
 
 /**
  * @brief Set playback state (internal use)
  * @param[in] state New playback state
  */
-void                SetPlaybackState            ( uint8_t state );
+void                SetPlaybackState                ( uint8_t state );
 
 /**
  * @brief Get which half of double-buffer is next to fill
  * @return FIRST (0) or SECOND (1)
  */
-uint8_t             GetHalfToFill               ( void );
+uint8_t             GetHalfToFill                   ( void );
 
 /**
  * @brief Set which half of double-buffer to fill next (internal use)
  * @param[in] half FIRST or SECOND
  */
-void                SetHalfToFill               ( uint8_t half );
+void                SetHalfToFill                   ( uint8_t half );
 
 /**
  * @brief Get current playback sample rate
  * @return Sample rate in Hz (e.g., 22000, 44100)
  */
-uint32_t            GetPlaybackSpeed            ( void );
+uint32_t            GetPlaybackSpeed                ( void );
 
 /**
  * @brief Set playback sample rate (internal use)
  * @param[in] speed Sample rate in Hz
  */
-void                SetPlaybackSpeed            ( uint32_t speed );
+void                SetPlaybackSpeed                ( uint32_t speed );
 
 #ifdef __cplusplus
 }

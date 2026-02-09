@@ -31,19 +31,6 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-//
-#include <stdint.h>
-#include <stdbool.h>
-#include <math.h>
-#include "cmsis_gcc.h"
-#include "stm32g4xx_hal.h"
-#include "stm32g4xx_hal_adc_ex.h"
-#include "stm32g4xx_hal_i2s.h"
-#include "stm32g4xx_hal_tim_ex.h"
-#include "stm32g4xx_hal_tim.h"
-#include "audio_engine.h"
-#include "lock.h"
-#include "interrupt_utils.h"
 
 // Sample data includes, use as needed.
 #include "newchallenger11k.h"
@@ -114,17 +101,14 @@ DMA_HandleTypeDef hdma_spi2_tx;
 /* USER CODE BEGIN PV */
 
 // Trigger control variables (hardware-specific)
-volatile  uint16_t        trig_counter                  = 0;
-volatile  uint8_t         trig_timeout_flag             = 0;
-volatile  uint16_t        trig_timeout_counter          = 0;
-volatile  uint8_t         trig_status                   = TRIGGER_CLR;
-volatile  uint16_t        adc_raw                       = 0;
+volatile  uint16_t        trig_counter                  = 0;              // Counter for trigger input timing
+volatile  uint8_t         trig_timeout_flag             = 0;              // Flag indicating trigger timeout has occurred
+volatile  uint16_t        trig_timeout_counter          = 0;              // Counter for trigger timeout duration
+volatile  uint8_t         trig_status                   = TRIGGER_CLR;    // Current trigger status  (SET or CLR)
+volatile  uint16_t        adc_raw                       = 0;              // 
 
 // External variables from audio_engine
 extern FilterConfig_TypeDef filter_cfg;
-
-// Test variable to count playback end callbacks
-volatile uint32_t callback_count = 0;
 
 /* USER CODE END PV */
 
@@ -766,11 +750,6 @@ void HAL_IncTick( void )
   if( trig_counter > TC_HIGH_THRESHOLD )  trig_status = TRIGGER_SET;
 }
 
-void AudioEngine_OnPlaybackEnd( void )
-{
-    callback_count++;
-  /* Default implementation does nothing - override in application if needed */
-}
 /* USER CODE END 4 */
 
 /**
@@ -781,8 +760,10 @@ void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* Shutdown playback, disable interrupts amd switch off DAC */
-  __disable_irq();
   HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );
+  __ISB();
+  __DSB();
+  __disable_irq();
   DAC_MasterSwitch( DAC_OFF );
   while (1)
   {
