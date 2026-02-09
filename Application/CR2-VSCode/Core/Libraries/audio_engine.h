@@ -175,6 +175,8 @@ typedef struct {
   uint16_t lpf_16bit_custom_alpha;            // Q16 alpha for custom 16-bit LPF
   LPF_Level lpf_8bit_level;                   // Filter level for 8-bit LPF
   uint16_t lpf_8bit_custom_alpha;             // Q16 alpha for custom 8-bit LPF
+  uint8_t enable_filter_chain_16bit;          // Master enable for entire 16-bit filter chain
+  uint8_t enable_filter_chain_8bit;           // Master enable for entire 8-bit filter chain
 } FilterConfig_TypeDef;
 
 /* Global audio engine state exposed for hardware initialization */

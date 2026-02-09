@@ -74,6 +74,9 @@
 #include "big_gong8b16k.h"
 #include "big_gong8b1c11k.h"
 #include "chinese_flute.h"
+#include "fanfare_drums16b1c22k.h"    // Don't use the LPF with this one.  It needs to be bright and punchy, not distorted.
+#include "tribe_drum.h"
+#include "teleport16b1c44k.h"
 
 /* USER CODE END Includes */
 
@@ -202,11 +205,13 @@ int main(void)
 
   // FilterConfig_TypeDef filter_cfg;
   filter_cfg.enable_noise_gate            = 0;  // Noise gate disabled by default; enable as needed
-  filter_cfg.enable_16bit_biquad_lpf      = 1;  // 16-bit biquad LPF disabled by default; enable as needed
+  filter_cfg.enable_16bit_biquad_lpf      = 0;  // 16-bit biquad LPF disabled by default; enable as needed
   filter_cfg.enable_8bit_lpf              = 0;  // 8-bit LPF disabled by default; enable as needed
   filter_cfg.enable_soft_dc_filter_16bit  = 1;  // Soft DC blocking filter for 16-bit samples enabled by default
   filter_cfg.enable_soft_clipping         = 1;  // Soft clipping enabled by default
   filter_cfg.enable_air_effect            = 0;  // Air effect (high-shelf brightening) disabled by default; enable as needed
+  filter_cfg.enable_filter_chain_16bit    = 0;  // Master enable for entire 16-bit filter chain
+  filter_cfg.enable_filter_chain_8bit     = 1;  // Master enable for entire 8-bit filter chain
 
   // Apply initial filter configuration
   SetFilterConfig( &filter_cfg );
@@ -221,9 +226,9 @@ int main(void)
   SetResumeFadeTime( 0.8f );            // 800 ms resume fade-in
 
   // Set LPF makeup gain to compensate for attenuation from filtering
-  SetSoftClippingEnable( 1 );
-  SetLpf16BitCustomAlpha( CalcLpf16BitAlphaFromCutoff( 14500, I2S_AUDIOFREQ_16K ) );  // Set 16-bit biquad LPF cutoff to 6 kHz for 16 kHz sample rate
-  SetLpfMakeupGain16Bit( 2.0f );  // Compensate for attenuation from LPF.
+  //SetSoftClippingEnable( 1 );
+  //SetLpf16BitCustomAlpha( CalcLpf16BitAlphaFromCutoff( 20000, I2S_AUDIOFREQ_22K ) );  // Set 16-bit biquad LPF cutoff to 20 kHz for 22 kHz sample rate
+  //SetLpfMakeupGain16Bit( 0.95f );  // Compensate for overshot from LPF.
 
   /* USER CODE END 2 */
 
@@ -242,8 +247,8 @@ int main(void)
  
     // Start playback of samples
     //
-    PlaySample( chinese_flute16k16bm, CHINESE_FLUTE16K16BM_SZ,
-      I2S_AUDIOFREQ_16K, 16, CHINESE_FLUTE16K16BM_PB_FMT);
+    PlaySample( teleport16b1c44k, TELEPORT16B1C44K_SZ,
+      I2S_AUDIOFREQ_44K, 16, TELEPORT16B1C44K_PB_FMT );
     WaitForSampleEnd();
 
     ShutDownAudio();

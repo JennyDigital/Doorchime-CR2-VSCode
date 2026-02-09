@@ -148,7 +148,9 @@ volatile FilterConfig_TypeDef filter_cfg = {
   .lpf_16bit_level              = LPF_Custom,
   .lpf_16bit_custom_alpha       = LPF_16BIT_SOFT,
   .lpf_8bit_level               = LPF_Medium,
-  .lpf_8bit_custom_alpha        = LPF_MEDIUM
+  .lpf_8bit_custom_alpha        = LPF_MEDIUM,
+  .enable_filter_chain_16bit    = 1,
+  .enable_filter_chain_8bit     = 1
 };
 
 /* Playback state variables */
@@ -317,10 +319,12 @@ PB_StatusTypeDef AudioEngine_Init( DAC_SwitchFunc dac_switch,
   filter_cfg.enable_soft_clipping           = 1;
   filter_cfg.enable_air_effect              = 0;
   filter_cfg.lpf_makeup_gain_q16            = LPF_MAKEUP_GAIN_Q16;
-  filter_cfg.lpf_makeup_gain_16bit_q16       = LPF_16BIT_MAKEUP_GAIN_Q16;
+  filter_cfg.lpf_makeup_gain_16bit_q16      = LPF_16BIT_MAKEUP_GAIN_Q16;
   filter_cfg.lpf_16bit_level                = LPF_Soft;
   filter_cfg.lpf_8bit_level                 = LPF_Medium;
   filter_cfg.lpf_8bit_custom_alpha          = LPF_MEDIUM;
+  filter_cfg.enable_filter_chain_16bit      = 1;
+  filter_cfg.enable_filter_chain_8bit       = 1;
   
   return PB_Idle;  // Success - ready to play but not currently playing
 }
@@ -434,6 +438,25 @@ uint16_t GetLpf8BitCustomAlpha( void )
   return filter_cfg.lpf_8bit_custom_alpha;
 }
 
+void SetFilterChain8BitEnable( uint8_t enabled )
+{
+  filter_cfg.enable_filter_chain_8bit = enabled ? 1 : 0;
+}
+
+uint8_t GetFilterChain8BitEnable( void )
+{
+  return filter_cfg.enable_filter_chain_8bit;
+}
+
+void SetFilterChain16BitEnable( uint8_t enabled )
+{
+  filter_cfg.enable_filter_chain_16bit = enabled ? 1 : 0;
+}
+
+uint8_t GetFilterChain16BitEnable( void )
+{
+  return filter_cfg.enable_filter_chain_16bit;
+}
 
 #if AUDIO_ENGINE_ENABLE_AIR_EFFECT
 /** Sets whether to use the air effect or not
@@ -655,7 +678,7 @@ void SetLpfMakeupGain8Bit( float gain )
 
 /** Set 16-bit LPF makeup gain
   *
-  * @brief Sets the makeup gain applied after the 16-bit low-pass filter.
+  * @brief Sets the makeup gain applied after the 16-bit low-pass filter. Default is 1.0 (No gain), lower limit: 0.1, upper limit: 2.0.
   * @param: gain - Floating-point gain value (0.1 to 2.0).
   * @retval: none
   */
@@ -1735,7 +1758,9 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
     }
     else {
       leftsample = ApplyVolumeSetting( *input, vol_input );                       // Apply volume setting
+      if( filter_cfg.enable_filter_chain_16bit == 1 ) {
       leftsample = ApplyFilterChain16Bit( leftsample, CHANNEL_LEFT );             // Apply complete filter chain
+      }
     }
     input++;
 
@@ -1746,7 +1771,9 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
       }
       else { 
         rightsample = ApplyVolumeSetting( *input, vol_input );                    // Right channel
+        if( filter_cfg.enable_filter_chain_16bit == 1 ) {
         rightsample = ApplyFilterChain16Bit( rightsample, CHANNEL_RIGHT );        // Apply complete filter chain
+        }
       }   // End of right channel processing
       input++;
     }
@@ -1798,7 +1825,9 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
       uint8_t sample8 = *input;
       leftsample = Apply8BitDithering( sample8 );                           // Left channel with dithering
       leftsample = ApplyVolumeSetting( leftsample, vol_input );
-      leftsample = ApplyFilterChain8Bit( leftsample, CHANNEL_LEFT );        // Apply complete filter chain
+      if( filter_cfg.enable_filter_chain_8bit == 1 ) {
+        leftsample = ApplyFilterChain8Bit( leftsample, CHANNEL_LEFT );       // Apply complete filter chain
+      }
     }
     input++;
 
@@ -1812,7 +1841,9 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
         uint8_t sample8 = *input;
         rightsample = Apply8BitDithering( sample8 );                        // Right channel with dithering
         rightsample = ApplyVolumeSetting( rightsample, vol_input );
-        rightsample = ApplyFilterChain8Bit( rightsample, CHANNEL_RIGHT );   // Apply complete filter chain
+        if( filter_cfg.enable_filter_chain_8bit == 1 ) {
+          rightsample = ApplyFilterChain8Bit( rightsample, CHANNEL_RIGHT );   // Apply complete filter chain
+        }
       }
       input++;
     }
