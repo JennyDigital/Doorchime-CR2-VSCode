@@ -39,7 +39,16 @@
 /** WARNING!
   *
   * SysTick interrupt priority must be set higher (numerically lower) than the DMA interrupt priority
-  * to avoid application lockup upon stopping playback.
+  * to avoid application lockup upon stopping playback.  This is because the audio engine relies on
+  * HAL_I2S_DMAStop being able to execute from the SysTick callback to properly stop the DMA and reset state.
+  * If the SysTick interrupt priority is not higher than the DMA interrupt priority, stopping playback
+  * from the SysTick callback will not be able to preempt the DMA interrupt, causing the application to lock up.
+  * Ensure that the SysTick interrupt priority is configured correctly in your application (e.g., set SysTick
+  * priority to DMA interrupt priority to 1 more (lower priority) than SysTick) to allow proper stopping of
+  * playback without lockup.
+  *
+  * The DMA I2S callbacks just need to beat the buffer refill time, so that they can keep the buffer supplied
+  * with processed audio samples.
 */
 #ifndef __AUDIO_ENGINE_H
 #define __AUDIO_ENGINE_H
@@ -116,8 +125,8 @@ extern "C" {
 #define NOISE_GATE_THRESHOLD    512         // ~1.5% of full scale
 
 /* Audio silence midpoints */
-#define SAMPLE8_MIDPOINT        128U
-#define SAMPLE16_MIDPOINT       0
+#define SAMPLE8_MIDPOINT        128U        // Midpoint for unsigned 8-bit unsigned samples
+#define SAMPLE16_MIDPOINT       0           // Midpoint for signed 16-bit samples
 
 /* Fill half buffer macro */
 #define MIDPOINT_FILL_BUFFER() memset( pb_buffer, SAMPLE16_MIDPOINT, sizeof( pb_buffer ) );
@@ -182,13 +191,6 @@ typedef struct {
 /* Global audio engine state exposed for hardware initialization */
 extern uint32_t I2S_PlaybackSpeed;
 
-/* Audio engine state structure */
-typedef struct {
-  I2S_HandleTypeDef *hi2s;
-  int16_t *pb_buffer;
-  uint32_t playback_speed;
-} AudioEngine_HandleTypeDef;
-
 /* Hardware interface function pointer types */
 typedef void        ( *DAC_SwitchFunc )         ( GPIO_PinState setting );
 typedef uint16_t    ( *ReadVolumeFunc )         ( void );
@@ -213,9 +215,11 @@ void AudioEngine_OnPlaybackEnd( void );
  * @param[in] i2s_init     Function to initialize I2S peripheral
  * @return PB_Idle on success, PB_Error on failure
  */
-PB_StatusTypeDef    AudioEngine_Init                  ( DAC_SwitchFunc dac_switch,
+PB_StatusTypeDef    AudioEngine_Init                  (
+                                                        DAC_SwitchFunc dac_switch,
                                                         ReadVolumeFunc read_volume,
-                                                        I2S_InitFunc i2s_init );
+                                                        I2S_InitFunc i2s_init
+                                                      );
 
 /* Filter configuration functions */
 /**

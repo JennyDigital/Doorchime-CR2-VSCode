@@ -119,7 +119,7 @@ extern FilterConfig_TypeDef filter_cfg;
         void                SystemClock_Config          ( void );
 static  void                MX_GPIO_Init                ( void );
 static  void                MX_DMA_Init                 ( void );
-static  void                MX_I2S2_Init                ( void );                                     // Used in audio_engine
+static  void                MX_I2S2_Init                ( void );                     // Used in audio_engine
 #ifndef VOLUME_INPUT_DIGITAL
 static  void                MX_ADC1_Init                ( void );
 static  void                MX_TIM7_Init                ( void );
@@ -210,8 +210,8 @@ int main(void)
   filter_cfg.enable_soft_dc_filter_16bit  = 1;  // Soft DC blocking filter for 16-bit samples enabled by default
   filter_cfg.enable_soft_clipping         = 1;  // Soft clipping enabled by default
   filter_cfg.enable_air_effect            = 0;  // Air effect (high-shelf brightening) disabled by default; enable as needed
-  filter_cfg.enable_filter_chain_16bit    = 0;  // Master enable for entire 16-bit filter chain
-  filter_cfg.enable_filter_chain_8bit     = 1;  // Master enable for entire 8-bit filter chain
+  filter_cfg.enable_filter_chain_16bit    = 1;  // Master enable for entire 16-bit filter chain
+  filter_cfg.enable_filter_chain_8bit     = 0;  // Master enable for entire 8-bit filter chain
 
   // Apply initial filter configuration
   SetFilterConfig( &filter_cfg );
@@ -223,7 +223,7 @@ int main(void)
   SetFadeInTime(0.8f );                // 800 ms fade-in
   SetFadeOutTime( 0.15f );              // 150 ms fade-out
   SetPauseFadeTime( 0.15f );             // 150 ms pause fade-out
-  SetResumeFadeTime( 0.8f );            // 800 ms resume fade-in
+  SetResumeFadeTime( 1.25f );            // 1250 ms resume fade-in
 
   // Set LPF makeup gain to compensate for attenuation from filtering
   //SetSoftClippingEnable( 1 );
@@ -245,10 +245,10 @@ int main(void)
     }
 #endif
  
-    // Start playback of samples
+    // Start playback of sound sample
     //
-    PlaySample( teleport16b1c44k, TELEPORT16B1C44K_SZ,
-      I2S_AUDIOFREQ_44K, 16, TELEPORT16B1C44K_PB_FMT );
+    PlaySample( chinese_flute16k16bm, CHINESE_FLUTE16K16BM_SZ,
+      I2S_AUDIOFREQ_16K, 16, CHINESE_FLUTE16K16BM_PB_FMT );
     WaitForSampleEnd();
 
     ShutDownAudio();

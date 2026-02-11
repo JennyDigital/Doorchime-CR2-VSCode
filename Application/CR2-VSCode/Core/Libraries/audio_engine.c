@@ -1169,7 +1169,7 @@ static inline int32_t ComputeSoftClipCurve( int32_t excess, int32_t range )
 {
   int32_t x = excess * (int32_t)Q16_SCALE / range;
   if( x > (int32_t)Q16_SCALE ) x = (int32_t)Q16_SCALE;
-  int32_t x2 = ( x * x ) >> 16;
+  int32_t x2 = ( x * x )  >> 16;
   int32_t x3 = ( x2 * x ) >> 16;
 
   return ( ( 3 * x2 ) >> 1 ) - ( ( 2 * x3 ) >> 1 );
@@ -1220,7 +1220,8 @@ static inline int16_t ApplyDCFilterWithAlpha(
                                               volatile int16_t input,
                                               volatile int32_t *prev_input,
                                               volatile int32_t *prev_output,
-                                              uint32_t alpha_q16 )
+                                              uint32_t alpha_q16
+                                            )
 {
   int32_t output = input - *prev_input +
                    ( ( *prev_output * (int32_t)alpha_q16 ) >> DC_FILTER_SHIFT );
@@ -1743,6 +1744,7 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
   }
 
   vol_input = AudioEngine_ReadVolume();
+
   input   = chunk_p;      // Source sample pointer
   output  = ( half_to_fill == SECOND ) ? ( pb_buffer + CHUNK_SZ ) : pb_buffer;
 
@@ -1807,8 +1809,9 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
   }
 
   vol_input = AudioEngine_ReadVolume();
-  input = chunk_p;                                                          // Source sample pointer
-  output = ( half_to_fill == SECOND ) ? ( pb_buffer + CHUNK_SZ ) : pb_buffer;
+
+  input   = chunk_p;                                                        // Source sample pointer
+  output  = ( half_to_fill == SECOND ) ? ( pb_buffer + CHUNK_SZ ) : pb_buffer;
 
   // Transfer mono audio (scaled for volume) into the stereo buffer.
   // This is done both to eliminate the need for a second resistor
@@ -1885,8 +1888,8 @@ PB_StatusTypeDef PlaySample (
   //
   if( ( sample_depth != 16 && sample_depth != 8 ) || 
       ( mode != Mode_mono && mode != Mode_stereo) ||
-      sample_set_sz   == 0                        ||
-      sample_to_play  == NULL
+        sample_set_sz   == 0                      ||
+        sample_to_play  == NULL
     ) { return PB_Error; }
 
   // Ensure volume callback is initialized before starting playback
@@ -1916,32 +1919,32 @@ PB_StatusTypeDef PlaySample (
   HAL_I2S_DMAStop( &AUDIO_ENGINE_I2S_HANDLE );            // Ensure there is no currently playing sound before starting a new one.
   
   // Reset callback guard for new playback session
-  playback_end_callback_called = 0;
-  stop_requested = 0;
-  paused_sample_ptr = NULL;
+  playback_end_callback_called  = 0;
+  stop_requested                = 0;
+  paused_sample_ptr             = NULL;
   
   // Reset all filter state for new sample
   ResetAllFilterState();
   
   // Warm up 16-bit biquad filter state from first sample to avoid startup transient
   if( sample_depth == 16 && filter_cfg.enable_16bit_biquad_lpf ) {
-    int16_t first_sample = *((int16_t *)sample_to_play);
+    int16_t first_sample = *( (int16_t *)sample_to_play );
     WarmupBiquadFilter16Bit( first_sample );
   }
   
-  if( sample_depth == 16 ) {            // For 16-bit, initialize 16-bit sample playback pointers
+  if( sample_depth == 16 ) {                  // For 16-bit, initialize 16-bit sample playback pointers
     pb_p16_ptr    = (uint16_t *) sample_to_play;
     pb_end16_ptr  = pb_p16_ptr + sample_set_sz;
     pb_mode   = 16;
   }
-  else if( sample_depth == 8 ) {        // For 8-bit, initialize 8-bit sample playback pointers
+  else if( sample_depth == 8 ) {              // For 8-bit, initialize 8-bit sample playback pointers
     pb_p8_ptr     = (uint8_t *) sample_to_play;
     pb_end8_ptr   = pb_p8_ptr + sample_set_sz;
     pb_mode   = 8;
   }
   // Initialize fade counters
-  samples_remaining = sample_set_sz;  // Track position in file
-  fadeout_samples_remaining = 0;      // Pause fadeout duration (set when pause is called)
+  samples_remaining         = sample_set_sz;  // Track position in file
+  fadeout_samples_remaining = 0;              // Pause fadeout duration (set when pause is called)
   fadein_samples_remaining  = fadein_samples;
   
   // Pre-fill the buffer with processed samples before starting DMA
