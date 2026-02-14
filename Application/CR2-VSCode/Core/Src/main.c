@@ -108,6 +108,7 @@ volatile  uint16_t        trig_counter                  = 0;              // Cou
 volatile  uint8_t         trig_timeout_flag             = 0;              // Flag indicating trigger timeout has occurred
 volatile  uint16_t        trig_timeout_counter          = 0;              // Counter for trigger timeout duration
 volatile  uint8_t         trig_status                   = TRIGGER_CLR;    // Current trigger status  (SET or CLR)
+
 volatile  uint16_t        adc_raw                       = 0;              // 
 
 // External variables from audio_engine
