@@ -33,9 +33,11 @@
 /* USER CODE BEGIN Includes */
 
 // Sample data includes, use as needed.
+#include "audio_engine.h"
 #include "newchallenger11k.h"
 #include "guitar.h"
 #include "mind_the_door.h"
+#include "stm32g4xx_hal_gpio.h"
 #include "three_tone_arrival_c.h"
 #include "tunnelbarra.h"
 #include "tunnelbarra16.h"
@@ -109,7 +111,7 @@ volatile  uint8_t         trig_timeout_flag             = 0;              // Fla
 volatile  uint16_t        trig_timeout_counter          = 0;              // Counter for trigger timeout duration
 volatile  uint8_t         trig_status                   = TRIGGER_CLR;    // Current trigger status  (SET or CLR)
 
-volatile  uint16_t        adc_raw                       = 0;              // 
+volatile  uint16_t        adc_out                       = 0;              // 
 
 // External variables from audio_engine
 extern FilterConfig_TypeDef filter_cfg;
@@ -206,7 +208,7 @@ int main(void)
 
   // FilterConfig_TypeDef filter_cfg;
   filter_cfg.enable_noise_gate            = 0;  // Noise gate disabled by default; enable as needed
-  filter_cfg.enable_16bit_biquad_lpf      = 0;  // 16-bit biquad LPF disabled by default; enable as needed
+  filter_cfg.enable_16bit_biquad_lpf      = 1;  // 16-bit biquad LPF disabled by default; enable as needed
   filter_cfg.enable_8bit_lpf              = 0;  // 8-bit LPF disabled by default; enable as needed
   filter_cfg.enable_soft_dc_filter_16bit  = 1;  // Soft DC blocking filter for 16-bit samples enabled by default
   filter_cfg.enable_soft_clipping         = 1;  // Soft clipping enabled by default
@@ -227,8 +229,9 @@ int main(void)
   SetResumeFadeTime( 1.25f );            // 1250 ms resume fade-in
 
   // Set LPF makeup gain to compensate for attenuation from filtering
-  //SetSoftClippingEnable( 1 );
-  //SetLpf16BitCustomAlpha( CalcLpf16BitAlphaFromCutoff( 20000, I2S_AUDIOFREQ_22K ) );  // Set 16-bit biquad LPF cutoff to 20 kHz for 22 kHz sample rate
+  SetLpf16BitLevel( LPF_Custom );
+  SetSoftClippingEnable( 1 );
+  SetLpf16BitCustomAlpha( CalcLpf16BitAlphaFromCutoff( 3000, I2S_AUDIOFREQ_22K ) );  // Set 16-bit biquad LPF cutoff to 20 kHz for 22 kHz sample rate
   //SetLpfMakeupGain16Bit( 0.95f );  // Compensate for overshot from LPF.
 
   /* USER CODE END 2 */
@@ -441,9 +444,12 @@ static void MX_GPIO_Init( void )
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init( NSD_MODE_GPIO_Port, &GPIO_InitStruct );
 
+  /* Protect the MAX98357A from accidental logic high, which could damage the device  */
+  HAL_GPIO_LockPin( NSD_MODE_GPIO_Port, NSD_MODE_Pin );
+
   /*Configure GPIO pins : TRIGGER_Pin with interrupt */
   GPIO_InitStruct.Pin   = TRIGGER_Pin;
-  GPIO_InitStruct.Mode  = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Mode  = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull  = GPIO_PULLDOWN;
   HAL_GPIO_Init( TRIGGER_GPIO_Port, &GPIO_InitStruct );
   HAL_NVIC_SetPriority( EXTI4_IRQn, 0, 0 );
@@ -480,11 +486,11 @@ static void MX_TIM7_Init(void)
 
   /* USER CODE END TIM7_Init 1 */
   htim7.Instance                  = TIM7;
-  htim7.Init.Prescaler            = 150-1;
+  htim7.Init.Prescaler            = 150-1; // 150 MHz clock divided by 150 gives 1 MHz timer clock.
   htim7.Init.CounterMode          = TIM_COUNTERMODE_UP;
-  htim7.Init.Period               = 39999;
+  htim7.Init.Period               = 5000-1; // 1 MHz timer clock divided by 5000 gives 200 Hz update rate (5 ms period).
   htim7.Init.AutoReloadPreload    = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_Base_Init(&htim7)   != HAL_OK)
+  if( HAL_TIM_Base_Init(&htim7 ) != HAL_OK )
   {
     Error_Handler();
   }
@@ -627,9 +633,9 @@ uint16_t ReadVolume( void )
     // Scale 12-bit ADC directly to match 16-bit volume range with 16x scaling factor
     // (4095 * 16 = 65520, close to full 65535 range)
     #ifndef VOLUME_ADC_INVERTED
-    uint32_t lin = (uint32_t)adc_raw * MASTER_VOLUME_SCALE;               // Scale 12-bit to acceptable range
+    uint32_t lin = (uint32_t)adc_out * MASTER_VOLUME_SCALE;               // Scale 12-bit to acceptable range
     #else
-    uint32_t lin = ( (4095U - (uint32_t)adc_raw) * MASTER_VOLUME_SCALE ); // Invert ADC reading so 0 = max volume, 4095 = min volume
+    uint32_t lin = ( (4095U - (uint32_t)adc_out) * MASTER_VOLUME_SCALE ); // Invert ADC reading so 0 = max volume, 4095 = min volume
     #endif
     if( lin > VOLUME_ADC_MAX_SCALED ) lin = VOLUME_ADC_MAX_SCALED;        // Cap at maximum ADC * 16
     volume = (uint16_t)lin;
@@ -647,7 +653,18 @@ void HAL_ADC_ConvCpltCallback( ADC_HandleTypeDef *hadc )
 {
   /* Prevent unused argument(s) compilation warning */
   UNUSED(hadc);
-  adc_raw = HAL_ADC_GetValue( &hadc1 );
+  #define FILTER_SHIFT 4      // Smoothing factor (higher = smoother)
+
+  static uint16_t adc_filtered = 0;
+         uint16_t adc_raw;
+
+  // Get the raw value
+  adc_raw = (uint16_t) HAL_ADC_GetValue( &hadc1 );
+  // Note: We perform the subtraction first to find the 'error'
+  adc_filtered = adc_filtered + ( adc_raw - ( adc_filtered >> FILTER_SHIFT ) );
+
+  // Your actual 12-bit volume result (0-4095)
+  adc_out = adc_filtered >> FILTER_SHIFT;
 }
 
 
