@@ -79,6 +79,8 @@
 #include "fanfare_drums16b1c22k.h"    // Don't use the LPF with this one.  It needs to be bright and punchy, not distorted.
 #include "tribe_drum.h"
 #include "teleport16b1c44k.h"
+#include "medieval_flute.h"
+
 
 /* USER CODE END Includes */
 
@@ -208,7 +210,8 @@ int main(void)
 
   // FilterConfig_TypeDef filter_cfg;
   filter_cfg.enable_noise_gate            = 0;  // Noise gate disabled by default; enable as needed
-  filter_cfg.enable_16bit_biquad_lpf      = 1;  // 16-bit biquad LPF disabled by default; enable as needed
+  filter_cfg.enable_16bit_biquad_lpf      = 0
+  ;  // 16-bit biquad LPF disabled by default; enable as needed
   filter_cfg.enable_8bit_lpf              = 0;  // 8-bit LPF disabled by default; enable as needed
   filter_cfg.enable_soft_dc_filter_16bit  = 1;  // Soft DC blocking filter for 16-bit samples enabled by default
   filter_cfg.enable_soft_clipping         = 1;  // Soft clipping enabled by default
@@ -223,15 +226,15 @@ int main(void)
   SetAirEffectPresetDb( 0 );       // default +3 dB preset
   
   // Set fade times
-  SetFadeInTime(0.8f );                // 800 ms fade-in
-  SetFadeOutTime( 0.15f );              // 150 ms fade-out
-  SetPauseFadeTime( 0.15f );             // 150 ms pause fade-out
-  SetResumeFadeTime( 1.25f );            // 1250 ms resume fade-in
+  SetFadeInTime( 3.0f );                  // 3000 ms fade-in
+  SetFadeOutTime( 0.15f );                // 150 ms fade-out
+  SetPauseFadeTime( 0.15f );              // 150 ms pause fade-out
+  SetResumeFadeTime( 1.25f );             // 1250 ms resume fade-in
 
   // Set LPF makeup gain to compensate for attenuation from filtering
-  SetLpf16BitLevel( LPF_Custom );
+  SetLpf16BitLevel( LPF_Off );
   SetSoftClippingEnable( 1 );
-  SetLpf16BitCustomAlpha( CalcLpf16BitAlphaFromCutoff( 3000, I2S_AUDIOFREQ_22K ) );  // Set 16-bit biquad LPF cutoff to 20 kHz for 22 kHz sample rate
+  //SetLpf16BitCustomAlpha( CalcLpf16BitAlphaFromCutoff( 3000, I2S_AUDIOFREQ_22K ) );  // Set 16-bit biquad LPF cutoff to 20 kHz for 22 kHz sample rate
   //SetLpfMakeupGain16Bit( 0.95f );  // Compensate for overshot from LPF.
 
   /* USER CODE END 2 */
@@ -251,8 +254,8 @@ int main(void)
  
     // Start playback of sound sample
     //
-    PlaySample( chinese_flute16k16bm, CHINESE_FLUTE16K16BM_SZ,
-      I2S_AUDIOFREQ_16K, 16, CHINESE_FLUTE16K16BM_PB_FMT );
+    PlaySample( medieval_flute16b11k1c, MEDIEVAL_FLUTE16B11K1C_SZ,
+      I2S_AUDIOFREQ_11K, 16, MEDIEVAL_FLUTE16B11K1C_PB_FMT );
     WaitForSampleEnd();
 
     ShutDownAudio();
