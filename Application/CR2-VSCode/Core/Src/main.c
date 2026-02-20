@@ -31,13 +31,13 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "audio_engine.h"
 
 // Sample data includes, use as needed.
-#include "audio_engine.h"
+
 #include "newchallenger11k.h"
 #include "guitar.h"
 #include "mind_the_door.h"
-#include "stm32g4xx_hal_gpio.h"
 #include "three_tone_arrival_c.h"
 #include "tunnelbarra.h"
 #include "tunnelbarra16.h"
@@ -232,7 +232,7 @@ int main(void)
   SetResumeFadeTime( 1.25f );             // 1250 ms resume fade-in
 
   // Set LPF makeup gain to compensate for attenuation from filtering
-  SetLpf16BitLevel( LPF_Off );
+  SetLpf16BitLevel( LPF_VerySoft );
   SetSoftClippingEnable( 1 );
   //SetLpf16BitCustomAlpha( CalcLpf16BitAlphaFromCutoff( 3000, I2S_AUDIOFREQ_22K ) );  // Set 16-bit biquad LPF cutoff to 20 kHz for 22 kHz sample rate
   //SetLpfMakeupGain16Bit( 0.95f );  // Compensate for overshot from LPF.
@@ -254,8 +254,10 @@ int main(void)
  
     // Start playback of sound sample
     //
-    PlaySample( medieval_flute16b11k1c, MEDIEVAL_FLUTE16B11K1C_SZ,
-      I2S_AUDIOFREQ_11K, 16, MEDIEVAL_FLUTE16B11K1C_PB_FMT );
+    // PlaySample( medieval_flute16b11k1c, MEDIEVAL_FLUTE16B11K1C_SZ,
+    //   I2S_AUDIOFREQ_11K, 16, MEDIEVAL_FLUTE16B11K1C_PB_FMT );
+    PlaySample( guitar_riff22k, GUITAR_RIFF22K_SZ,
+      I2S_AUDIOFREQ_22K, 16, GUITAR_RIFF22K_PB_FMT );
     WaitForSampleEnd();
 
     ShutDownAudio();
@@ -645,7 +647,7 @@ uint16_t ReadVolume( void )
   #endif
 
   /* Analog signals have noise; clamp low values to avoid noise-induced ultra-quiet audio */
-  if( volume < 32U ) volume = 32U;
+  if( volume < VOLUME_MIN_CLAMP ) volume = VOLUME_MIN_CLAMP;
 
   /* Return raw volume - audio engine applies non-linear response curve internally */
   return volume;

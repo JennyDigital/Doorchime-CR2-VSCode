@@ -1006,6 +1006,7 @@ static int16_t ApplyLowPassFilter8Bit( int16_t sample, volatile int32_t *y1 )
                    ( ( one_minus_alpha * ( *y1 ) ) >> 16 );
   // Apply makeup gain
   int64_t output64 = ( (int64_t)output * (int64_t)filter_cfg.lpf_makeup_gain_q16 ) >> 16;
+  // Clamp to valid 16-bit range
   if( output64 > AUDIO_INT16_MAX ) output64 = AUDIO_INT16_MAX;
   if( output64 < AUDIO_INT16_MIN ) output64 = AUDIO_INT16_MIN;
   *y1 = (int32_t)output64;
@@ -1304,6 +1305,7 @@ static int16_t ApplyLowPassFilter16Bit(
   *y1 = output;
   // Apply 16-bit LPF makeup gain
   int64_t output64 = ( (int64_t)output * (int64_t)filter_cfg.lpf_makeup_gain_16bit_q16 ) >> 16;
+  // Clamp to valid 16-bit range
   if ( output64 > AUDIO_INT16_MAX ) output64 = AUDIO_INT16_MAX;
   if ( output64 < AUDIO_INT16_MIN ) output64 = AUDIO_INT16_MIN;
   output = (int32_t)output64;

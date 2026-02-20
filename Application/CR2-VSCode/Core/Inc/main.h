@@ -112,7 +112,10 @@ void Error_Handler(void);
 
 // ADC reading inversion option (uncomment to invert ADC so 0 = max volume, 4095 = min volume)
 // This is a convenience option for the user who wants to layout their PCB with reverse pinout.
-//#define VOLUME_ADC_INVERTED
+#define VOLUME_ADC_INVERTED
+
+// Volume minimum clamp level.
+#define VOLUME_MIN_CLAMP 8U
 
 /* USER CODE END Private defines */
 

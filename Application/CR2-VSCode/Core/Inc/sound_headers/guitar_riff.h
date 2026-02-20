@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #define GUITAR_RIFF22K_SZ 235712
+#define GUITAR_RIFF22K_PB_FMT Mode_mono
 
 const uint16_t guitar_riff22k[ GUITAR_RIFF22K_SZ ] =
 {
