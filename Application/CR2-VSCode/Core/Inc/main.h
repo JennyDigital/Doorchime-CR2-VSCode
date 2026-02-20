@@ -87,9 +87,9 @@ void Error_Handler(void);
 #define AUTO_TRIG_DISABLED    0
 
 // Trigger counter values
-#define TC_LOW_THRESHOLD      120U
-#define TC_HIGH_THRESHOLD     240U
-#define TC_MAX                360U
+#define TC_LOW_THRESHOLD      80U
+#define TC_HIGH_THRESHOLD     160U
+#define TC_MAX                240U
 #define TRIGGER_SET           1
 #define TRIGGER_CLR           0
 #define TRIG_TIMEOUT_MS       1000U
@@ -98,7 +98,7 @@ void Error_Handler(void);
 //#define TEST_CYCLING
 #define FORCE_TRIGGER_OPT
 //#define LOCK_BUILD
-#define NO_SLEEP_MODE
+//#define NO_SLEEP_MODE
 
 // Uncomment to use digital GPIOs for volume instead of ADC
 //#define VOLUME_INPUT_DIGITAL

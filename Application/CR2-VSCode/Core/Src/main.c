@@ -52,6 +52,8 @@
 #include "darkblues32k.h"
 #include "custom_tritone16k.h"
 #include "ocarina_melody32k.h"
+#include "ocarina22k.h"
+#include "ocarina_trill.h"
 #include "theremin_quartet.h"
 #include "steves_doorbell.h"
 #include "harmony8b.h"
@@ -80,6 +82,7 @@
 #include "tribe_drum.h"
 #include "teleport16b1c44k.h"
 #include "medieval_flute.h"
+#include "Emperor_dm22k1c16b.h"
 
 
 /* USER CODE END Includes */
@@ -205,13 +208,12 @@ int main(void)
   HAL_Delay( 150 );
 
   // Set DAC control to manual and start with it on.
-  DAC_MasterSwitch( DAC_ON );         // Start with DAC off until ready to play
-  SetDAC_Control( 0 );                // 0 = manual control, 1 = auto control by audio engine
+  //DAC_MasterSwitch( DAC_ON );         // Start with DAC off until ready to play
+  SetDAC_Control( 1 );                // 0 = manual control, 1 = auto control by audio engine
 
   // FilterConfig_TypeDef filter_cfg;
   filter_cfg.enable_noise_gate            = 0;  // Noise gate disabled by default; enable as needed
-  filter_cfg.enable_16bit_biquad_lpf      = 0
-  ;  // 16-bit biquad LPF disabled by default; enable as needed
+  filter_cfg.enable_16bit_biquad_lpf      = 0;  // 16-bit biquad LPF disabled by default; enable as needed
   filter_cfg.enable_8bit_lpf              = 0;  // 8-bit LPF disabled by default; enable as needed
   filter_cfg.enable_soft_dc_filter_16bit  = 1;  // Soft DC blocking filter for 16-bit samples enabled by default
   filter_cfg.enable_soft_clipping         = 1;  // Soft clipping enabled by default
@@ -226,17 +228,17 @@ int main(void)
   SetAirEffectPresetDb( 0 );       // default +3 dB preset
   
   // Set fade times
-  SetFadeInTime( 3.0f );                  // 3000 ms fade-in
-  SetFadeOutTime( 0.15f );                // 150 ms fade-out
+  SetFadeInTime( 0.5f );                  // 500 ms fade-in
+  SetFadeOutTime( 1.5f );                 // 1500 ms fade-out
   SetPauseFadeTime( 0.15f );              // 150 ms pause fade-out
   SetResumeFadeTime( 1.25f );             // 1250 ms resume fade-in
 
-  // Set LPF makeup gain to compensate for attenuation from filtering
-  SetLpf16BitLevel( LPF_VerySoft );
+  // Set LPF filter levels and makeup gain
+  SetLpf16BitLevel( LPF_Off );  // Start with LPF off
   SetSoftClippingEnable( 1 );
   //SetLpf16BitCustomAlpha( CalcLpf16BitAlphaFromCutoff( 3000, I2S_AUDIOFREQ_22K ) );  // Set 16-bit biquad LPF cutoff to 20 kHz for 22 kHz sample rate
-  //SetLpfMakeupGain16Bit( 0.95f );  // Compensate for overshot from LPF.
-
+  SetLpfMakeupGain16Bit( 0.88f );  // Compensate for overshot from LPF.
+  
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -256,8 +258,8 @@ int main(void)
     //
     // PlaySample( medieval_flute16b11k1c, MEDIEVAL_FLUTE16B11K1C_SZ,
     //   I2S_AUDIOFREQ_11K, 16, MEDIEVAL_FLUTE16B11K1C_PB_FMT );
-    PlaySample( guitar_riff22k, GUITAR_RIFF22K_SZ,
-      I2S_AUDIOFREQ_22K, 16, GUITAR_RIFF22K_PB_FMT );
+    PlaySample( ocarina_trill22k16b1c, OCARINA_TRILL22K16B1C_SZ,
+      I2S_AUDIOFREQ_22K, 16, OCARINA_TRILL22K16B1C_PB_FMT );
     WaitForSampleEnd();
 
     ShutDownAudio();
