@@ -83,6 +83,7 @@
 #include "teleport16b1c44k.h"
 #include "medieval_flute.h"
 #include "Emperor_dm22k1c16b.h"
+#include "didgeridoo.h"
 
 
 /* USER CODE END Includes */
@@ -258,8 +259,8 @@ int main(void)
     //
     // PlaySample( medieval_flute16b11k1c, MEDIEVAL_FLUTE16B11K1C_SZ,
     //   I2S_AUDIOFREQ_11K, 16, MEDIEVAL_FLUTE16B11K1C_PB_FMT );
-    PlaySample( ocarina_trill22k16b1c, OCARINA_TRILL22K16B1C_SZ,
-      I2S_AUDIOFREQ_22K, 16, OCARINA_TRILL22K16B1C_PB_FMT );
+    PlaySample( didgeridoo16b16k1c, DIDGERIDOO16B16K1C_SZ,
+      I2S_AUDIOFREQ_16K, 16, DIDGERIDOO16B16K1C_PB_FMT );
     WaitForSampleEnd();
 
     ShutDownAudio();

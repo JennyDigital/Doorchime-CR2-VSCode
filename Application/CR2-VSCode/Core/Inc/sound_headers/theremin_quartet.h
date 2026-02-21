@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #define THEREMIN_QUARTET11K_SZ 233722
+#define THEREMIN_QUARTET11K_PB_FMT Mode_mono 
 
 const uint16_t theremin_quartet11k[ THEREMIN_QUARTET11K_SZ ] =
 {
