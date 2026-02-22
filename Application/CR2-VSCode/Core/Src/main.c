@@ -229,8 +229,8 @@ int main(void)
   SetAirEffectPresetDb( 0 );       // default +3 dB preset
   
   // Set fade times
-  SetFadeInTime( 0.5f );                  // 500 ms fade-in
-  SetFadeOutTime( 1.5f );                 // 1500 ms fade-out
+  SetFadeInTime( 0.25f );                 // 250 ms fade-in
+  SetFadeOutTime( 4.0f );                // 4000 ms fade-out
   SetPauseFadeTime( 0.15f );              // 150 ms pause fade-out
   SetResumeFadeTime( 1.25f );             // 1250 ms resume fade-in
 
@@ -257,10 +257,10 @@ int main(void)
  
     // Start playback of sound sample
     //
-    // PlaySample( medieval_flute16b11k1c, MEDIEVAL_FLUTE16B11K1C_SZ,
-    //   I2S_AUDIOFREQ_11K, 16, MEDIEVAL_FLUTE16B11K1C_PB_FMT );
-    PlaySample( didgeridoo16b16k1c, DIDGERIDOO16B16K1C_SZ,
-      I2S_AUDIOFREQ_16K, 16, DIDGERIDOO16B16K1C_PB_FMT );
+    PlaySample( medieval_flute16b11k1c, MEDIEVAL_FLUTE16B11K1C_SZ,
+      I2S_AUDIOFREQ_11K, 16, MEDIEVAL_FLUTE16B11K1C_PB_FMT );
+    // PlaySample( custom_tritone16k, CUSTOM_TRITONE16K_SZ,
+    //   I2S_AUDIOFREQ_16K, 16, CUSTOM_TRITONE16K_PB_FMT );
     WaitForSampleEnd();
 
     ShutDownAudio();

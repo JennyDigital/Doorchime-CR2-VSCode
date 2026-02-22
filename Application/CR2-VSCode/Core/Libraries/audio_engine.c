@@ -111,6 +111,9 @@ static          int16_t   ApplyFilterChain8Bit        ( int16_t sample, AudioCha
 // DMA stop helper
 static inline   void      StopDmaAndResetPlaybackState( uint8_t reset_state );
 
+// Default fader state
+volatile uint8_t faders_enabled = 1;
+
 /* External variables that need to be defined by the application */
 extern I2S_HandleTypeDef AUDIO_ENGINE_I2S_HANDLE;
 
@@ -158,6 +161,8 @@ volatile  uint8_t         *pb_p8_ptr;                               // Pointer f
 volatile  uint8_t         *pb_end8_ptr;                             // End pointer for 8-bit sample processing
 volatile  uint16_t        *pb_p16_ptr;                              // Pointer for 16-bit sample processing
 volatile  uint16_t        *pb_end16_ptr;                            // End pointer for 16-bit sample processing
+
+volatile  uint16_t        fade_offset;
 
 volatile  uint8_t         pb_state                    = PB_Idle;    // Playback state machine variable
 volatile  uint8_t         half_to_fill;                             // Flag to indicate which half of the buffer to fill in the DMA callback
@@ -850,6 +855,30 @@ static uint32_t FadeTimeToSamples( float seconds )
 }
 
 
+/** Fader state Setter
+  *
+  * @brief Sets whether to apply fades or not.
+  * @param: fader_setting - 1 is faders enabled, 0 is disabled.
+  * @retval: none
+  */
+void SetFadersEnabled( uint8_t fader_setting )
+{
+  faders_enabled = fader_setting ? 1 : 0;
+}
+
+
+/** Fader state getter
+  *
+  * @brief Gets the the fader enable state
+  * @param: none
+  * @retval: fader_enabled state.
+  */
+uint8_t GetFadersEnabled( void )
+{
+  return faders_enabled;
+}
+
+
 /** Set fade-in time in seconds
   * 
   * @brief Sets the fade-in duration based on the current playback speed.
@@ -1068,9 +1097,9 @@ static int16_t ApplyFadeOut( int16_t sample )
     uint32_t remaining_in_file = 0;
     
     if( pb_mode == 16 ) {
-      remaining_in_file = (uint32_t)( pb_end16_ptr - pb_p16_ptr );
+      remaining_in_file = (uint32_t)( pb_end16_ptr - ( pb_p16_ptr + fade_offset ) );
     } else {
-      remaining_in_file = (uint32_t)( pb_end8_ptr - pb_p8_ptr );
+      remaining_in_file = (uint32_t)( pb_end8_ptr - ( pb_p8_ptr + fade_offset ) );
     }
     
     if( remaining_in_file > 0 && remaining_in_file <= fadeout_samples ) {
@@ -1412,9 +1441,13 @@ static inline int16_t ApplyPostFilters( int16_t sample, AudioChannelId channel_i
     sample = ApplyAirEffect( sample, &channel->air_x1, &channel->air_y1 );
   }
 #endif
-  
-  sample = ApplyFadeIn( sample );
-  sample = ApplyFadeOut( sample );
+
+  // Apply faders if enabled
+  if( faders_enabled )
+  {  
+    sample = ApplyFadeIn( sample );
+    sample = ApplyFadeOut( sample );
+  }
   
   if( filter_cfg.enable_noise_gate ) {
     sample = ApplyNoiseGate( sample );
@@ -1743,6 +1776,8 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
     return PB_Error;
   }
 
+  fade_offset = 0;
+
   vol_input = AudioEngine_ReadVolume();
 
   input   = chunk_p;      // Source sample pointer
@@ -1784,6 +1819,9 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
     
     // Update fade counters based on samples processed
     uint32_t samples_processed = ( channels == Mode_stereo ) ? 2 : 1;
+
+    fade_offset++;
+
     UpdateFadeCounters( samples_processed );
   }
   return PB_Playing;;
@@ -1807,6 +1845,8 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
   if( chunk_p == NULL ) {   // Sanity check
     return PB_Error;
   }
+
+  fade_offset = 0;
 
   vol_input = AudioEngine_ReadVolume();
 
@@ -1855,6 +1895,9 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
     
     // Update fade counters based on samples processed
     uint32_t samples_processed = ( channels == Mode_stereo ) ? 2 : 1;
+
+    fade_offset++;
+
     UpdateFadeCounters( samples_processed );
   }
   return PB_Playing;

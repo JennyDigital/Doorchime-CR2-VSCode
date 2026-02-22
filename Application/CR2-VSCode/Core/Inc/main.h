@@ -96,9 +96,9 @@ void Error_Handler(void);
 
 // Special development/customer switches
 //#define TEST_CYCLING
-#define FORCE_TRIGGER_OPT
+//#define FORCE_TRIGGER_OPT
 //#define LOCK_BUILD
-//#define NO_SLEEP_MODE
+#define NO_SLEEP_MODE
 
 // Uncomment to use digital GPIOs for volume instead of ADC
 //#define VOLUME_INPUT_DIGITAL

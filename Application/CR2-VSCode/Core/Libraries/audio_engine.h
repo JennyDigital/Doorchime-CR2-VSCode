@@ -347,6 +347,18 @@ uint16_t            CalcLpf8BitAlphaFromCutoff        ( float cutoff_hz, float s
 uint16_t            GetLpf16BitCustomAlphaFromCutoff  ( float cutoff_hz );
 
 /* Fade time configuration functions */
+
+/** @brief Set whether the faders are enabled or not
+ *  @param[in] 1 (Enabled) or 0 (Disabled).
+ */
+void                SetFadersEnabled                  ( uint8_t fader_setting );
+
+/**
+ * @brief Get the state of whether the faders are enabled or not.
+ * @return Faders enabled (1) or not (0)
+ */
+  uint8_t             GetFadersEnabled                ( void );
+
 /**
  * @brief Set the duration of fade-in ramp at playback start
  * @param[in] seconds Fade-in time in seconds (0.0-5.0 typical range)
