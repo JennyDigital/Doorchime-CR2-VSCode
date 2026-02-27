@@ -1740,6 +1740,7 @@ void AdvanceSamplePointer( void )
   if( pb_mode == 16 ) {  // Advance the 16-bit sample pointer
     pb_p16_ptr += p_advance;
     if( pb_p16_ptr >= pb_end16_ptr ) {
+      StopImmediate();
       pb_state = PB_Idle;
       return;
     }
@@ -1747,6 +1748,7 @@ void AdvanceSamplePointer( void )
   else if( pb_mode == 8 ) {  // Or advance the 8-bit sample pointer
     pb_p8_ptr += p_advance;
     if( pb_p8_ptr >= pb_end8_ptr ) {
+      StopImmediate();
       pb_state = PB_Idle;
       return;
     }
