@@ -157,24 +157,24 @@ volatile FilterConfig_TypeDef filter_cfg = {
 };
 
 /* Playback state variables */
-volatile  uint8_t         *pb_p8_ptr;                               // Pointer for 8-bit sample processing
-volatile  uint8_t         *pb_end8_ptr;                             // End pointer for 8-bit sample processing
-volatile  uint16_t        *pb_p16_ptr;                              // Pointer for 16-bit sample processing
-volatile  uint16_t        *pb_end16_ptr;                            // End pointer for 16-bit sample processing
+  volatile  uint8_t         *pb_p8_ptr;                               // Pointer for 8-bit sample processing
+volatile  uint8_t           *pb_end8_ptr;                             // End pointer for 8-bit sample processing
+volatile  uint16_t          *pb_p16_ptr;                              // Pointer for 16-bit sample processing
+volatile  uint16_t          *pb_end16_ptr;                            // End pointer for 16-bit sample processing
 
-volatile  uint16_t        fade_offset;
+volatile  uint16_t          fade_offset;
 
-volatile  uint8_t         pb_state                    = PB_Idle;    // Playback state machine variable
-volatile  uint8_t         half_to_fill;                             // Flag to indicate which half of the buffer to fill in the DMA callback
-          uint8_t         pb_mode;                                  // Mono or stereo mode (set by application before playback)
-          uint32_t        I2S_PlaybackSpeed           = 22025;      // Default playback speed in Hz
+volatile  PB_StatusTypeDef  pb_state                    = PB_Idle;    // Playback state machine variable
+volatile  uint8_t           half_to_fill;                             // Flag to indicate which half of the buffer to fill in the DMA callback
+          uint8_t           pb_mode;                                  // Mono or stereo mode (set by application before playback)
+          uint32_t          I2S_PlaybackSpeed           = 22025;      // Default playback speed in Hz
 
 /* Playback engine control variables */
-          uint32_t        p_advance;                                // Number of samples to advance in current buffer.
-          PB_ModeTypeDef  channels                    = Mode_mono;  // Default to mono; set to Mode_stereo for stereo playback.
-volatile  uint32_t        samples_remaining           = 0;          // Total samples remaining in current playback (used for tracking when to stop)
-volatile  uint32_t        fadein_samples_remaining    = 0;          // Fade-in samples remaining, used for applying fade-in effect over specified duration
-volatile  uint32_t        fadeout_samples_remaining   = 0;          // Fade-out samples remaining, used for applying fade-out effect over specified duration
+          uint32_t          p_advance;                                // Number of samples to advance in current buffer.
+          PB_ModeTypeDef    channels                    = Mode_mono;  // Default to mono; set to Mode_stereo for stereo playback.
+volatile  uint32_t          samples_remaining           = 0;          // Total samples remaining in current playback (used for tracking when to stop)
+volatile  uint32_t          fadein_samples_remaining    = 0;          // Fade-in samples remaining, used for applying fade-in effect over specified duration
+volatile  uint32_t          fadeout_samples_remaining   = 0;          // Fade-out samples remaining, used for applying fade-out effect over specified duration
 
 /* Fade time configuration (stored in seconds, converted to samples based on playback speed) */
           float           fadein_time_seconds         = 0.150f;     // 150ms default
@@ -1481,9 +1481,9 @@ static void ResetPlaybackState( void ) {
 /** Get current playback state
   * 
   * @param: none
-  * @retval: uint8_t - Current playback state (PB_Idle, PB_Playing, PB_Paused)
+  * @retval: PB_StatusTypeDef - Current playback state (PB_Idle, PB_Playing, PB_Paused)
   */
-uint8_t GetPlaybackState( void )
+PB_StatusTypeDef GetPlaybackState( void )
 {
   return pb_state;
 }
@@ -1494,7 +1494,7 @@ uint8_t GetPlaybackState( void )
   * @param: state - Desired playback state (PB_Idle, PB_Playing, PB_Paused)
   * @retval: none
   */
-void SetPlaybackState( uint8_t state )
+void SetPlaybackState( PB_StatusTypeDef state )
 {
   pb_state = state;
 }
@@ -2129,7 +2129,6 @@ PB_StatusTypeDef ResumePlayback( void )
       pb_p8_ptr   = (uint8_t *)paused_sample_ptr;
     }
   }
-  
 
   /* Resume playback from where it was paused */
   pb_state = PB_Playing;
@@ -2174,10 +2173,13 @@ PB_StatusTypeDef StopPlayback( void )
 static inline uint16_t ApplyVolumeResponseCurve( uint16_t linear_volume )
 {
   if( volume_response_nonlinear ) {
+
     /* Normalize to 0.0-1.0 range */
     float normalized = (float)linear_volume / 65535.0f;
+
     /* Apply inverse power law (gamma > 1 creates logarithmic response) */
     float curved = powf( normalized, 1.0f / volume_response_gamma );
+    
     /* Scale back to 0-65535 range */
     return (uint16_t)( curved * 65535.0f + 0.5f );
   } else {

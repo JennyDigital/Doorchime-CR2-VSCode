@@ -622,13 +622,13 @@ void                 HAL_I2S_TxCpltCallback         ( I2S_HandleTypeDef *hi2s );
  * @brief Get current playback state
  * @return PB_Idle, PB_Error, PB_Playing, PB_Paused, or PB_PlayingFailed
  */
-uint8_t             GetPlaybackState                ( void );
+PB_StatusTypeDef    GetPlaybackState                ( void );
 
 /**
  * @brief Set playback state (internal use)
  * @param[in] state New playback state
  */
-void                SetPlaybackState                ( uint8_t state );
+void                SetPlaybackState                ( PB_StatusTypeDef state );
 
 /**
  * @brief Get which half of double-buffer is next to fill
