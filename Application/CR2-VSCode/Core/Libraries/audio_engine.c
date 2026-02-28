@@ -2196,9 +2196,15 @@ static inline uint16_t ApplyVolumeResponseCurve( uint16_t linear_volume )
   */
 static inline int16_t ApplyVolumeSetting( int16_t sample, uint16_t volume_setting )
 {
-  /* Apply non-linear volume response curve if enabled */
-  uint16_t adjusted_volume = ApplyVolumeResponseCurve( volume_setting );
-  
+  static uint16_t   adjusted_volume,
+                    last_volume_setting   = 0;
+
+  /* Apply non-linear volume response curve if enabled, only recalculating when volume changes to lower CPU overhead */
+  if( volume_setting != last_volume_setting ) {
+    adjusted_volume = ApplyVolumeResponseCurve( volume_setting );
+    last_volume_setting = volume_setting;
+  }
+
   int32_t sample32 = (int32_t) sample;
   int32_t volume32 = (int32_t) adjusted_volume;
 
