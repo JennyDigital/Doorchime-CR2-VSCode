@@ -2,6 +2,20 @@
 
 All notable changes to the CR2-VSCode Audio Engine project are documented here.
 
+## [2026-03-01] - Fade Behavior, Pause/Resume, and API Docs Refresh
+
+### Added
+- **audio_engine.c**: Fader enable controls via `SetFadersEnabled()` and `GetFadersEnabled()`.
+- **Docs**: Updated API reference, quick reference, function index, and manual to reflect new getters/setters and behavior notes.
+
+### Changed
+- **audio_engine.c**: End-of-file fade-out now computes per-sample using `samples_remaining` (no half-chunk stepping), preserving smooth fades.
+- **audio_engine.c**: `WaitForSampleEnd()` now blocks while playback is paused or pausing, so pause/resume does not fall through to shutdown.
+- **Docs**: Function counts, filter config fields, and fader/makeup gain sections updated for API consistency.
+
+### Fixed
+- **audio_engine.c**: Resume now accepts `PB_Pausing` to reliably cancel an in-progress pause fade and continue playback.
+
 ## [2026-02-08] - New Sample + 16-bit LPF Makeup Gain
 
 ### Added

@@ -15,7 +15,7 @@
 11. [Troubleshooting](#troubleshooting)
 12. [Performance Notes](#performance-notes)
 
-**📖 Complete API Reference:** See [API_REFERENCE.md](API_REFERENCE.md) for detailed documentation of all 44+ functions including getters, setters, and control functions.
+**📖 Complete API Reference:** See [API_REFERENCE.md](API_REFERENCE.md) for detailed documentation of all 60+ functions including getters, setters, and control functions.
 
 ---
 
@@ -152,10 +152,11 @@ The audio playback system follows a clear data flow from flash memory through DS
    - Runtime-adjustable boost (+1 dB, +2 dB, +3 dB presets)
    - Disabled by default
 
-4. **Fade In/Out** *(Always Active)*
+4. **Fade In/Out** *(Enabled by default)*
    - Quadratic power curve ramp
    - Default: 2048 samples (~93 ms @ 22 kHz)
    - Smooth entry/exit for audio transitions
+  - Can be disabled via `SetFadersEnabled(0)` if needed
 
 5. **Noise Gate** *(Optional - enable_noise_gate)*
    - Mutes samples below ±512 amplitude
@@ -207,6 +208,7 @@ typedef enum {
   PB_Idle,           // No audio playing
   PB_Error,          // Error during playback
   PB_Playing,        // Audio actively playing
+  PB_Pausing,        // Fade-out in progress (pause or stop)
   PB_Paused,         // Playback paused
   PB_PlayingFailed   // Playback failed to start
 } PB_StatusTypeDef;
@@ -251,10 +253,13 @@ typedef struct {
   uint8_t enable_soft_clipping;     // Enable/disable soft clipping
   uint8_t enable_air_effect;        // Enable/disable air effect
   uint32_t lpf_makeup_gain_q16;     // Post-LPF gain in Q16 fixed-point
+  uint32_t lpf_makeup_gain_16bit_q16;  // Post-16-bit LPF gain in Q16 fixed-point
   LPF_Level lpf_16bit_level;        // 16-bit LPF aggressiveness
   uint16_t lpf_16bit_custom_alpha;  // Custom alpha for 16-bit LPF
   LPF_Level lpf_8bit_level;         // 8-bit LPF aggressiveness
   uint16_t lpf_8bit_custom_alpha;   // Custom alpha for 8-bit LPF
+  uint8_t enable_filter_chain_16bit;  // Master enable for entire 16-bit filter chain
+  uint8_t enable_filter_chain_8bit;   // Master enable for entire 8-bit filter chain
 } FilterConfig_TypeDef;
 ```
 
@@ -1656,5 +1661,5 @@ For questions or issues, refer to the troubleshooting section or review the prov
 ---
 
 **Document Version:** 1.0  
-**Last Updated:** 2026-01-24  
+**Last Updated:** 2026-03-01  
 **Audio Engine Version:** Modularized with Widened 16-bit LPF & Warm-Up Support

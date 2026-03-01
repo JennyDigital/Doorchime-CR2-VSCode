@@ -155,6 +155,7 @@ PB_StatusTypeDef WaitForSampleEnd(void);
 **Notes:**
 - Blocking call; use with caution in interrupt-sensitive contexts
 - Safe to call even if no playback is active
+- Blocks while playback is paused or pausing
 
 ### `PausePlayback()`
 
@@ -416,11 +417,14 @@ void SetFilterConfig(const FilterConfig_TypeDef *cfg);
   - `enable_noise_gate`: 1 to suppress low-level noise, 0 to disable
   - `enable_soft_clipping`: 1 to prevent distortion, 0 to disable
   - `enable_air_effect`: 1 to enable brightening, 0 to disable
-  - `lpf_makeup_gain_q16`: Makeup gain after LPF (Q16 format)
+  - `lpf_makeup_gain_q16`: Makeup gain after 8-bit LPF (Q16 format)
+  - `lpf_makeup_gain_16bit_q16`: Makeup gain after 16-bit LPF (Q16 format)
   - `lpf_8bit_level`: Filter aggressiveness for 8-bit (LPF_VerySoft to LPF_Aggressive)
   - `lpf_16bit_level`: Filter aggressiveness for 16-bit (LPF_VerySoft to LPF_Aggressive)
   - `lpf_16bit_custom_alpha`: Custom alpha coefficient (used if `lpf_16bit_level = LPF_Custom`)
   - `lpf_8bit_custom_alpha`: Custom alpha coefficient (used if `lpf_8bit_level = LPF_Custom`)
+  - `enable_filter_chain_16bit`: 1 to enable the full 16-bit filter chain, 0 to bypass
+  - `enable_filter_chain_8bit`: 1 to enable the full 8-bit filter chain, 0 to bypass
 
 **Example:**
 ```c
@@ -432,7 +436,10 @@ FilterConfig_TypeDef cfg = {
   .lpf_16bit_custom_alpha = LPF_16BIT_SOFT,
   .lpf_8bit_level = LPF_Medium,
   .lpf_8bit_custom_alpha = LPF_MEDIUM,
-  .lpf_makeup_gain_q16 = 65536  // 1.0x gain
+  .lpf_makeup_gain_q16 = 65536,        // 1.0x 8-bit LPF gain
+  .lpf_makeup_gain_16bit_q16 = 65536,  // 1.0x 16-bit LPF gain
+  .enable_filter_chain_16bit = 1,
+  .enable_filter_chain_8bit = 1
 };
 SetFilterConfig(&cfg);
 ```
@@ -579,6 +586,28 @@ void SetLpfMakeupGain8Bit(float gain);
 **Notes:**
 - Typical range: 0.5x to 1.5x
 - Higher values restore energy lost in filtering
+ - Higher values restore energy lost in filtering
+
+#### `SetLpfMakeupGain16Bit()`
+
+Set makeup gain after 16-bit LPF (compensates for filter attenuation).
+
+```c
+void SetLpfMakeupGain16Bit(float gain);
+```
+
+**Parameters:**
+- `gain`: Boost factor (0.1 to 2.0, clamped)
+
+#### `GetLpfMakeupGain16Bit()`
+
+Read current 16-bit LPF makeup gain.
+
+```c
+float GetLpfMakeupGain16Bit(void);
+```
+
+**Returns:** Current linear gain factor
 
 ### 16-bit LPF Functions
 
@@ -868,6 +897,27 @@ for (uint8_t i = 0; i < GetAirEffectPresetCount(); i++) {
 ---
 
 ## Fade Time Control
+
+### `SetFadersEnabled()`
+
+Enable or disable fade-in/fade-out processing.
+
+```c
+void SetFadersEnabled(uint8_t fader_setting);
+```
+
+**Parameters:**
+- `fader_setting`: 1 to enable faders, 0 to bypass
+
+### `GetFadersEnabled()`
+
+Query current fader enable state.
+
+```c
+uint8_t GetFadersEnabled(void);
+```
+
+**Returns:** 1 if faders are enabled, 0 if disabled
 
 ### `SetFadeInTime()`
 
@@ -1267,6 +1317,10 @@ void demo_interactive_control(void) {
 | `GetLpf8BitCustomAlpha()`            | LPF        | Get custom 8-bit LPF alpha            |
 | `SetLpf8BitLevel()`                  | LPF        | Set 8-bit filter aggressiveness       |
 | `SetLpfMakeupGain8Bit()`             | LPF        | Set 8-bit LPF makeup gain             |
+| `SetLpfMakeupGain16Bit()`            | LPF        | Set 16-bit LPF makeup gain            |
+| `GetLpfMakeupGain16Bit()`            | LPF        | Get 16-bit LPF makeup gain            |
+| `SetFadersEnabled()`                 | Fade       | Enable/disable faders                 |
+| `GetFadersEnabled()`                 | Fade       | Get fader enable state                |
 | `CalcLpf8BitAlphaFromCutoff()`       | LPF        | Calculate 8-bit LPF alpha from cutoff |
 | `SetPauseFadeTime()`                 | Fade       | Set pause fade-out duration           |
 | `SetResumeFadeTime()`                | Fade       | Set resume fade-in duration           |

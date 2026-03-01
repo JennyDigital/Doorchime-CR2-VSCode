@@ -1,6 +1,6 @@
 # Audio Engine Function Index
 
-Complete alphabetical index of all 44+ public functions in the Audio Engine API, organized by category with quick descriptions.
+Complete alphabetical index of all 60+ public functions in the Audio Engine API, organized by category with quick descriptions.
 
 <!-- Anchor targets for internal links -->
 <a id="advancesamplepointer"></a>
@@ -19,16 +19,20 @@ Complete alphabetical index of all 44+ public functions in the Audio Engine API,
 <a id="getdac_control"></a>
 <a id="getfadeintime"></a>
 <a id="getfadeouttime"></a>
+<a id="getfadersenabled"></a>
 <a id="getfilterconfig"></a>
 <a id="gethalftofill"></a>
 <a id="getlpf8bitcustomalpha"></a>
 <a id="getlpf8bitlevel"></a>
 <a id="getlpf16bitcustomalphafromotoff"></a>
+<a id="getlpfmakeupgain16bit"></a>
 <a id="getpausefadetime"></a>
 <a id="getplaybackspeed"></a>
 <a id="getplaybackstate"></a>
 <a id="getresumefadetime"></a>
 <a id="getsoftclippingenable"></a>
+<a id="getvolumeresponsegamma"></a>
+<a id="getvolumeresponsenonlinear"></a>
 <a id="hal_i2s_txcpltcallback"></a>
 <a id="hal_i2s_txhalfcpltcallback"></a>
 <a id="pauseplayback"></a>
@@ -42,6 +46,7 @@ Complete alphabetical index of all 44+ public functions in the Audio Engine API,
 <a id="setdac_control"></a>
 <a id="setfadeintime"></a>
 <a id="setfadeouttime"></a>
+<a id="setfadersenabled"></a>
 <a id="setfilterconfig"></a>
 <a id="sethalftofill"></a>
 <a id="setlpf8bitcustomalpha"></a>
@@ -49,11 +54,14 @@ Complete alphabetical index of all 44+ public functions in the Audio Engine API,
 <a id="setlpf16bitcustomalpha"></a>
 <a id="setlpf16bitlevel"></a>
 <a id="setlpfmakeupgain8bit"></a>
+<a id="setlpfmakeupgain16bit"></a>
 <a id="setpausefadetime"></a>
 <a id="setplaybackspeed"></a>
 <a id="setplaybackstate"></a>
 <a id="setresumefadetime"></a>
 <a id="setsoftclippingenable"></a>
+<a id="setvolumeresponsegamma"></a>
+<a id="setvolumeresponsenonlinear"></a>
 <a id="shutdownaudio"></a>
 <a id="stopplayback"></a>
 <a id="waitforsampleend"></a>
@@ -78,16 +86,20 @@ Complete alphabetical index of all 44+ public functions in the Audio Engine API,
 | [`GetDAC_Control()`](#getdac_control) | DAC Control | Read DAC power control state |
 | [`GetFadeInTime()`](#getfadeintime) | Fade Time | Get fade-in duration in seconds |
 | [`GetFadeOutTime()`](#getfadeouttime) | Fade Time | Get fade-out duration in seconds |
+| [`GetFadersEnabled()`](#getfadersenabled) | Fade Time | Get fader enable state |
 | [`GetFilterConfig()`](#getfilterconfig) | Filter Config | Read current filter configuration |
 | [`GetHalfToFill()`](#gethalftofill) | Internal State | Get which buffer half to fill next |
 | [`GetLpf8BitCustomAlpha()`](#getlpf8bitcustomalpha) | 8-bit LPF | Get custom 8-bit LPF alpha |
 | [`GetLpf8BitLevel()`](#getlpf8bitlevel) | 8-bit LPF | Get 8-bit LPF aggressiveness level |
 | [`GetLpf16BitCustomAlphaFromCutoff()`](#getlpf16bitcustomalphafromotoff) | 16-bit LPF | Get alpha from cutoff frequency |
+| [`GetLpfMakeupGain16Bit()`](#getlpfmakeupgain16bit) | LPF | Get 16-bit LPF makeup gain |
 | [`GetPauseFadeTime()`](#getpausefadetime) | Fade Time | Get pause fade duration in seconds |
 | [`GetPlaybackSpeed()`](#getplaybackspeed) | Internal State | Get current sample rate |
 | [`GetPlaybackState()`](#getplaybackstate) | Internal State | Get current playback state |
 | [`GetResumeFadeTime()`](#getresumefadetime) | Fade Time | Get resume fade duration in seconds |
 | [`GetSoftClippingEnable()`](#getsoftclippingenable) | Filter Config | Read soft clipping enable state |
+| [`GetVolumeResponseGamma()`](#getvolumeresponsegamma) | Volume Response | Get volume response gamma |
+| [`GetVolumeResponseNonlinear()`](#getvolumeresponsenonlinear) | Volume Response | Get non-linear volume response mode |
 | [`HAL_I2S_TxCpltCallback()`](#hal_i2s_txcpltcallback) | DMA Callbacks | DMA complete callback |
 | [`HAL_I2S_TxHalfCpltCallback()`](#hal_i2s_txhalfcpltcallback) | DMA Callbacks | DMA half-complete callback |
 | [`PausePlayback()`](#pauseplayback) | Playback Control | Pause with fade-out |
@@ -102,6 +114,7 @@ Complete alphabetical index of all 44+ public functions in the Audio Engine API,
 | [`SetDAC_Control()`](#setdac_control) | DAC Control | Enable/disable DAC power control |
 | [`SetFadeInTime()`](#setfadeintime) | Fade Time | Set fade-in duration in seconds |
 | [`SetFadeOutTime()`](#setfadeouttime) | Fade Time | Set fade-out duration in seconds |
+| [`SetFadersEnabled()`](#setfadersenabled) | Fade Time | Enable/disable faders |
 | [`SetFilterConfig()`](#setfilterconfig) | Filter Config | Apply complete filter configuration |
 | [`SetHalfToFill()`](#sethalftofill) | Internal State | Set which buffer half to fill next |
 | [`SetLpf8BitCustomAlpha()`](#setlpf8bitcustomalpha) | 8-bit LPF | Set custom alpha coefficient |
@@ -109,11 +122,14 @@ Complete alphabetical index of all 44+ public functions in the Audio Engine API,
 | [`SetLpf16BitCustomAlpha()`](#setlpf16bitcustomalpha) | 16-bit LPF | Set custom alpha coefficient |
 | [`SetLpf16BitLevel()`](#setlpf16bitlevel) | 16-bit LPF | Set 16-bit LPF aggressiveness level |
 | [`SetLpfMakeupGain8Bit()`](#setlpfmakeupgain8bit) | 8-bit LPF | Set makeup gain after 8-bit LPF |
+| [`SetLpfMakeupGain16Bit()`](#setlpfmakeupgain16bit) | LPF | Set makeup gain after 16-bit LPF |
 | [`SetPauseFadeTime()`](#setpausefadetime) | Fade Time | Set pause fade duration in seconds |
 | [`SetPlaybackSpeed()`](#setplaybackspeed) | Internal State | Set sample rate |
 | [`SetPlaybackState()`](#setplaybackstate) | Internal State | Set playback state |
 | [`SetResumeFadeTime()`](#setresumefadetime) | Fade Time | Set resume fade duration in seconds |
 | [`SetSoftClippingEnable()`](#setsoftclippingenable) | Filter Config | Enable/disable soft clipping |
+| [`SetVolumeResponseGamma()`](#setvolumeresponsegamma) | Volume Response | Set volume response gamma |
+| [`SetVolumeResponseNonlinear()`](#setvolumeresponsenonlinear) | Volume Response | Enable/disable non-linear volume response |
 | [`ShutDownAudio()`](#shutdownaudio) | Playback Control | Shut down all audio hardware |
 | [`StopPlayback()`](#stopplayback) | Playback Control | Stop playback with fade-out |
 | [`WaitForSampleEnd()`](#waitforsampleend) | Playback Control | Block until playback completes |
@@ -159,6 +175,11 @@ Complete alphabetical index of all 44+ public functions in the Audio Engine API,
 - [`CalcLpf16BitAlphaFromCutoff()`](#calclpf16bitalphafromotoff) - Calculate alpha from cutoff frequency
 - [`GetLpf16BitCustomAlphaFromCutoff()`](#getlpf16bitcustomalphafromotoff) - Get alpha from cutoff frequency
 
+### Makeup Gain (3 functions)
+- [`SetLpfMakeupGain8Bit()`](#setlpfmakeupgain8bit) - Set makeup gain after 8-bit LPF
+- [`SetLpfMakeupGain16Bit()`](#setlpfmakeupgain16bit) - Set makeup gain after 16-bit LPF
+- [`GetLpfMakeupGain16Bit()`](#getlpfmakeupgain16bit) - Get 16-bit LPF makeup gain
+
 ### Air Effect Control (11 functions)
 - [`SetAirEffectEnable()`](#setaireffectenable) - Enable/disable air effect
 - [`GetAirEffectEnable()`](#getaireffectenable) - Read air effect enable state
@@ -182,6 +203,10 @@ Complete alphabetical index of all 44+ public functions in the Audio Engine API,
 - [`SetResumeFadeTime()`](#setresumefadetime) - Set resume fade duration in seconds
 - [`GetResumeFadeTime()`](#getresumefadetime) - Get resume fade duration in seconds
 
+### Faders (2 functions)
+- [`SetFadersEnabled()`](#setfadersenabled) - Enable/disable faders
+- [`GetFadersEnabled()`](#getfadersenabled) - Get fader enable state
+
 ### Chunk Processing (3 functions)
 - [`ProcessNextWaveChunk()`](#processnextwavechunk) - Process 16-bit samples
 - [`ProcessNextWaveChunk_8_bit()`](#processnextwavechunk_8_bit) - Process 8-bit samples
@@ -198,6 +223,12 @@ Complete alphabetical index of all 44+ public functions in the Audio Engine API,
 - [`SetHalfToFill()`](#sethalftofill) - Set which buffer half to fill next
 - [`GetPlaybackSpeed()`](#getplaybackspeed) - Get current sample rate
 - [`SetPlaybackSpeed()`](#setplaybackspeed) - Set sample rate
+
+### Volume Response Control (4 functions)
+- [`SetVolumeResponseNonlinear()`](#setvolumeresponsenonlinear) - Enable/disable non-linear response
+- [`GetVolumeResponseNonlinear()`](#getvolumeresponsenonlinear) - Get non-linear response mode
+- [`SetVolumeResponseGamma()`](#setvolumeresponsegamma) - Set gamma exponent
+- [`GetVolumeResponseGamma()`](#getvolumeresponsegamma) - Get gamma exponent
 
 ## 🔍 Quick Lookups
 
@@ -240,7 +271,7 @@ Complete alphabetical index of all 44+ public functions in the Audio Engine API,
 
 For complete function signatures, parameters, return values, and code examples:
 
-- **Comprehensive Reference**: [API_REFERENCE.md](API_REFERENCE.md) - All 44+ functions with detailed examples
+- **Comprehensive Reference**: [API_REFERENCE.md](API_REFERENCE.md) - All 60+ functions with detailed examples
 - **Quick Guide**: [QUICK_REFERENCE.md](QUICK_REFERENCE.md) - Common patterns and fast lookup
 - **Header File**: [audio_engine.h](../Core/Libraries/audio_engine.h) - Doxygen-documented signatures (IDE integration)
 - **Manual**: [AUDIO_ENGINE_MANUAL.md](AUDIO_ENGINE_MANUAL.md) - Architecture and integration guide
@@ -303,5 +334,5 @@ For all other function details, see the comprehensive documentation files listed
 
 ---
 
-*Last updated: 2026-02-01*
+*Last updated: 2026-03-01*
 *Part of the Audio Engine Documentation Suite*

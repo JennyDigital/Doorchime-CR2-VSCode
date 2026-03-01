@@ -92,6 +92,8 @@ SetSoftClippingEnable(1);
 
 // Makeup gain after filtering
 SetLpfMakeupGain8Bit(1.15f);     // 15% boost
+SetLpfMakeupGain16Bit(1.05f);    // 5% boost
+GetLpfMakeupGain16Bit();
 ```
 
 ## Air Effect (Brightening)
@@ -130,6 +132,10 @@ GetFadeInTime();
 GetFadeOutTime();
 GetPauseFadeTime();
 GetResumeFadeTime();
+
+// Enable/disable faders
+SetFadersEnabled(1);
+GetFadersEnabled();
 ```
 
 ## Custom LPF Alpha
@@ -247,7 +253,7 @@ void main_loop(void) {
 
 ## Function Categories
 
-**Playback** (7): `PlaySample`, `WaitForSampleEnd`, `PausePlayback`, `ResumePlayback`, `StopPlayback`, `GetStopStatus`, `ShutDownAudio`
+**Playback** (6): `PlaySample`, `WaitForSampleEnd`, `PausePlayback`, `ResumePlayback`, `StopPlayback`, `ShutDownAudio`
 
 **DAC Control** (2): `SetDAC_Control`, `GetDAC_Control`
 
@@ -261,18 +267,22 @@ void main_loop(void) {
 
 **16-bit LPF** (4): `SetLpf16BitLevel`, `SetLpf16BitCustomAlpha`, `CalcLpf16BitAlphaFromCutoff`, `GetLpf16BitCustomAlphaFromCutoff`
 
-**Air Effect** (8): `SetAirEffectEnable`, `GetAirEffectEnable`, `SetAirEffectGainQ16`, `GetAirEffectGainQ16`, `SetAirEffectGainDb`, `GetAirEffectGainDb`, `SetAirEffectPresetDb`, `CycleAirEffectPresetDb`, `GetAirEffectPresetIndex`, `GetAirEffectPresetCount`, `GetAirEffectPresetDb`
+**Air Effect** (11): `SetAirEffectEnable`, `GetAirEffectEnable`, `SetAirEffectGainQ16`, `GetAirEffectGainQ16`, `SetAirEffectGainDb`, `GetAirEffectGainDb`, `SetAirEffectPresetDb`, `CycleAirEffectPresetDb`, `GetAirEffectPresetIndex`, `GetAirEffectPresetCount`, `GetAirEffectPresetDb`
 
 **Fade Times** (8): `SetFadeInTime`, `GetFadeInTime`, `SetFadeOutTime`, `GetFadeOutTime`, `SetPauseFadeTime`, `GetPauseFadeTime`, `SetResumeFadeTime`, `GetResumeFadeTime`
 
-**Makeup Gain** (1): `SetLpfMakeupGain8Bit`
+**Faders** (2): `SetFadersEnabled`, `GetFadersEnabled`
+
+**Makeup Gain** (3): `SetLpfMakeupGain8Bit`, `SetLpfMakeupGain16Bit`, `GetLpfMakeupGain16Bit`
 
 **Status** (2): `GetPlaybackState`, `GetPlaybackSpeed`
+
+**Volume Response** (4): `SetVolumeResponseNonlinear`, `GetVolumeResponseNonlinear`, `SetVolumeResponseGamma`, `GetVolumeResponseGamma`
 
 ---
 
 ## See Also
 
-- **Full API Reference**: [API_REFERENCE.md](API_REFERENCE.md) - Complete documentation for all 44+ functions
+- **Full API Reference**: [API_REFERENCE.md](API_REFERENCE.md) - Complete documentation for all 60+ functions
 - **User Manual**: [AUDIO_ENGINE_MANUAL.md](AUDIO_ENGINE_MANUAL.md) - Architecture, examples, troubleshooting
 - **Air Effect Guide**: [AIR_EFFECT_QUICK_REFERENCE.md](AIR_EFFECT_QUICK_REFERENCE.md) - Air effect details

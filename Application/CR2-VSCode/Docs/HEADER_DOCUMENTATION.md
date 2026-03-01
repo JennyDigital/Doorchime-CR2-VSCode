@@ -31,25 +31,29 @@ The header is organized into logical groups of related functions:
 2. **Application Callbacks** (1 function)
    - `AudioEngine_OnPlaybackEnd()` - Playback end notification callback
 
-3. **Filter Configuration** (7 functions)
+3. **Filter Configuration** (9 functions)
    - `SetFilterConfig()` / `GetFilterConfig()` - Batch configuration
    - `SetLpfMakeupGain8Bit()` - 8-bit LPF makeup gain
+   - `SetLpfMakeupGain16Bit()` / `GetLpfMakeupGain16Bit()` - 16-bit LPF makeup gain
    - `SetAirEffectEnable()` / `GetAirEffectEnable()` - Air effect enable
    - `SetSoftClippingEnable()` / `GetSoftClippingEnable()` - Clipping control
 
-4. **8-bit LPF Control** (2 functions)
+4. **8-bit LPF Control** (5 functions)
    - `SetLpf8BitLevel()` / `GetLpf8BitLevel()` - 8-bit LPF aggressiveness
+   - `SetLpf8BitCustomAlpha()` / `GetLpf8BitCustomAlpha()` - Custom alpha control
+   - `CalcLpf8BitAlphaFromCutoff()` - Frequency-based alpha helper
 
 5. **16-bit LPF Control** (4 functions)
    - `SetLpf16BitLevel()` / `SetLpf16BitCustomAlpha()` - 16-bit LPF control
    - `CalcLpf16BitAlphaFromCutoff()` - Frequency-based LPF configuration
    - `GetLpf16BitCustomAlphaFromCutoff()` - Query LPF cutoff frequency
 
-6. **Fade Time Configuration** (8 functions)
+6. **Fade Time Configuration** (10 functions)
    - `SetFadeInTime()` / `GetFadeInTime()` - Playback start fade
    - `SetFadeOutTime()` / `GetFadeOutTime()` - Playback stop fade
    - `SetPauseFadeTime()` / `GetPauseFadeTime()` - Pause fade
    - `SetResumeFadeTime()` / `GetResumeFadeTime()` - Resume fade
+   - `SetFadersEnabled()` / `GetFadersEnabled()` - Enable/disable faders
 
 7. **Playback Control** (7 functions)
    - `CalcSampleOffsetSamples()` - Compute sample offset from time, rate, and mode
@@ -125,7 +129,7 @@ Special usage notes include:
 ## Using the Documentation
 
 ### In Code Editors
-Most modern IDEs (Visual Studio, VS Code, CLion) will display this documentation as:
+Most modern IDEs (Visual Studio, CrossWorks, VS Code, CLion) will display this documentation as:
 - **Hover tooltips**: When you hover over a function name
 - **IntelliSense popups**: When you type function names
 - **Parameter hints**: While typing function arguments
@@ -227,17 +231,18 @@ The `ReadVolume` callback returns 1-65535:
 
 ## Function Count Summary
 
-Total documented functions: **55**
+Total documented functions: **63**
 
 - **Initialization**: 1
 - **Application Callbacks**: 1
-- **Filter Configuration**: 7
-- **8-bit LPF Control**: 2
+- **Filter Configuration**: 9
+- **8-bit LPF Control**: 5
 - **16-bit LPF Control**: 4
+- **Faders**: 2
 - **Fade Control**: 8
-- **Playback Control**: 6
+- **Playback Control**: 7
 - **DAC Power Control**: 2
-- **Volume Response Control**: 3
+- **Volume Response Control**: 4
 - **Chunk Processing**: 3
 - **Air Effect**: 9
 - **DMA Callbacks**: 2
@@ -273,5 +278,5 @@ The documentation follows these standards:
 
 ---
 
-*Last updated: 2026-02-07*
+*Last updated: 2026-03-01*
 *Part of the Audio Engine Documentation Suite*
