@@ -231,7 +231,7 @@ int main(void)
   // Set fade times
   SetFadeInTime( 0.25f );                 // 250 ms fade-in
   SetFadeOutTime( 4.0f );                // 4000 ms fade-out
-  SetPauseFadeTime( 0.15f );              // 150 ms pause fade-out
+  SetPauseFadeTime( 1.15f );              // 1150 ms pause fade-out
   SetResumeFadeTime( 1.25f );             // 1250 ms resume fade-in
 
   // Set LPF filter levels and makeup gain
@@ -259,6 +259,10 @@ int main(void)
     //
     PlaySample( medieval_flute16b11k1c, MEDIEVAL_FLUTE16B11K1C_SZ,
       I2S_AUDIOFREQ_11K, 16, MEDIEVAL_FLUTE16B11K1C_PB_FMT );
+      HAL_Delay( 2000 );
+      PausePlayback();
+      HAL_Delay( 3000 );
+      ResumePlayback();
     // PlaySample( custom_tritone16k, CUSTOM_TRITONE16K_SZ,
     //   I2S_AUDIOFREQ_16K, 16, CUSTOM_TRITONE16K_PB_FMT );
     WaitForSampleEnd();

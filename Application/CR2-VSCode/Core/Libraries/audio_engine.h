@@ -443,7 +443,7 @@ PB_StatusTypeDef    PlaySample                        (
 /**
  * @brief Block until current sample playback completes
  * @return PB_Idle when playback finished, PB_Error on playback failure
- * @note Suitable for simple blocking playback. For non-blocking, poll GetPlaybackState()
+ * @note This blocks while paused/pausing as well. For non-blocking, poll GetPlaybackState().
  */
 PB_StatusTypeDef    WaitForSampleEnd                  ( void );
 

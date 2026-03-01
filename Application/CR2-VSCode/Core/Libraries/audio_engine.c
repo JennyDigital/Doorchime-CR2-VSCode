@@ -162,8 +162,6 @@ volatile  uint8_t           *pb_end8_ptr;                             // End poi
 volatile  uint16_t          *pb_p16_ptr;                              // Pointer for 16-bit sample processing
 volatile  uint16_t          *pb_end16_ptr;                            // End pointer for 16-bit sample processing
 
-volatile  uint16_t          fade_offset;
-
 volatile  PB_StatusTypeDef  pb_state                    = PB_Idle;    // Playback state machine variable
 volatile  uint8_t           half_to_fill;                             // Flag to indicate which half of the buffer to fill in the DMA callback
           uint8_t           pb_mode;                                  // Mono or stereo mode (set by application before playback)
@@ -175,6 +173,7 @@ volatile  uint8_t           half_to_fill;                             // Flag to
 volatile  uint32_t          samples_remaining           = 0;          // Total samples remaining in current playback (used for tracking when to stop)
 volatile  uint32_t          fadein_samples_remaining    = 0;          // Fade-in samples remaining, used for applying fade-in effect over specified duration
 volatile  uint32_t          fadeout_samples_remaining   = 0;          // Fade-out samples remaining, used for applying fade-out effect over specified duration
+volatile  uint32_t          paused_samples_remaining    = 0;          // Saved remaining samples at pause point (used to resume correctly)
 
 /* Fade time configuration (stored in seconds, converted to samples based on playback speed) */
           float           fadein_time_seconds         = 0.150f;     // 150ms default
@@ -1092,20 +1091,10 @@ static int16_t ApplyFadeOut( int16_t sample )
     fade_total        = pause_fadeout_samples;
     remaining_to_use  = fadeout_samples_remaining;
   } else if( pb_state == PB_Playing ) {
-    /* For normal playback, check if we're in the fadeout window based on file position.
-       Calculate remaining samples from current pointer position to end. */
-    uint32_t remaining_in_file = 0;
-    
-    if( pb_mode == 16 ) {
-      remaining_in_file = (uint32_t)( pb_end16_ptr - ( pb_p16_ptr + fade_offset ) );
-    } else {
-      remaining_in_file = (uint32_t)( pb_end8_ptr - ( pb_p8_ptr + fade_offset ) );
-    }
-    
-    if( remaining_in_file > 0 && remaining_in_file <= fadeout_samples ) {
+    if( samples_remaining > 0 && samples_remaining <= fadeout_samples ) {
       should_apply_fade = 1;
       fade_total = fadeout_samples;
-      remaining_to_use = remaining_in_file;
+      remaining_to_use = samples_remaining;
     }
   }
   
@@ -1471,6 +1460,7 @@ static void ResetPlaybackState( void ) {
   samples_remaining             = 0;
   fadeout_samples_remaining     = 0;
   fadein_samples_remaining      = 0;
+  paused_samples_remaining      = 0;
   stop_requested                = 0;
   playback_end_callback_called  = 0;
 }
@@ -1778,8 +1768,6 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
     return PB_Error;
   }
 
-  fade_offset = 0;
-
   vol_input = AudioEngine_ReadVolume();
 
   input   = chunk_p;      // Source sample pointer
@@ -1822,8 +1810,6 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
     // Update fade counters based on samples processed
     uint32_t samples_processed = ( channels == Mode_stereo ) ? 2 : 1;
 
-    fade_offset++;
-
     UpdateFadeCounters( samples_processed );
   }
   return PB_Playing;;
@@ -1847,8 +1833,6 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
   if( chunk_p == NULL ) {   // Sanity check
     return PB_Error;
   }
-
-  fade_offset = 0;
 
   vol_input = AudioEngine_ReadVolume();
 
@@ -1897,8 +1881,6 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
     
     // Update fade counters based on samples processed
     uint32_t samples_processed = ( channels == Mode_stereo ) ? 2 : 1;
-
-    fade_offset++;
 
     UpdateFadeCounters( samples_processed );
   }
@@ -2035,7 +2017,7 @@ PB_StatusTypeDef PlaySample (
   */
 PB_StatusTypeDef WaitForSampleEnd( void )
 {
-  while( pb_state == PB_Playing ) {
+  while( pb_state == PB_Playing || pb_state == PB_Pausing || pb_state == PB_Paused ) {
     __NOP();  // Prevent optimizer from removing loop
   }
   
@@ -2071,6 +2053,9 @@ PB_StatusTypeDef PausePlayback( void )
   } else {
     paused_sample_ptr = (const void *)pb_p8_ptr;
   }
+
+  /* Preserve remaining samples so resume doesn't skip the end-of-file logic */
+  paused_samples_remaining = samples_remaining;
   
   /* Calculate current volume level if fading in */
   uint32_t fadeout_start_level = pause_fadeout_samples;
@@ -2117,8 +2102,8 @@ PB_StatusTypeDef PausePlayback( void )
   */
 PB_StatusTypeDef ResumePlayback( void )
 {
-  if( pb_state != PB_Paused ) {
-    return pb_state;  // Can only resume from paused state
+  if( pb_state != PB_Paused && pb_state != PB_Pausing ) {
+    return pb_state;  // Can only resume from paused or pausing state
   }
   
   /* Restore playback position from where it was paused */
@@ -2128,6 +2113,11 @@ PB_StatusTypeDef ResumePlayback( void )
     } else {
       pb_p8_ptr   = (uint8_t *)paused_sample_ptr;
     }
+  }
+
+  /* Restore remaining samples to align fade-out timing after resume */
+  if( paused_samples_remaining > 0 ) {
+    samples_remaining = paused_samples_remaining;
   }
 
   /* Resume playback from where it was paused */
