@@ -1763,12 +1763,11 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
 {
   int16_t *input, *output;
   int16_t leftsample, rightsample;
+  uint16_t current_volume;
 
   if( chunk_p == NULL ) {   // Sanity check
     return PB_Error;
   }
-
-  vol_input = AudioEngine_ReadVolume();
 
   input   = chunk_p;      // Source sample pointer
   output  = ( half_to_fill == SECOND ) ? ( pb_buffer + CHUNK_SZ ) : pb_buffer;
@@ -1780,11 +1779,14 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
   //
   for( uint16_t i = 0; i < HALFCHUNK_SZ; i++ )
   {
+    current_volume = AudioEngine_ReadVolume();
+    vol_input = current_volume;
+
     if( (uint16_t *) input >=  pb_end16_ptr ) {                                   // Check for end of sample data
       leftsample = SAMPLE16_MIDPOINT;                                             // Pad with silence if at end 
     }
     else {
-      leftsample = ApplyVolumeSetting( *input, vol_input );                       // Apply volume setting
+      leftsample = ApplyVolumeSetting( *input, current_volume );                  // Apply volume setting
       if( filter_cfg.enable_filter_chain_16bit == 1 ) {
       leftsample = ApplyFilterChain16Bit( leftsample, CHANNEL_LEFT );             // Apply complete filter chain
       }
@@ -1797,7 +1799,7 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
         rightsample = SAMPLE16_MIDPOINT;                                          // Pad with silence if at end
       }
       else { 
-        rightsample = ApplyVolumeSetting( *input, vol_input );                    // Right channel
+        rightsample = ApplyVolumeSetting( *input, current_volume );               // Right channel
         if( filter_cfg.enable_filter_chain_16bit == 1 ) {
         rightsample = ApplyFilterChain16Bit( rightsample, CHANNEL_RIGHT );        // Apply complete filter chain
         }
@@ -1829,12 +1831,11 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
   uint8_t *input;
   int16_t *output;
   int16_t leftsample, rightsample;
+  uint16_t current_volume;
 
   if( chunk_p == NULL ) {   // Sanity check
     return PB_Error;
   }
-
-  vol_input = AudioEngine_ReadVolume();
 
   input   = chunk_p;                                                        // Source sample pointer
   output  = ( half_to_fill == SECOND ) ? ( pb_buffer + CHUNK_SZ ) : pb_buffer;
@@ -1846,6 +1847,9 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
 
   for( uint16_t i = 0; i < HALFCHUNK_SZ; i++ )
   {
+    current_volume = AudioEngine_ReadVolume();
+    vol_input = current_volume;
+
     if( (uint8_t *) input >=  pb_end8_ptr ) {                               // Check for end of sample data
       leftsample = SAMPLE16_MIDPOINT;                                       // Pad with silence if at end
     }
@@ -1853,7 +1857,7 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
       /* Convert unsigned 8-bit (0..255) -> signed 16-bit with dithering */
       uint8_t sample8 = *input;
       leftsample = Apply8BitDithering( sample8 );                           // Left channel with dithering
-      leftsample = ApplyVolumeSetting( leftsample, vol_input );
+      leftsample = ApplyVolumeSetting( leftsample, current_volume );
       if( filter_cfg.enable_filter_chain_8bit == 1 ) {
         leftsample = ApplyFilterChain8Bit( leftsample, CHANNEL_LEFT );       // Apply complete filter chain
       }
@@ -1869,7 +1873,7 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
         /* Convert unsigned 8-bit (0..255) -> signed 16-bit with dithering */
         uint8_t sample8 = *input;
         rightsample = Apply8BitDithering( sample8 );                        // Right channel with dithering
-        rightsample = ApplyVolumeSetting( rightsample, vol_input );
+        rightsample = ApplyVolumeSetting( rightsample, current_volume );
         if( filter_cfg.enable_filter_chain_8bit == 1 ) {
           rightsample = ApplyFilterChain8Bit( rightsample, CHANNEL_RIGHT );   // Apply complete filter chain
         }
