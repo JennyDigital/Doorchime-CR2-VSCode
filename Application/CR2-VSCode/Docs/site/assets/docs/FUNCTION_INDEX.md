@@ -273,7 +273,7 @@ For complete function signatures, parameters, return values, and code examples:
 
 - **Comprehensive Reference**: [API_REFERENCE.md](API_REFERENCE.md) - All 60+ functions with detailed examples
 - **Quick Guide**: [QUICK_REFERENCE.md](QUICK_REFERENCE.md) - Common patterns and fast lookup
-- **Header File**: [audio_engine.h](../Core/Libraries/audio_engine.h) - Doxygen-documented signatures (IDE integration)
+- **Header File**: [audio_engine.h](../source/Core/Libraries/audio_engine.h) - Doxygen-documented signatures (IDE integration)
 - **Manual**: [AUDIO_ENGINE_MANUAL.md](AUDIO_ENGINE_MANUAL.md) - Architecture and integration guide
 
 ## 📝 Function Details
@@ -330,7 +330,7 @@ For all other function details, see the comprehensive documentation files listed
 - [API_REFERENCE.md](API_REFERENCE.md) - Detailed function reference
 - [QUICK_REFERENCE.md](QUICK_REFERENCE.md) - Fast lookup guide
 - [HEADER_DOCUMENTATION.md](HEADER_DOCUMENTATION.md) - Guide to Doxygen header
-- [audio_engine.h](../Core/Libraries/audio_engine.h) - Doxygen-documented header
+- [audio_engine.h](../source/Core/Libraries/audio_engine.h) - Doxygen-documented header
 
 ---
 

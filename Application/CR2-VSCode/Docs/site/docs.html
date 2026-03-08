@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doorchime CR2 | Documentation Hub</title>
+  <meta name="description" content="Doorchime CR2 documentation hub: guides, API reference, quick reference, portability report, and technical PDFs.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="noise"></div>
+
+  <header class="hero docs-hero">
+    <nav class="topbar">
+      <div class="brand">DOORCHIME CR2</div>
+      <div class="actions">
+        <a class="btn ghost" href="./index.html">Home</a>
+        <a class="btn" href="./assets/docs/README.md">Open README</a>
+      </div>
+    </nav>
+
+    <section class="panel docs-intro">
+      <p class="kicker">DOCUMENTATION HUB</p>
+      <h1>Everything You Need To Integrate, Tune, and Ship</h1>
+      <p class="lead">
+        Jump to setup guides, API details, portability advice, and filter analysis.
+        All links below are deployment-safe for your Netlify site.
+      </p>
+    </section>
+  </header>
+
+  <main>
+    <section class="panel docs-toolbar" aria-label="Documentation search">
+      <label class="docs-search-wrap" for="docs-search">Find a document</label>
+      <input id="docs-search" class="docs-search" type="search" placeholder="Search by title or description" autocomplete="off">
+      <p id="docs-count" class="docs-count">9 results</p>
+    </section>
+
+    <section class="panel docs-grid docs-grid-3">
+      <a class="doc" href="./assets/docs/README.md">
+        <h4>Project README</h4>
+        <p>Overview, feature matrix, quick start, and documentation map.</p>
+      </a>
+      <a class="doc" href="./assets/docs/AUDIO_ENGINE_MANUAL.md">
+        <h4>Audio Engine Manual</h4>
+        <p>Architecture deep dive, signal flow, and integration guidance.</p>
+      </a>
+      <a class="doc" href="./assets/docs/API_REFERENCE.md">
+        <h4>API Reference</h4>
+        <p>Function-by-function reference for playback, filters, and control.</p>
+      </a>
+      <a class="doc" href="./assets/docs/QUICK_REFERENCE.md">
+        <h4>Quick Reference</h4>
+        <p>Fast lookup for common patterns and runtime control calls.</p>
+      </a>
+      <a class="doc" href="./assets/docs/FUNCTION_INDEX.md">
+        <h4>Function Index</h4>
+        <p>Alphabetical and categorized function lookup.</p>
+      </a>
+      <a class="doc" href="./assets/docs/PORTABILITY_REPORT.md">
+        <h4>Portability Report</h4>
+        <p>Checklist and risk analysis for non-STM32 or mixed toolchains.</p>
+      </a>
+      <a class="doc" href="./assets/docs/Filter_Report_Enhanced.pdf">
+        <h4>Filter Report (PDF)</h4>
+        <p>Response curves, tuning data, and technical tables in A4 format.</p>
+      </a>
+      <a class="doc" href="./assets/docs/LICENSE">
+        <h4>MIT License</h4>
+        <p>Project licensing terms for commercial and open-source use.</p>
+      </a>
+      <a class="doc" href="./assets/audio-engine-logo-flashy.svg">
+        <h4>Logo Asset</h4>
+        <p>High-impact SVG branding asset for the audio engine.</p>
+      </a>
+    </section>
+  </main>
+
+  <footer>
+    <p>Doorchime CR2 Documentation Hub</p>
+  </footer>
+
+  <script>
+    (function () {
+      const input = document.getElementById("docs-search");
+      const count = document.getElementById("docs-count");
+      const cards = Array.from(document.querySelectorAll(".docs-grid .doc"));
+
+      function updateFilter() {
+        const term = input.value.trim().toLowerCase();
+        let visible = 0;
+
+        cards.forEach((card) => {
+          const text = card.textContent.toLowerCase();
+          const show = term === "" || text.includes(term);
+          card.style.display = show ? "block" : "none";
+          if (show) {
+            visible += 1;
+          }
+        });
+
+        count.textContent = `${visible} result${visible === 1 ? "" : "s"}`;
+      }
+
+      input.addEventListener("input", updateFilter);
+      updateFilter();
+    })();
+  </script>
+</body>
+</html>
