@@ -230,7 +230,7 @@ volatile  uint8_t         stop_requested              = 0;          // Set to 1 
 volatile  uint8_t         playback_end_callback_called = 0;         // Flag to ensure playback end callback is only called once per playback session, prevents multiple invocations in edge cases
 
 /* DAC power control flag */
-volatile  uint8_t         dac_power_control           = 1;          // Default to enabled
+volatile  uint8_t         dac_power_control           = true;       // Default to enabled
 
 
 /* ===== Filter State Reset Helpers ===== */
@@ -1594,6 +1594,9 @@ static inline void EndPlaybackCleanup( void )
   if( !playback_end_callback_called ) {
     playback_end_callback_called = 1;
     AudioEngine_OnPlaybackEnd();
+    if( dac_power_control == true ) {
+      AudioEngine_DACSwitch( 0 );
+    }
   }
 }
 
@@ -1624,6 +1627,9 @@ static inline void StopImmediate( void )
   if( !playback_end_callback_called ) {
     playback_end_callback_called = 1;
     AudioEngine_OnPlaybackEnd();
+    if( dac_power_control == true ) {
+      AudioEngine_DACSwitch( DAC_OFF );
+    }
   }
 }
 
@@ -1859,6 +1865,8 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
     return PB_Error;
   }
 
+  vol_input = AudioEngine_ReadVolume();
+
   input   = chunk_p;                                                        // Source sample pointer
   output  = ( half_to_fill == SECOND ) ? ( pb_buffer + CHUNK_SZ ) : pb_buffer;
 
@@ -2029,6 +2037,9 @@ PB_StatusTypeDef PlaySample (
   pb_state = PB_Playing;
   if( HAL_I2S_Transmit_DMA( &AUDIO_ENGINE_I2S_HANDLE, (uint16_t *) pb_buffer, PB_BUFF_SZ )
       != HAL_OK ) {
+    if( dac_power_control == true ) {
+      AudioEngine_DACSwitch( DAC_OFF );
+    }
     pb_state = PB_PlayingFailed;
     return PB_PlayingFailed;
   }

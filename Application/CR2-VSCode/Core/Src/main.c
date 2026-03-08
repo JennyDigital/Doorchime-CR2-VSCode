@@ -229,8 +229,8 @@ int main(void)
   SetAirEffectPresetDb( 0 );       // default +3 dB preset
   
   // Set fade times
-  SetFadeInTime( 1.0f );                 // 1.0 s fade-in
-  SetFadeOutTime( 1.0f );                // 1.0 s fade-out
+  SetFadeInTime( 0.5f );                 // 0.5 s fade-in
+  SetFadeOutTime( 0.5f );                // 0.5 s fade-out
   SetPauseFadeTime( 1.15f );              // 1150 ms pause fade-out
   SetResumeFadeTime( 1.25f );             // 1250 ms resume fade-in
 
