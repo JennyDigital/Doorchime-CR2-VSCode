@@ -235,7 +235,7 @@ int main(void)
   SetResumeFadeTime( 1.25f );             // 1250 ms resume fade-in
 
   // Set LPF filter levels and makeup gain
-  SetLpf16BitLevel( LPF_Off );  // Start with LPF off
+  SetLpf16BitLevel( LPF_VerySoft );  // Start with LPF off
   SetSoftClippingEnable( 1 );
   //SetLpf16BitCustomAlpha( CalcLpf16BitAlphaFromCutoff( 3000, I2S_AUDIOFREQ_22K ) );  // Set 16-bit biquad LPF cutoff to 20 kHz for 22 kHz sample rate
   SetLpfMakeupGain16Bit( 1.0f );  // Set at 1 for testing purposes.

@@ -435,6 +435,7 @@ void SetLpf8BitCustomAlpha( uint16_t alpha )
 {
   filter_cfg.lpf_8bit_custom_alpha = alpha;
   filter_cfg.lpf_8bit_level = LPF_Custom;
+  filter_cfg.enable_8bit_lpf = 1;
   lpf_8bit_alpha = alpha;
 }
 
@@ -1306,19 +1307,27 @@ static int16_t ApplyLowPassFilter16Bit(
                                         volatile int32_t *y2
                                       )
 {
-  uint32_t alpha = lpf_16bit_alpha;
-  int32_t b0 = ( ( Q16_SCALE - alpha ) * ( Q16_SCALE - alpha ) ) >> 17;
+  uint32_t alpha = (uint32_t)lpf_16bit_alpha;
+  if( alpha >= Q16_SCALE ) {
+    alpha = Q16_SCALE - 1U;
+  }
+
+  uint32_t one_minus_alpha = Q16_SCALE - alpha;
+  int32_t b0 = (int32_t)( ( (int64_t)one_minus_alpha * (int64_t)one_minus_alpha ) >> 17 );
   int32_t b1 = b0 << 1;
   int32_t b2 = b0;
-  int32_t a1 = -( alpha << 1 );
-  int32_t a2 = ( alpha * alpha ) >> 16;
+  int32_t a1 = -( (int32_t)alpha * 2 );
+  int32_t a2 = (int32_t)( ( (int64_t)alpha * (int64_t)alpha ) >> 16 );
   /* Use 64-bit accumulation to avoid overflow on aggressive coefficients */
   int64_t acc = ( (int64_t)b0 * input ) +
                 ( (int64_t)b1 * (*x1) ) +
                 ( (int64_t)b2 * (*x2) ) -
                 ( (int64_t)a1 * (*y1) ) -
                 ( (int64_t)a2 * (*y2) );
-  int32_t output = (int32_t)( acc >> 16 );
+  int64_t output_pre = acc >> 16;
+  if( output_pre > INT32_MAX ) output_pre = INT32_MAX;
+  if( output_pre < INT32_MIN ) output_pre = INT32_MIN;
+  int32_t output = (int32_t)output_pre;
   *x2 = *x1;
   *x1 = input;
   *y2 = *y1;
@@ -1795,6 +1804,8 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
   if( chunk_p == NULL ) {   // Sanity check
     return PB_Error;
   }
+
+  vol_input = AudioEngine_ReadVolume();
 
   input   = chunk_p;      // Source sample pointer
   output  = ( half_to_fill == SECOND ) ? ( pb_buffer + CHUNK_SZ ) : pb_buffer;
@@ -2284,6 +2295,9 @@ void ShutDownAudio( void )
 static inline uint16_t GetLpf8BitAlpha( LPF_Level lpf_level )
 {
     switch (lpf_level) {
+    case LPF_Off:
+      return LPF_MEDIUM;
+
         case LPF_Custom:
       return filter_cfg.lpf_8bit_custom_alpha;
             

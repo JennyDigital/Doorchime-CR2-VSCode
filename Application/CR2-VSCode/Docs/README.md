@@ -1,5 +1,7 @@
 # Audio Engine - STM32 DSP Audio Playback System
 
+![Audio Engine Flash Logo](./audio-engine-logo-flashy.svg)
+
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-STM32%20with%20I2S-orange.svg)](https://www.st.com/en/microcontrollers-microprocessors/stm32-32-bit-arm-cortex-mcus.html)
 [![Audio](https://img.shields.io/badge/audio-8bit%20%7C%2016bit-green.svg)]()
@@ -9,6 +11,8 @@
 A professional, reusable audio playback engine for STM32 microcontrollers with I2S support (including STM32G4, STM32F4, STM32H7 series and others) with runtime-configurable DSP filter chain, supporting 8-bit and 16-bit audio playback through I2S to digital amplifiers such as the MAX98357A. Includes an Air Effect high-shelf brightening filter with presets (+1, +2, +3 dB) and direct dB control.
 
 > 📚 **New to the project?** See [DOCUMENTATION_GUIDE.md](DOCUMENTATION_GUIDE.md) for complete navigation of all 15 documentation files.
+
+> 🌍 **Porting to other toolchains or architectures?** See [PORTABILITY_REPORT.md](./PORTABILITY_REPORT.md) for compatibility risks and migration guidance.
 
 ## 📋 Table of Contents
 
@@ -21,6 +25,7 @@ A professional, reusable audio playback engine for STM32 microcontrollers with I
 - [API Reference](#-api-reference)
 - [Performance](#-performance)
 - [Documentation](#-documentation)
+- [Portability](#-portability)
 
 ## ✨ Features
 
@@ -357,6 +362,14 @@ Located in `Core/Libraries/audio_engine.h`:
 #define DC_FILTER_ALPHA       64225     // Standard DC filter coefficient (0.98)
 #define NOISE_GATE_THRESHOLD  512       // Noise gate threshold (~1.5% full scale)
 ```
+
+## 🌍 Portability
+
+For non-STM32 or less-compatible environments (different compilers, C runtimes, or CPU alignment/aliasing rules), use the dedicated report:
+
+- [PORTABILITY_REPORT.md](./PORTABILITY_REPORT.md)
+
+It summarizes prioritized risks and gives a practical migration checklist.
 
 ## 🎯 Usage Examples
 
