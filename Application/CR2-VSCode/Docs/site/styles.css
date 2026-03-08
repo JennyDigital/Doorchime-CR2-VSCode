@@ -147,6 +147,19 @@ h1 {
   border-color: #38658f;
 }
 
+.license-btn {
+  border-color: rgba(255, 211, 107, 0.72);
+  color: #ffe7ad;
+  background: linear-gradient(130deg, rgba(104, 69, 6, 0.42), rgba(42, 30, 6, 0.34));
+  box-shadow: inset 0 0 0 1px rgba(255, 223, 145, 0.18);
+}
+
+.license-btn:hover {
+  border-color: rgba(255, 224, 152, 0.92);
+  color: #fff6de;
+  box-shadow: 0 10px 24px rgba(255, 188, 70, 0.18), inset 0 0 0 1px rgba(255, 223, 145, 0.25);
+}
+
 .panel {
   background: var(--panel);
   border: 1px solid var(--panel-border);
@@ -336,6 +349,46 @@ h1 {
   margin: 20px 0;
 }
 
+.markdown-view.license-mode {
+  background:
+    radial-gradient(circle at 88% 8%, rgba(255, 220, 140, 0.11), transparent 34%),
+    rgba(22, 17, 8, 0.78);
+  border-color: rgba(255, 214, 130, 0.42);
+}
+
+.license-shell {
+  max-width: 86ch;
+  margin: 0 auto;
+}
+
+.license-kicker {
+  margin: 0 0 10px;
+  color: #ffd589;
+  letter-spacing: 0.08em;
+  font-size: 0.78rem;
+  font-family: "Orbitron", sans-serif;
+  text-transform: uppercase;
+}
+
+.license-shell h2 {
+  margin: 0 0 14px;
+  color: #ffe9bc;
+  font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+}
+
+.license-text {
+  margin: 0;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 214, 130, 0.35);
+  background: rgba(10, 8, 4, 0.65);
+  color: #f8e5bd;
+  font-family: "ui-monospace", "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 0.93rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
 .docs-grid-3 {
   grid-template-columns: repeat(3, 1fr);
 }
@@ -364,6 +417,26 @@ h1 {
 .doc p {
   margin: 0;
   color: var(--muted);
+}
+
+.license-card {
+  border-color: rgba(255, 211, 107, 0.45);
+  background:
+    radial-gradient(circle at 85% 15%, rgba(255, 214, 130, 0.12), transparent 36%),
+    rgba(24, 17, 4, 0.72);
+}
+
+.license-card h4 {
+  color: #ffe6af;
+}
+
+.license-card p {
+  color: #f5ddb2;
+}
+
+.license-card:hover {
+  border-color: rgba(255, 223, 145, 0.85);
+  box-shadow: 0 12px 24px rgba(255, 188, 70, 0.12);
 }
 
 footer {

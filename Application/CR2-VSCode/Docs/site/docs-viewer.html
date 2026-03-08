@@ -48,9 +48,19 @@
       const requested = params.get("doc") || "README.md";
 
       // Keep doc selection constrained to expected filename characters.
-      const safeDoc = /^[A-Za-z0-9._-]+\.md$/.test(requested) ? requested : "README.md";
+      const safeDoc = (/^[A-Za-z0-9._-]+\.md$/.test(requested) || requested === "LICENSE") ? requested : "README.md";
       const docsRoot = "./assets/docs/";
       const docPath = docsRoot + safeDoc;
+      const isLicense = safeDoc === "LICENSE";
+
+      function escapeHtml(text) {
+        return text
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
 
       function resolveRelativePath(baseDoc, relPath) {
         const baseDir = baseDoc.includes("/") ? baseDoc.slice(0, baseDoc.lastIndexOf("/") + 1) : "";
@@ -74,6 +84,11 @@
             return;
           }
 
+          if (href === "LICENSE" || href.endsWith("/LICENSE")) {
+            a.setAttribute("href", "./docs-viewer.html?doc=LICENSE");
+            return;
+          }
+
           if (href.endsWith(".pdf")) {
             const resolvedPdf = resolveRelativePath(currentDoc, href);
             a.setAttribute("href", docsRoot + resolvedPdf.split("/").pop());
@@ -94,9 +109,26 @@
             throw new Error(`Could not load ${safeDoc} (HTTP ${response.status})`);
           }
 
-          const markdown = await response.text();
-          const rawHtml = marked.parse(markdown, { gfm: true, breaks: false });
+          const docText = await response.text();
+
+          if (isLicense) {
+            output.classList.add("license-mode");
+            output.innerHTML = `
+              <div class="license-shell">
+                <p class="license-kicker">Open Source License</p>
+                <h2>MIT License</h2>
+                <pre class="license-text">${escapeHtml(docText)}</pre>
+              </div>
+            `;
+            title.textContent = "MIT License";
+            subtitle.textContent = "Rendered legal text from assets/docs/LICENSE";
+            document.title = "Doorchime CR2 | MIT License";
+            return;
+          }
+
+          const rawHtml = marked.parse(docText, { gfm: true, breaks: false });
           const safeHtml = DOMPurify.sanitize(rawHtml);
+          output.classList.remove("license-mode");
           output.innerHTML = safeHtml;
           rewriteLinks(output, safeDoc);
           title.textContent = safeDoc;
