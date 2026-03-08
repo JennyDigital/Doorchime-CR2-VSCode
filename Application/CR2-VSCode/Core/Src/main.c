@@ -219,7 +219,7 @@ int main(void)
   filter_cfg.enable_soft_dc_filter_16bit  = 1;  // Soft DC blocking filter for 16-bit samples enabled by default
   filter_cfg.enable_soft_clipping         = 1;  // Soft clipping enabled by default
   filter_cfg.enable_air_effect            = 0;  // Air effect (high-shelf brightening) disabled by default; enable as needed
-  filter_cfg.enable_filter_chain_16bit    = 1;  // Master enable for entire 16-bit filter chain
+  filter_cfg.enable_filter_chain_16bit    = 0;  // Master enable for entire 16-bit filter chain
   filter_cfg.enable_filter_chain_8bit     = 0;  // Master enable for entire 8-bit filter chain
 
   // Apply initial filter configuration
@@ -229,8 +229,8 @@ int main(void)
   SetAirEffectPresetDb( 0 );       // default +3 dB preset
   
   // Set fade times
-  SetFadeInTime( 0.25f );                 // 250 ms fade-in
-  SetFadeOutTime( 4.0f );                // 4000 ms fade-out
+  SetFadeInTime( 1.0f );                 // 1.0 s fade-in
+  SetFadeOutTime( 1.0f );                // 1.0 s fade-out
   SetPauseFadeTime( 1.15f );              // 1150 ms pause fade-out
   SetResumeFadeTime( 1.25f );             // 1250 ms resume fade-in
 
@@ -238,7 +238,7 @@ int main(void)
   SetLpf16BitLevel( LPF_Off );  // Start with LPF off
   SetSoftClippingEnable( 1 );
   //SetLpf16BitCustomAlpha( CalcLpf16BitAlphaFromCutoff( 3000, I2S_AUDIOFREQ_22K ) );  // Set 16-bit biquad LPF cutoff to 20 kHz for 22 kHz sample rate
-  SetLpfMakeupGain16Bit( 0.88f );  // Compensate for overshot from LPF.
+  SetLpfMakeupGain16Bit( 1.0f );  // Set at 1 for testing purposes.
   
   /* USER CODE END 2 */
 
@@ -257,14 +257,8 @@ int main(void)
  
     // Start playback of sound sample
     //
-    PlaySample( medieval_flute16b11k1c, MEDIEVAL_FLUTE16B11K1C_SZ,
-      I2S_AUDIOFREQ_11K, 16, MEDIEVAL_FLUTE16B11K1C_PB_FMT );
-      HAL_Delay( 2000 );
-      PausePlayback();
-      HAL_Delay( 3000 );
-      ResumePlayback();
-    // PlaySample( custom_tritone16k, CUSTOM_TRITONE16K_SZ,
-    //   I2S_AUDIOFREQ_16K, 16, CUSTOM_TRITONE16K_PB_FMT );
+    PlaySample( didgeridoo16b16k1c , DIDGERIDOO16B16K1C_SZ,
+      I2S_AUDIOFREQ_22K, 16, DIDGERIDOO16B16K1C_PB_FMT );
     WaitForSampleEnd();
 
     ShutDownAudio();

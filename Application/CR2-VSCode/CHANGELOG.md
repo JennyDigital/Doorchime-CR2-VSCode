@@ -2,6 +2,26 @@
 
 All notable changes to the CR2-VSCode Audio Engine project are documented here.
 
+## [2026-03-08] - Fades Decoupled from Filter Chain
+
+### Changed
+- **audio_engine.c**: Fade-in/fade-out are now applied once per sample in chunk processing, regardless of whether the 8-bit/16-bit filter chain is enabled.
+- **audio_engine.c**: Fader behavior is now fully controlled by `SetFadersEnabled()`/`GetFadersEnabled()` and no longer implicitly tied to filter-chain enable state.
+
+### Fixed
+- **audio_engine.c**: Disabling `enable_filter_chain_16bit`/`enable_filter_chain_8bit` no longer disables fades.
+- **audio_engine.c**: Removed ambiguity around fade application order so fades are not accidentally applied twice.
+
+## [2026-03-06] - Deterministic Playback Start/Reset
+
+### Changed
+- **audio_engine.c**: Added `PrepareForNewPlayback()` to force a known-clean start state before each playback buffer prefill.
+- **audio_engine.c**: `ResetPlaybackState()` now clears playback pointers and half-buffer selection state to reduce stale transport/playback carryover.
+
+### Fixed
+- **audio_engine.c**: `EndPlaybackCleanup()` now always resets playback internals after stopping DMA, including natural end-of-file paths.
+- **audio_engine.c**: Reduced first-pass-vs-repeat playback differences by resetting transport/filter/playback state consistently between sessions.
+
 ## [2026-03-01] - Fade Behavior, Pause/Resume, and API Docs Refresh
 
 ### Added

@@ -1432,13 +1432,6 @@ static inline int16_t ApplyPostFilters( int16_t sample, AudioChannelId channel_i
   }
 #endif
 
-  // Apply faders if enabled
-  if( faders_enabled )
-  {  
-    sample = ApplyFadeIn( sample );
-    sample = ApplyFadeOut( sample );
-  }
-  
   if( filter_cfg.enable_noise_gate ) {
     sample = ApplyNoiseGate( sample );
   }
@@ -1809,7 +1802,11 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
     else {
       leftsample = ApplyVolumeSetting( *input, current_volume );                  // Apply volume setting
       if( filter_cfg.enable_filter_chain_16bit == 1 ) {
-      leftsample = ApplyFilterChain16Bit( leftsample, CHANNEL_LEFT );             // Apply complete filter chain
+        leftsample = ApplyFilterChain16Bit( leftsample, CHANNEL_LEFT );            // Apply complete filter chain
+      }
+      if( faders_enabled ) {
+        leftsample = ApplyFadeIn( leftsample );
+        leftsample = ApplyFadeOut( leftsample );
       }
     }
     input++;
@@ -1822,7 +1819,11 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
       else { 
         rightsample = ApplyVolumeSetting( *input, current_volume );               // Right channel
         if( filter_cfg.enable_filter_chain_16bit == 1 ) {
-        rightsample = ApplyFilterChain16Bit( rightsample, CHANNEL_RIGHT );        // Apply complete filter chain
+          rightsample = ApplyFilterChain16Bit( rightsample, CHANNEL_RIGHT );       // Apply complete filter chain
+        }
+        if( faders_enabled ) {
+          rightsample = ApplyFadeIn( rightsample );
+          rightsample = ApplyFadeOut( rightsample );
         }
       }   // End of right channel processing
       input++;
@@ -1882,6 +1883,10 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
       if( filter_cfg.enable_filter_chain_8bit == 1 ) {
         leftsample = ApplyFilterChain8Bit( leftsample, CHANNEL_LEFT );       // Apply complete filter chain
       }
+      if( faders_enabled ) {
+        leftsample = ApplyFadeIn( leftsample );
+        leftsample = ApplyFadeOut( leftsample );
+      }
     }
     input++;
 
@@ -1897,6 +1902,10 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
         rightsample = ApplyVolumeSetting( rightsample, current_volume );
         if( filter_cfg.enable_filter_chain_8bit == 1 ) {
           rightsample = ApplyFilterChain8Bit( rightsample, CHANNEL_RIGHT );   // Apply complete filter chain
+        }
+        if( faders_enabled ) {
+          rightsample = ApplyFadeIn( rightsample );
+          rightsample = ApplyFadeOut( rightsample );
         }
       }
       input++;
