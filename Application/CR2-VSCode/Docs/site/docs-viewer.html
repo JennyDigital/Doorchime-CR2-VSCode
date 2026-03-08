@@ -98,7 +98,27 @@
           if (href.endsWith(".h") || href.endsWith(".c")) {
             const normalized = href.replace(/^\.\.\//, "");
             a.setAttribute("href", `./assets/${normalized}`);
+            return;
           }
+
+          if (href.endsWith(".html")) {
+            if (href === "site/index.html") {
+              a.setAttribute("href", "./index.html");
+              return;
+            }
+            const resolvedHtml = resolveRelativePath(currentDoc, href);
+            a.setAttribute("href", `./${resolvedHtml.split("/").pop()}`);
+          }
+        });
+
+        container.querySelectorAll("img[src]").forEach((img) => {
+          const src = (img.getAttribute("src") || "").trim();
+          if (!src || src.startsWith("http://") || src.startsWith("https://") || src.startsWith("data:")) {
+            return;
+          }
+
+          const resolvedImg = resolveRelativePath(currentDoc, src);
+          img.setAttribute("src", docsRoot + resolvedImg.split("/").pop());
         });
       }
 

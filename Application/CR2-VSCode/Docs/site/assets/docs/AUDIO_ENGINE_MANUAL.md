@@ -696,7 +696,7 @@ void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s) {
 
 The audio engine provides these implementations that will be called automatically.
 
-**Interrupt Priority Note:** Ensure `SysTick` has higher priority (numerically lower) than the I2S DMA IRQ. The audio engine may call HAL stop routines from DMA callbacks, and those routines use `HAL_GetTick()` for timeouts. If SysTick cannot preempt the DMA IRQ, timeouts can stall and audio playback can lock up. See [Core/Inc/stm32g4xx_hal_conf.h](../source/Core/Inc/stm32g4xx_hal_conf.h) for `TICK_INT_PRIORITY` and [Core/Src/main.c](../source/Core/Src/main.c) for DMA IRQ priority setup.
+**Interrupt Priority Note:** Ensure `SysTick` has higher priority (numerically lower) than the I2S DMA IRQ. The audio engine may call HAL stop routines from DMA callbacks, and those routines use `HAL_GetTick()` for timeouts. If SysTick cannot preempt the DMA IRQ, timeouts can stall and audio playback can lock up. See [Core/Inc/stm32g4xx_hal_conf.h](../Core/Inc/stm32g4xx_hal_conf.h) for `TICK_INT_PRIORITY` and [Core/Src/main.c](../Core/Src/main.c) for DMA IRQ priority setup.
 
 ---
 
