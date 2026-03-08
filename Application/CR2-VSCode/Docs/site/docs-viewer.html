@@ -68,6 +68,83 @@
         return new URL(relPath, fakeBase).pathname.replace(/^\//, "");
       }
 
+      function slugifyHeading(text) {
+        return text
+          .toLowerCase()
+          .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, "")
+          .replace(/[^a-z0-9\s-]/g, "")
+          .trim()
+          .replace(/\s+/g, "-")
+          .replace(/-+/g, "-");
+      }
+
+      function ensureHeadingAnchors(container) {
+        const seen = new Map();
+        const headings = container.querySelectorAll("h1, h2, h3, h4, h5, h6");
+
+        headings.forEach((h) => {
+          const text = (h.textContent || "").trim();
+          if (!text) {
+            return;
+          }
+
+          let base = slugifyHeading(text) || "section";
+          const count = seen.get(base) || 0;
+          seen.set(base, count + 1);
+          if (count > 0) {
+            base = `${base}-${count}`;
+          }
+
+          if (!h.id) {
+            h.id = base;
+          }
+
+          const prefixed = `-${h.id}`;
+          if (!container.querySelector(`#${CSS.escape(prefixed)}`)) {
+            const alias = document.createElement("span");
+            alias.id = prefixed;
+            alias.className = "anchor-alias";
+            h.parentNode.insertBefore(alias, h);
+          }
+        });
+      }
+
+      function wireInPageAnchors(container) {
+        container.querySelectorAll('a[href^="#"]').forEach((a) => {
+          a.addEventListener("click", (evt) => {
+            const href = (a.getAttribute("href") || "").trim();
+            if (!href || href === "#") {
+              return;
+            }
+
+            const rawHash = href.slice(1);
+            const decodedHash = decodeURIComponent(rawHash);
+            const candidates = [
+              decodedHash,
+              decodedHash.replace(/^[-]+/, ""),
+              decodedHash.startsWith("-") ? decodedHash : `-${decodedHash}`,
+            ];
+
+            let target = null;
+            for (const c of candidates) {
+              if (!c) {
+                continue;
+              }
+              target = container.querySelector(`#${CSS.escape(c)}`) || document.getElementById(c);
+              if (target) {
+                break;
+              }
+            }
+
+            if (target) {
+              evt.preventDefault();
+              target.scrollIntoView({ behavior: "smooth", block: "start" });
+              history.replaceState(null, "", `#${encodeURIComponent(decodedHash)}`);
+            }
+          });
+        });
+      }
+
       function rewriteLinks(container, currentDoc) {
         container.querySelectorAll("a[href]").forEach((a) => {
           const href = (a.getAttribute("href") || "").trim();
@@ -150,7 +227,9 @@
           const safeHtml = DOMPurify.sanitize(rawHtml);
           output.classList.remove("license-mode");
           output.innerHTML = safeHtml;
+          ensureHeadingAnchors(output);
           rewriteLinks(output, safeDoc);
+          wireInPageAnchors(output);
           title.textContent = safeDoc;
           subtitle.textContent = "Rendered from assets/docs";
           document.title = `Doorchime CR2 | ${safeDoc}`;
