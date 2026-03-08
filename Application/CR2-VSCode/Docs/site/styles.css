@@ -247,6 +247,95 @@ h1 {
   font-size: 0.92rem;
 }
 
+.markdown-view {
+  margin-top: 20px;
+  padding: 24px;
+  overflow-wrap: anywhere;
+}
+
+.markdown-view h1,
+.markdown-view h2,
+.markdown-view h3,
+.markdown-view h4,
+.markdown-view h5,
+.markdown-view h6 {
+  font-family: "Orbitron", sans-serif;
+  color: #c8f7ff;
+  margin-top: 1.4em;
+  margin-bottom: 0.5em;
+}
+
+.markdown-view h1 {
+  margin-top: 0.2em;
+  font-size: clamp(1.5rem, 3.2vw, 2.3rem);
+}
+
+.markdown-view p,
+.markdown-view li {
+  color: var(--ink);
+  line-height: 1.65;
+}
+
+.markdown-view a {
+  color: var(--teal);
+}
+
+.markdown-view a:hover {
+  color: var(--lime);
+}
+
+.markdown-view code {
+  background: rgba(5, 15, 30, 0.8);
+  border: 1px solid rgba(118, 186, 255, 0.25);
+  border-radius: 6px;
+  padding: 0.12em 0.35em;
+  color: #d4f7ff;
+}
+
+.markdown-view pre {
+  background: rgba(3, 10, 24, 0.95);
+  border: 1px solid rgba(118, 186, 255, 0.25);
+  border-radius: 10px;
+  padding: 12px;
+  overflow: auto;
+}
+
+.markdown-view pre code {
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.markdown-view blockquote {
+  border-left: 3px solid rgba(45, 245, 152, 0.8);
+  margin: 1em 0;
+  padding: 0.2em 1em;
+  color: #d7f3e9;
+  background: rgba(14, 45, 36, 0.25);
+}
+
+.markdown-view table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  display: block;
+  overflow-x: auto;
+}
+
+.markdown-view th,
+.markdown-view td {
+  border: 1px solid rgba(118, 186, 255, 0.22);
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.markdown-view hr {
+  border: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(118, 186, 255, 0.65), transparent);
+  margin: 20px 0;
+}
+
 .docs-grid-3 {
   grid-template-columns: repeat(3, 1fr);
 }
@@ -320,5 +409,9 @@ footer {
   .docs-toolbar {
     grid-template-columns: 1fr;
     align-items: stretch;
+  }
+
+  .markdown-view {
+    padding: 16px;
   }
 }

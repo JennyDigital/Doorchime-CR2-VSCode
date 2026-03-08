@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doorchime CR2 | Docs Viewer</title>
+  <meta name="description" content="Rendered documentation viewer for Doorchime CR2 markdown files.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="noise"></div>
+
+  <header class="hero docs-hero">
+    <nav class="topbar">
+      <div class="brand">DOORCHIME CR2</div>
+      <div class="actions">
+        <a class="btn ghost" href="./index.html">Home</a>
+        <a class="btn ghost" href="./docs.html">Docs Hub</a>
+      </div>
+    </nav>
+
+    <section class="panel docs-intro">
+      <p class="kicker">RENDERED DOCUMENTATION</p>
+      <h1 id="doc-title">Loading document...</h1>
+      <p class="lead" id="doc-subtitle">Please wait while the markdown file is rendered.</p>
+    </section>
+  </header>
+
+  <main>
+    <article class="panel markdown-view" id="markdown-output"></article>
+  </main>
+
+  <footer>
+    <p>Doorchime CR2 Docs Viewer</p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+  <script>
+    (function () {
+      const output = document.getElementById("markdown-output");
+      const title = document.getElementById("doc-title");
+      const subtitle = document.getElementById("doc-subtitle");
+      const params = new URLSearchParams(window.location.search);
+      const requested = params.get("doc") || "README.md";
+
+      // Keep doc selection constrained to expected filename characters.
+      const safeDoc = /^[A-Za-z0-9._-]+\.md$/.test(requested) ? requested : "README.md";
+      const docsRoot = "./assets/docs/";
+      const docPath = docsRoot + safeDoc;
+
+      function resolveRelativePath(baseDoc, relPath) {
+        const baseDir = baseDoc.includes("/") ? baseDoc.slice(0, baseDoc.lastIndexOf("/") + 1) : "";
+        const fakeBase = new URL(baseDir, "https://example.invalid/");
+        return new URL(relPath, fakeBase).pathname.replace(/^\//, "");
+      }
+
+      function rewriteLinks(container, currentDoc) {
+        container.querySelectorAll("a[href]").forEach((a) => {
+          const href = (a.getAttribute("href") || "").trim();
+          if (!href || href.startsWith("#") || href.startsWith("http://") || href.startsWith("https://") || href.startsWith("mailto:")) {
+            return;
+          }
+
+          if (href.endsWith(".md")) {
+            const resolved = resolveRelativePath(currentDoc, href);
+            const fileName = resolved.split("/").pop();
+            if (fileName && /^[A-Za-z0-9._-]+\.md$/.test(fileName)) {
+              a.setAttribute("href", `./docs-viewer.html?doc=${encodeURIComponent(fileName)}`);
+            }
+            return;
+          }
+
+          if (href.endsWith(".pdf")) {
+            const resolvedPdf = resolveRelativePath(currentDoc, href);
+            a.setAttribute("href", docsRoot + resolvedPdf.split("/").pop());
+            return;
+          }
+
+          if (href.endsWith(".h") || href.endsWith(".c")) {
+            const normalized = href.replace(/^\.\.\//, "");
+            a.setAttribute("href", `./assets/${normalized}`);
+          }
+        });
+      }
+
+      async function loadDoc() {
+        try {
+          const response = await fetch(docPath, { cache: "no-store" });
+          if (!response.ok) {
+            throw new Error(`Could not load ${safeDoc} (HTTP ${response.status})`);
+          }
+
+          const markdown = await response.text();
+          const rawHtml = marked.parse(markdown, { gfm: true, breaks: false });
+          const safeHtml = DOMPurify.sanitize(rawHtml);
+          output.innerHTML = safeHtml;
+          rewriteLinks(output, safeDoc);
+          title.textContent = safeDoc;
+          subtitle.textContent = "Rendered from assets/docs";
+          document.title = `Doorchime CR2 | ${safeDoc}`;
+        } catch (err) {
+          title.textContent = "Document unavailable";
+          subtitle.textContent = "This markdown file could not be loaded from the deployed site.";
+          output.innerHTML = `<p>${String(err.message || err)}</p>`;
+        }
+      }
+
+      loadDoc();
+    })();
+  </script>
+</body>
+</html>
