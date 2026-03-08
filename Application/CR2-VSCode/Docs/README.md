@@ -346,6 +346,7 @@ This project includes extensive documentation to help you understand and use the
 ### Included Files
 
 - **README.md** (this file) - Quick start and overview
+- [site/index.html](site/index.html) - Project website landing page
 - [AUDIO_ENGINE_MANUAL.md](AUDIO_ENGINE_MANUAL.md) - Complete technical manual
 - [Filter_Report_Enhanced.pdf](Filter_Report_Enhanced.pdf) - A4 technical report with graphs
 - [filter_characteristics_enhanced.png](filter_characteristics_enhanced.png) - Visual filter analysis

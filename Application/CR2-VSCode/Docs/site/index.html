@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doorchime CR2 | Audio Engine</title>
+  <meta name="description" content="Doorchime CR2 is an STM32 audio engine with real-time DSP, I2S DMA playback, and configurable filter chains.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="noise"></div>
+
+  <header class="hero">
+    <nav class="topbar">
+      <div class="brand">DOORCHIME CR2</div>
+      <a class="btn ghost" href="../README.md">Docs</a>
+    </nav>
+
+    <div class="hero-grid">
+      <section class="hero-copy">
+        <p class="kicker">STM32 AUDIO PLAYBACK ENGINE</p>
+        <h1>Real-Time DSP for Door Chimes, Alerts, and Sonic UX</h1>
+        <p class="lead">
+          A reusable audio engine for STM32 with I2S + DMA streaming, runtime filter control,
+          and polished playback behavior for embedded products.
+        </p>
+        <p class="open-source-note">
+          Open source under the MIT License. Use it, modify it, and ship it in your own products.
+        </p>
+        <div class="actions">
+          <a class="btn" href="../README.md">Read the Guide</a>
+          <a class="btn ghost" href="../API_REFERENCE.md">API Reference</a>
+          <a class="btn ghost" href="../../LICENSE">View License</a>
+        </div>
+      </section>
+
+      <section class="hero-art">
+        <img src="../audio-engine-logo-flashy.svg" alt="Audio Engine logo">
+      </section>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel metrics">
+      <article>
+        <h2>8-bit / 16-bit</h2>
+        <p>Dual PCM format support with mono and stereo modes.</p>
+      </article>
+      <article>
+        <h2>DMA + I2S</h2>
+        <p>Double-buffered streaming designed for reliable real-time playback.</p>
+      </article>
+      <article>
+        <h2>Runtime DSP</h2>
+        <p>LPF, DC filtering, soft clipping, fades, and optional Air Effect.</p>
+      </article>
+    </section>
+
+    <section class="panel feature-band">
+      <div>
+        <h3>Filter Chain That You Can Tune Live</h3>
+        <p>
+          Dial in low-pass aggressiveness, volume response, and playback fades at runtime
+          without recompiling firmware.
+        </p>
+      </div>
+      <a class="btn" href="../AUDIO_ENGINE_MANUAL.md">Open Manual</a>
+    </section>
+
+    <section class="panel docs-grid">
+      <a class="doc" href="../QUICK_REFERENCE.md">
+        <h4>Quick Reference</h4>
+        <p>Fast lookup for common setup and playback tasks.</p>
+      </a>
+      <a class="doc" href="../FUNCTION_INDEX.md">
+        <h4>Function Index</h4>
+        <p>Browse the API by category and symbol name.</p>
+      </a>
+      <a class="doc" href="../PORTABILITY_REPORT.md">
+        <h4>Portability Report</h4>
+        <p>Guidance for non-STM32 or less-compatible environments.</p>
+      </a>
+      <a class="doc" href="../Filter_Report_Enhanced.pdf">
+        <h4>Filter Report (PDF)</h4>
+        <p>Response curves, specs, and technical notes.</p>
+      </a>
+    </section>
+  </main>
+
+  <footer>
+    <p>Doorchime CR2 Audio Engine</p>
+  </footer>
+</body>
+</html>
