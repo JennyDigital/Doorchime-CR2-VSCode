@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://jennys-stm32-dsp-audio-engine.netlify.app/sitemap.xml
