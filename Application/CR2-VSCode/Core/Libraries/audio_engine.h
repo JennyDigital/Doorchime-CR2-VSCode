@@ -38,14 +38,13 @@
 
 /** WARNING!
   *
-  * SysTick interrupt priority must be set higher (numerically lower) than the DMA interrupt priority
-  * to avoid application lockup upon stopping playback.  This is because the audio engine relies on
-  * HAL_I2S_DMAStop being able to execute from the SysTick callback to properly stop the DMA and reset state.
-  * If the SysTick interrupt priority is not higher than the DMA interrupt priority, stopping playback
-  * from the SysTick callback will not be able to preempt the DMA interrupt, causing the application to lock up.
-  * Ensure that the SysTick interrupt priority is configured correctly in your application (e.g., set SysTick
-  * priority to DMA interrupt priority to 1 more (lower priority) than SysTick) to allow proper stopping of
-  * playback without lockup.
+  * By default, this library overrides HAL_Delay() with an interrupt-independent implementation
+  * (see AUDIO_ENGINE_CUSTOM_HAL_DELAY). This reduces lockup risk when SysTick is suspended or
+  * cannot preempt DMA.
+  *
+  * If AUDIO_ENGINE_CUSTOM_HAL_DELAY is set to 0, HAL's default tick-based HAL_Delay() is used.
+  * In that mode, keep SysTick priority higher (numerically lower) than I2S DMA IRQ priority to
+  * avoid timeout stalls inside HAL stop paths.
   *
   * The DMA I2S callbacks just need to beat the buffer refill time, so that they can keep the buffer supplied
   * with processed audio samples.
@@ -74,6 +73,12 @@ extern "C" {
 /* Set to 0 to compile out Air Effect support and save flash. */
 #ifndef AUDIO_ENGINE_ENABLE_AIR_EFFECT
 #define AUDIO_ENGINE_ENABLE_AIR_EFFECT 1
+#endif
+
+/* Set to 1 (default) to use interrupt-independent HAL_Delay override in audio_engine.c.
+ * Set to 0 to use HAL's default tick-based HAL_Delay implementation. */
+#ifndef AUDIO_ENGINE_CUSTOM_HAL_DELAY
+#define AUDIO_ENGINE_CUSTOM_HAL_DELAY 1
 #endif
 
 /* DAC control values */

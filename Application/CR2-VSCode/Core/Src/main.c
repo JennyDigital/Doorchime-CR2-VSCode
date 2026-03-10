@@ -84,6 +84,7 @@
 #include "medieval_flute.h"
 #include "Emperor_dm22k1c16b.h"
 #include "didgeridoo.h"
+#include "secret_door.h"
 
 
 /* USER CODE END Includes */
@@ -235,7 +236,7 @@ int main(void)
   SetResumeFadeTime( 1.25f );             // 1250 ms resume fade-in
 
   // Set LPF filter levels and makeup gain
-  SetLpf16BitLevel( LPF_VerySoft );  // Start with LPF off
+  SetLpf16BitLevel( LPF_Off );  // Start with LPF off
   SetSoftClippingEnable( 1 );
   //SetLpf16BitCustomAlpha( CalcLpf16BitAlphaFromCutoff( 3000, I2S_AUDIOFREQ_22K ) );  // Set 16-bit biquad LPF cutoff to 20 kHz for 22 kHz sample rate
   SetLpfMakeupGain16Bit( 1.0f );  // Set at 1 for testing purposes.
@@ -257,8 +258,10 @@ int main(void)
  
     // Start playback of sound sample
     //
-    PlaySample( didgeridoo16b16k1c , DIDGERIDOO16B16K1C_SZ,
-      I2S_AUDIOFREQ_22K, 16, DIDGERIDOO16B16K1C_PB_FMT );
+    // PlaySample( didgeridoo16b16k1c , DIDGERIDOO16B16K1C_SZ,
+    //   I2S_AUDIOFREQ_22K, 16, DIDGERIDOO16B16K1C_PB_FMT );
+    PlaySample( secret_door16b16k1c, SECRET_DOOR16B16K1C_SZ,
+      I2S_AUDIOFREQ_16K, 16, SECRET_DOOR16B16K1C_PB_FMT );
     WaitForSampleEnd();
 
     ShutDownAudio();

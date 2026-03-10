@@ -2368,3 +2368,55 @@ float GetVolumeResponseGamma( void )
 {
   return volume_response_gamma;
 }
+
+
+#if AUDIO_ENGINE_CUSTOM_HAL_DELAY
+void HAL_Delay(uint32_t Delay)
+{
+  if( Delay == 0U )
+  {
+    return;
+  }
+
+#if defined(DWT) && defined(CoreDebug_DEMCR_TRCENA_Msk) && defined(DWT_CTRL_CYCCNTENA_Msk)
+  /* Use the CPU cycle counter so delay works even when SysTick interrupts are suspended. */
+  CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+  DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+
+  if( ( DWT->CTRL & DWT_CTRL_CYCCNTENA_Msk ) != 0U )
+  {
+    uint32_t cycles_per_ms = SystemCoreClock / 1000U;
+
+    if( cycles_per_ms == 0U )
+    {
+      cycles_per_ms = 1U;
+    }
+
+    while( Delay-- > 0U )
+    {
+      uint32_t start = DWT->CYCCNT;
+      while( ( uint32_t )( DWT->CYCCNT - start ) < cycles_per_ms )
+      {
+      }
+    }
+    return;
+  }
+#endif
+
+  /* Fallback: conservative busy-loop if DWT is unavailable. */
+  uint32_t loops_per_ms = SystemCoreClock / 8000U;
+
+  if( loops_per_ms == 0U )
+  {
+    loops_per_ms = 1U;
+  }
+
+  while( Delay-- > 0U )
+  {
+    for( volatile uint32_t i = 0U; i < loops_per_ms; i++ )
+    {
+      __NOP();
+    }
+  }
+}
+#endif
