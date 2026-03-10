@@ -15,6 +15,10 @@
   box-sizing: border-box;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
   font-family: "Manrope", "Segoe UI", sans-serif;
@@ -24,6 +28,8 @@ body {
     radial-gradient(circle at 90% 20%, #2d123f 0%, transparent 30%),
     linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
   min-height: 100vh;
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 .noise {
@@ -319,6 +325,13 @@ h1 {
   background: transparent;
 }
 
+.markdown-view img,
+.markdown-view svg,
+.markdown-view video {
+  max-width: 100%;
+  height: auto;
+}
+
 .markdown-view blockquote {
   border-left: 3px solid rgba(45, 245, 152, 0.8);
   margin: 1em 0;
@@ -493,5 +506,100 @@ footer {
 
   .markdown-view {
     padding: 16px;
+  }
+}
+
+@media (max-width: 600px) {
+  .hero,
+  main,
+  footer {
+    width: min(1120px, calc(100vw - 24px));
+  }
+
+  .topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding-top: 18px;
+  }
+
+  .topbar .actions {
+    width: 100%;
+  }
+
+  .topbar .actions .btn {
+    flex: 1 1 auto;
+    text-align: center;
+  }
+
+  .brand {
+    font-size: 0.78rem;
+    letter-spacing: 0.09em;
+  }
+
+  h1 {
+    font-size: clamp(1.45rem, 8vw, 2rem);
+    line-height: 1.14;
+  }
+
+  .lead {
+    font-size: 0.98rem;
+    margin: 14px 0 18px;
+  }
+
+  .panel,
+  .docs-intro,
+  .feature-band,
+  .markdown-view {
+    border-radius: 12px;
+  }
+
+  .metrics,
+  .docs-grid,
+  .docs-toolbar {
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .metrics article,
+  .doc {
+    padding: 13px;
+  }
+
+  .markdown-view {
+    padding: 12px;
+  }
+
+  .markdown-view p,
+  .markdown-view li {
+    line-height: 1.55;
+  }
+
+  .markdown-view pre {
+    padding: 10px;
+  }
+}
+
+@media (max-width: 420px) {
+  .actions .btn {
+    width: 100%;
+  }
+
+  .kicker {
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+  }
+
+  .docs-search-wrap {
+    font-size: 0.74rem;
+  }
+
+  .docs-count {
+    font-size: 0.84rem;
+  }
+
+  .markdown-view table th,
+  .markdown-view table td {
+    white-space: nowrap;
   }
 }
