@@ -2370,8 +2370,20 @@ float GetVolumeResponseGamma( void )
 }
 
 
+/** Custom HAL delay implementation
+  *
+  * Provides a busy-wait delay that works even when SysTick interrupts are suspended (e.g., during DMA callbacks).
+  * It first attempts to use the DWT cycle counter for accurate timing, and falls back to a conservative busy-loop
+  * if DWT is unavailable.
+  * 
+  * The advantage of this approach is that one can keep SysTick at the default priority level (instead of elevating
+  * it to ensure it runs during DMA) without breaking any code that relies on HAL_Delay for timing.
+  * 
+  * @param: Delay - Delay duration in milliseconds
+  * @retval: none
+  */
 #if AUDIO_ENGINE_CUSTOM_HAL_DELAY
-void HAL_Delay(uint32_t Delay)
+void HAL_Delay( uint32_t Delay )
 {
   if( Delay == 0U )
   {
