@@ -120,18 +120,18 @@ extern "C" {
 #define LPF_16BIT_MAKEUP_GAIN_Q16   65536   // 1.00x post-LPF makeup (default)
 
 /* 8-bit low-pass filter aggressiveness levels (alpha coefficients in fixed-point) */
-#define LPF_VERY_SOFT           61440       // 0.9375 - very gentle filtering
-#define LPF_SOFT                57344       // 0.875 - gentle filtering
-#define LPF_MEDIUM              49152       // 0.75 - balanced filtering
-#define LPF_FIRM                45056       // 0.6875 - firm filtering
-#define LPF_AGGRESSIVE          40960       // 0.625 - strong filtering
+#define LPF_VERY_SOFT               61440   // 0.9375 - very gentle filtering
+#define LPF_SOFT                    57344   // 0.875 - gentle filtering
+#define LPF_MEDIUM                  49152   // 0.75 - balanced filtering
+#define LPF_FIRM                    45056   // 0.6875 - firm filtering
+#define LPF_AGGRESSIVE              40960   // 0.625 - strong filtering
 
 /* Noise gate configuration */
-#define NOISE_GATE_THRESHOLD    512         // ~1.5% of full scale
+#define NOISE_GATE_THRESHOLD        512     // ~1.5% of full scale
 
 /* Audio silence midpoints */
-#define SAMPLE8_MIDPOINT        128U        // Midpoint for unsigned 8-bit unsigned samples
-#define SAMPLE16_MIDPOINT       0           // Midpoint for signed 16-bit samples
+#define SAMPLE8_MIDPOINT            128U    // Midpoint for unsigned 8-bit unsigned samples
+#define SAMPLE16_MIDPOINT           0       // Midpoint for signed 16-bit samples
 
 /* Fill half buffer macro */
 #define MIDPOINT_FILL_BUFFER() memset( pb_buffer, SAMPLE16_MIDPOINT, sizeof( pb_buffer ) );
@@ -612,7 +612,7 @@ float                GetAirEffectPresetDb             ( uint8_t preset_index );
  * @note Called from DMA ISR when first half of buffer is complete
  * @note Application must call this from HAL_I2S_TxHalfCpltCallback()
  */
-void                 HAL_I2S_TxHalfCpltCallback      ( I2S_HandleTypeDef *hi2s );
+void                 HAL_I2S_TxHalfCpltCallback       ( I2S_HandleTypeDef *hi2s );
 
 /**
  * @brief DMA complete callback for I2S
@@ -620,44 +620,44 @@ void                 HAL_I2S_TxHalfCpltCallback      ( I2S_HandleTypeDef *hi2s )
  * @note Called from DMA ISR when entire buffer transfer is complete
  * @note Application must call this from HAL_I2S_TxCpltCallback()
  */
-void                 HAL_I2S_TxCpltCallback         ( I2S_HandleTypeDef *hi2s );
+void                 HAL_I2S_TxCpltCallback           ( I2S_HandleTypeDef *hi2s );
 
 /* Playback state accessors (for internal use or advanced applications) */
 /**
  * @brief Get current playback state
  * @return PB_Idle, PB_Error, PB_Playing, PB_Paused, or PB_PlayingFailed
  */
-PB_StatusTypeDef    GetPlaybackState                ( void );
+PB_StatusTypeDef    GetPlaybackState                  ( void );
 
 /**
  * @brief Set playback state (internal use)
  * @param[in] state New playback state
  */
-void                SetPlaybackState                ( PB_StatusTypeDef state );
+void                SetPlaybackState                  ( PB_StatusTypeDef state );
 
 /**
  * @brief Get which half of double-buffer is next to fill
  * @return FIRST (0) or SECOND (1)
  */
-uint8_t             GetHalfToFill                   ( void );
+uint8_t             GetHalfToFill                     ( void );
 
 /**
  * @brief Set which half of double-buffer to fill next (internal use)
  * @param[in] half FIRST or SECOND
  */
-void                SetHalfToFill                   ( uint8_t half );
+void                SetHalfToFill                     ( uint8_t half );
 
 /**
  * @brief Get current playback sample rate
  * @return Sample rate in Hz (e.g., 22000, 44100)
  */
-uint32_t            GetPlaybackSpeed                ( void );
+uint32_t            GetPlaybackSpeed                  ( void );
 
 /**
  * @brief Set playback sample rate (internal use)
  * @param[in] speed Sample rate in Hz
  */
-void                SetPlaybackSpeed                ( uint32_t speed );
+void                SetPlaybackSpeed                  ( uint32_t speed );
 
 #ifdef __cplusplus
 }

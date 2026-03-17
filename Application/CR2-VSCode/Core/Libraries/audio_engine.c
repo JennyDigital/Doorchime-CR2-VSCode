@@ -73,7 +73,7 @@ static          int16_t   ApplySoftClipping           ( int16_t sample );
 static inline   int32_t   ComputeSoftClipCurve        ( int32_t excess, int32_t range );
 
 // DC blocking filters
-static inline   int16_t   ApplyDCFilterWithAlpha     (
+static inline   int16_t   ApplyDCFilterWithAlpha      (
                                                         volatile int16_t input,
                                                         volatile int32_t *prev_input,
                                                         volatile int32_t *prev_output,
@@ -110,7 +110,7 @@ static          int16_t   ApplyFilterChain8Bit        ( int16_t sample, AudioCha
 
 // DMA stop helper
 static inline   void      StopDmaAndResetPlaybackState( uint8_t reset_state );
-static inline   void      PrepareForNewPlayback        ( void );
+static inline   void      PrepareForNewPlayback       ( void );
 
 // Default fader state
 volatile uint8_t faders_enabled = 1;
@@ -177,16 +177,17 @@ volatile  uint32_t          fadeout_samples_remaining   = 0;          // Fade-ou
 volatile  uint32_t          paused_samples_remaining    = 0;          // Saved remaining samples at pause point (used to resume correctly)
 
 /* Fade time configuration (stored in seconds, converted to samples based on playback speed) */
-          float           fadein_time_seconds         = 0.150f;     // 150ms default
-          float           fadeout_time_seconds        = 0.150f;     // 150ms default
-          float           pause_fadeout_time_seconds  = 0.100f;     // 100ms default
-          float           pause_fadein_time_seconds   = 0.100f;     // 100ms default
-          uint32_t        fadein_samples              = 3300;       // Calculated fade in time from time and speed
-          uint32_t        fadeout_samples             = 3300;       // Calculated fade out time from time and speed
-          uint32_t        pause_fadeout_samples       = 2200;       // Calculated pause fade out time from time and speed
-          uint32_t        pause_fadein_samples        = 2200;       // Calculated pause fade in time from time and speed
+          float           fadein_time_seconds           = 0.150f;     // 150ms default
+          float           fadeout_time_seconds          = 0.150f;     // 150ms default
+          float           pause_fadeout_time_seconds    = 0.100f;     // 100ms default
+          float           pause_fadein_time_seconds     = 0.100f;     // 100ms default
+          uint32_t        fadein_samples                = 3300;       // Calculated fade in time from time and speed
+          uint32_t        fadeout_samples               = 3300;       // Calculated fade out time from time and speed
+          uint32_t        pause_fadeout_samples         = 2200;       // Calculated pause fade out time from time and speed
+          uint32_t        pause_fadein_samples          = 2200;       // Calculated pause fade in time from time and speed
 
-typedef struct AudioFilterChannelState {                            // Per-channel state for filters that require memory of previous samples
+/* Per-channel state for filters that require memory of previous samples */
+typedef struct AudioFilterChannelState {
   volatile int32_t dc_prev_input;
   volatile int32_t dc_prev_output;
   volatile int32_t lpf8_x1;
@@ -255,6 +256,7 @@ static inline void ResetFilterChannelState( AudioFilterChannelState *state )
   state->air_y1 = 0;
 }
 
+
 /** Reset all per-channel filter state to zero
   *
   * @param: none
@@ -265,6 +267,7 @@ static inline void ResetAllFilterState( void )
   ResetFilterChannelState( &filter_state[ CHANNEL_RIGHT ] );
 }
 
+
 /** Get pointer to channel filter state
   *
   * @param: channel_id - CHANNEL_LEFT or CHANNEL_RIGHT
@@ -274,6 +277,7 @@ static inline AudioFilterChannelState *GetChannelState( AudioChannelId channel_i
 {
   return &filter_state[ channel_id ];
 }
+
 
 /* ===== Audio Engine Initialization ===== */
 
@@ -431,6 +435,11 @@ LPF_Level GetLpf8BitLevel(void)
   return filter_cfg.lpf_8bit_level;
 }
 
+
+/** Set a custom alpha for the 8-bit low-pass filter
+  * @param: alpha - Custom alpha value in Q16 format (0-65535)
+  * @retval: none
+  */
 void SetLpf8BitCustomAlpha( uint16_t alpha )
 {
   filter_cfg.lpf_8bit_custom_alpha = alpha;
@@ -439,30 +448,60 @@ void SetLpf8BitCustomAlpha( uint16_t alpha )
   lpf_8bit_alpha = alpha;
 }
 
+
+/** Get the current custom alpha for the 8-bit low-pass filter
+  * @param: none
+  * @retval: current custom alpha in Q16 format
+  */
 uint16_t GetLpf8BitCustomAlpha( void )
 {
   return filter_cfg.lpf_8bit_custom_alpha;
 }
 
+
+/** Set the aggressiveness level for the 16-bit biquad low-pass filter.
+  * 
+  * @brief Sets the filter level for the 16-bit biquad low-pass filter.
+  * @param: level - Filter level (LPF_VerySoft, LPF_Soft, LPF_Medium, LPF_Firm, LPF_Aggressive, LPF_Custom).
+  * @retval: none
+  */
 void SetFilterChain8BitEnable( uint8_t enabled )
 {
   filter_cfg.enable_filter_chain_8bit = enabled ? 1 : 0;
 }
 
+
+/* Get whether the 8-bit filter chain is enabled 
+ * @param: none
+ * @retval: non-zero if enabled, zero if disabled
+ */
 uint8_t GetFilterChain8BitEnable( void )
 {
   return filter_cfg.enable_filter_chain_8bit;
 }
 
+
+/* Set whether the 16-bit filter chain is enabled
+ * @param: enabled - Non-zero to enable, zero to disable.
+ * @retval: none
+ */
 void SetFilterChain16BitEnable( uint8_t enabled )
 {
   filter_cfg.enable_filter_chain_16bit = enabled ? 1 : 0;
 }
 
+
+/* Get whether the 16-bit filter chain is enabled 
+ * @param: none
+ * @retval: non-zero if enabled, zero if disabled
+ */
 uint8_t GetFilterChain16BitEnable( void )
 {
   return filter_cfg.enable_filter_chain_16bit;
 }
+
+
+/* Air Effect runtime control */
 
 #if AUDIO_ENGINE_ENABLE_AIR_EFFECT
 /** Sets whether to use the air effect or not
@@ -591,6 +630,7 @@ uint8_t GetAirEffectPresetCount( void )
 {
   return AIR_EFFECT_PRESET_COUNT;
 }
+
 
 /** Get the dB value of a preset (clamps to current if OOB)
   * @param: preset_index - Index of desired preset
@@ -732,6 +772,7 @@ uint16_t CalcLpf16BitAlphaFromCutoff( float cutoff_hz, float sample_rate_hz )
   return (uint16_t)( alpha_f * 65536.0f + 0.5f );
 }
 
+
 /**
  * @brief Calculate Q16 alpha for 8-bit LPF from -3dB cutoff and sample rate
  *
@@ -832,6 +873,11 @@ void SetLpf16BitLevel( LPF_Level level )
   }
 }
 
+
+/** Set a custom alpha for the 16-bit low-pass filter
+  * @param: alpha - Custom alpha value in Q16 format (0-65535)
+  * @retval: none
+  */
 void SetLpf16BitCustomAlpha( uint16_t alpha )
 {
     filter_cfg.lpf_16bit_custom_alpha = alpha;
@@ -2239,6 +2285,7 @@ static inline uint16_t ApplyVolumeResponseCurve( uint16_t linear_volume )
     return linear_volume;
   }
 }
+
 
 /** Apply volume setting to sample
   * 

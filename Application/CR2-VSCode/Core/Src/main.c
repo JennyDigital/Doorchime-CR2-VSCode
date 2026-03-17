@@ -197,6 +197,14 @@ int main(void)
   HAL_TIM_Base_Start( &htim7 );       // Start TIM7 for ADC triggering
   #endif
   
+#ifdef DEBUG
+  // Code only for debug mode, so it doesn't drop the debugger in testing.  Not desirable in production
+  // as it increases power consumption and could cause unintended behavior if left operating by accident.
+  if( (CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk) != 0U ) {
+    HAL_DBGMCU_EnableDBGSleepMode();
+  }
+#endif
+
   /* Initialize audio engine with hardware interface functions */
   if( AudioEngine_Init( DAC_MasterSwitch, ReadVolume, MX_I2S2_Init ) != PB_Idle ) {
     Error_Handler();
