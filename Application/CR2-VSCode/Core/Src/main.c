@@ -272,13 +272,7 @@ int main(void)
     //   I2S_AUDIOFREQ_22K, 16, DIDGERIDOO16B16K1C_PB_FMT );
     PlaySample( secret_door16b16k1c, SECRET_DOOR16B16K1C_SZ,
       I2S_AUDIOFREQ_16K, 16, SECRET_DOOR16B16K1C_PB_FMT );
-      while( GetPlaybackState() == PB_Playing ) {
-        percent = GetPlaybackProgressPercent();
-        HAL_Delay( 100 );
-        // Could do other processing here if needed, but just wait in this example
-      }
-
-    // WaitForSampleEnd();
+   WaitForSampleEnd();
 
     ShutDownAudio();
 
