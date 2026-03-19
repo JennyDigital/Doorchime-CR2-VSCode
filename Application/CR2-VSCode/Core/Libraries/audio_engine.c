@@ -57,6 +57,7 @@
 #define DMA_CALLBACK_INLINE __attribute__((noinline))
 #endif
 
+
 /* Forward declarations for internal helper functions */
 
 // Fade and volume helpers
@@ -111,6 +112,7 @@ static          int16_t   ApplyFilterChain8Bit        ( int16_t sample, AudioCha
 // DMA stop helper
 static inline   void      StopDmaAndResetPlaybackState( uint8_t reset_state );
 static inline   void      PrepareForNewPlayback       ( void );
+static inline   void      RetireCompletedDmaHalf      ( uint8_t completed_half );
 
 // Default fader state
 volatile uint8_t faders_enabled = 1;
@@ -167,6 +169,9 @@ volatile  PB_StatusTypeDef  pb_state                    = PB_Idle;    // Playbac
 volatile  uint8_t           half_to_fill;                             // Flag to indicate which half of the buffer to fill in the DMA callback
           uint8_t           pb_mode;                                  // Mono or stereo mode (set by application before playback)
           uint32_t          I2S_PlaybackSpeed           = 22025;      // Default playback speed in Hz
+volatile  uint32_t          playback_total_samples      = 0;          // Total source samples scheduled for current playback session
+volatile  uint32_t          playback_samples_played     = 0;          // Source samples already played by DMA
+volatile  uint32_t          dma_half_sample_counts[ 2 ] = { 0U, 0U }; // Valid source samples currently queued in each DMA half
 
 /* Playback engine control variables */
           uint32_t          p_advance;                                // Number of samples to advance in current buffer.
@@ -1033,6 +1038,37 @@ uint32_t GetPlaybackSpeed( void )
 }
 
 
+/** Get the number of source samples already played
+  *
+  * @retval: uint32_t - Number of interleaved source samples already consumed by DMA
+  */
+uint32_t GetPlaybackProgressSamples( void )
+{
+  return playback_samples_played;
+}
+
+
+/** Get playback progress as a percentage
+  *
+  * @retval: float - Playback progress in the range 0.0f to 100.0f
+  */
+float GetPlaybackProgressPercent( void )
+{
+  uint32_t total_samples  = playback_total_samples;
+  uint32_t played_samples = playback_samples_played;
+
+  if( total_samples == 0U ) {
+    return 0.0f;
+  }
+
+  if( played_samples > total_samples ) {
+    played_samples = total_samples;
+  }
+
+  return ( (float)played_samples * 100.0f ) / (float)total_samples;
+}
+
+
 /* ===== DSP Filter Functions ===== */
 
 /* TPDF Dithering - Linear Congruential Generator (LCG) constants */
@@ -1516,6 +1552,10 @@ static void ResetPlaybackState( void ) {
   fadein_samples_remaining      = 0;
   paused_samples_remaining      = 0;
   half_to_fill                  = FIRST;
+  playback_total_samples        = 0;
+  playback_samples_played       = 0;
+  dma_half_sample_counts[ FIRST ] = 0U;
+  dma_half_sample_counts[ SECOND ] = 0U;
   stop_requested                = 0;
   playback_end_callback_called  = 0;
 }
@@ -1671,6 +1711,26 @@ static inline void StopDmaAndResetPlaybackState( uint8_t reset_state )
 }
 
 
+/** Retire the samples that were just played from a completed DMA half
+  *
+  * @param: completed_half - FIRST or SECOND
+  * @retval: none
+  */
+static inline void RetireCompletedDmaHalf( uint8_t completed_half )
+{
+  uint32_t completed_samples = dma_half_sample_counts[ completed_half ];
+  uint32_t remaining_samples = ( playback_total_samples > playback_samples_played ) ?
+                               ( playback_total_samples - playback_samples_played ) : 0U;
+
+  if( completed_samples > remaining_samples ) {
+    completed_samples = remaining_samples;
+  }
+
+  playback_samples_played += completed_samples;
+  dma_half_sample_counts[ completed_half ] = 0U;
+}
+
+
 /** Immediate stop of playback, halting DMA and resetting state without waiting for buffer to drain 
   *
   * Use when stopping from paused state or when an immediate halt is required.  Will not apply fade-out.
@@ -1700,6 +1760,8 @@ static inline void StopImmediate( void )
   */
 static DMA_CALLBACK_INLINE void ProcessDMACallback( uint8_t which_half )
 {
+  RetireCompletedDmaHalf( which_half );
+
   /* Handle pending stop request at the beginning of DMA callback (safest place to modify state) */
   if( stop_requested && pb_state != PB_Idle ) {
     /* Only handle stop if we're in a playable state */
@@ -1738,12 +1800,14 @@ static DMA_CALLBACK_INLINE void ProcessDMACallback( uint8_t which_half )
   /* If fully paused (fadeout already complete), fill buffer with silence */
   if( pb_state == PB_Paused ) {
     MIDPOINT_FILL_BUFFER();
+    dma_half_sample_counts[ which_half ] = 0U;
     return;
   }
   
   /* Special case: if pausing and fadeout nearly complete, skip processing and fill with silence */
   if( pb_state == PB_Pausing && fadeout_samples_remaining <= HALFCHUNK_SZ ) {
     MIDPOINT_FILL_BUFFER();
+    dma_half_sample_counts[ which_half ] = 0U;
     pb_state = PB_Paused;
     return;
   }
@@ -1846,6 +1910,7 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
   int16_t *input, *output;
   int16_t leftsample, rightsample;
   uint16_t current_volume;
+  uint32_t chunk_source_samples = 0U;
 
   if( chunk_p == NULL ) {   // Sanity check
     return PB_Error;
@@ -1870,6 +1935,7 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
       leftsample = SAMPLE16_MIDPOINT;                                             // Pad with silence if at end 
     }
     else {
+      chunk_source_samples++;
       leftsample = ApplyVolumeSetting( *input, current_volume );                  // Apply volume setting
       if( filter_cfg.enable_filter_chain_16bit == 1 ) {
         leftsample = ApplyFilterChain16Bit( leftsample, CHANNEL_LEFT );            // Apply complete filter chain
@@ -1887,6 +1953,7 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
         rightsample = SAMPLE16_MIDPOINT;                                          // Pad with silence if at end
       }
       else { 
+        chunk_source_samples++;
         rightsample = ApplyVolumeSetting( *input, current_volume );               // Right channel
         if( filter_cfg.enable_filter_chain_16bit == 1 ) {
           rightsample = ApplyFilterChain16Bit( rightsample, CHANNEL_RIGHT );       // Apply complete filter chain
@@ -1906,6 +1973,7 @@ PB_StatusTypeDef ProcessNextWaveChunk( int16_t * chunk_p )
 
     UpdateFadeCounters( samples_processed );
   }
+  dma_half_sample_counts[ half_to_fill ] = chunk_source_samples;
   return PB_Playing;;
 }
 
@@ -1924,6 +1992,7 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
   int16_t *output;
   int16_t leftsample, rightsample;
   uint16_t current_volume;
+  uint32_t chunk_source_samples = 0U;
 
   if( chunk_p == NULL ) {   // Sanity check
     return PB_Error;
@@ -1948,6 +2017,7 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
       leftsample = SAMPLE16_MIDPOINT;                                       // Pad with silence if at end
     }
     else {
+      chunk_source_samples++;
       /* Convert unsigned 8-bit (0..255) -> signed 16-bit with dithering */
       uint8_t sample8 = *input;
       leftsample = Apply8BitDithering( sample8 );                           // Left channel with dithering
@@ -1968,6 +2038,7 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
         rightsample = SAMPLE16_MIDPOINT;                                    // Pad with silence if at end
       }
       else {               
+        chunk_source_samples++;
         /* Convert unsigned 8-bit (0..255) -> signed 16-bit with dithering */
         uint8_t sample8 = *input;
         rightsample = Apply8BitDithering( sample8 );                        // Right channel with dithering
@@ -1990,6 +2061,7 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit( uint8_t * chunk_p )
 
     UpdateFadeCounters( samples_processed );
   }
+  dma_half_sample_counts[ half_to_fill ] = chunk_source_samples;
   return PB_Playing;
 }
 
@@ -2069,6 +2141,10 @@ PB_StatusTypeDef PlaySample (
     pb_mode   = 8;
   }
   // Initialize fade counters
+  playback_total_samples      = sample_set_sz;
+  playback_samples_played     = 0U;
+  dma_half_sample_counts[ FIRST ] = 0U;
+  dma_half_sample_counts[ SECOND ] = 0U;
   samples_remaining         = sample_set_sz;  // Track position in file
   fadeout_samples_remaining = 0;              // Pause fadeout duration (set when pause is called)
   fadein_samples_remaining  = fadein_samples;

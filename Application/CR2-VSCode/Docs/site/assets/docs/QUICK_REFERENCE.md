@@ -161,8 +161,10 @@ GetLpf8BitCustomAlpha();
 ## Status Queries
 
 ```c
-GetPlaybackState();    // PB_Idle, PB_Playing, PB_Paused, PB_Error
+GetPlaybackState();    // PB_Idle, PB_Playing, PB_Pausing, PB_Paused, PB_Error, PB_PlayingFailed
 GetPlaybackSpeed();    // Current sample rate (Hz)
+GetPlaybackProgressSamples();  // Interleaved source samples already played
+GetPlaybackProgressPercent();  // Playback progress in range 0.0f to 100.0f
 ```
 
 ## Volume Control
@@ -261,6 +263,8 @@ void main_loop(void) {
 
 **Configuration** (2): `SetFilterConfig`, `GetFilterConfig`
 
+**Filter Chain Master** (2): `SetFilterChain16BitEnable`, `SetFilterChain8BitEnable`
+
 **Soft Clipping** (2): `SetSoftClippingEnable`, `GetSoftClippingEnable`
 
 **8-bit LPF** (5): `SetLpf8BitLevel`, `GetLpf8BitLevel`, `SetLpf8BitCustomAlpha`, `GetLpf8BitCustomAlpha`, `CalcLpf8BitAlphaFromCutoff`
@@ -275,7 +279,7 @@ void main_loop(void) {
 
 **Makeup Gain** (3): `SetLpfMakeupGain8Bit`, `SetLpfMakeupGain16Bit`, `GetLpfMakeupGain16Bit`
 
-**Status** (2): `GetPlaybackState`, `GetPlaybackSpeed`
+**Status** (4): `GetPlaybackState`, `GetPlaybackSpeed`, `GetPlaybackProgressSamples`, `GetPlaybackProgressPercent`
 
 **Volume Response** (4): `SetVolumeResponseNonlinear`, `GetVolumeResponseNonlinear`, `SetVolumeResponseGamma`, `GetVolumeResponseGamma`
 
@@ -283,6 +287,6 @@ void main_loop(void) {
 
 ## See Also
 
-- **Full API Reference**: [API_REFERENCE.md](API_REFERENCE.md) - Complete documentation for all 60+ functions
+- **Full API Reference**: [API_REFERENCE.md](API_REFERENCE.md) - Complete documentation for all 64 functions
 - **User Manual**: [AUDIO_ENGINE_MANUAL.md](AUDIO_ENGINE_MANUAL.md) - Architecture, examples, troubleshooting
 - **Air Effect Guide**: [AIR_EFFECT_QUICK_REFERENCE.md](AIR_EFFECT_QUICK_REFERENCE.md) - Air effect details

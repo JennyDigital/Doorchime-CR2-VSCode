@@ -118,7 +118,7 @@ volatile  uint8_t         trig_timeout_flag             = 0;              // Fla
 volatile  uint16_t        trig_timeout_counter          = 0;              // Counter for trigger timeout duration
 volatile  uint8_t         trig_status                   = TRIGGER_CLR;    // Current trigger status  (SET or CLR)
 
-volatile  uint16_t        adc_out                       = 0;              // 
+volatile  uint16_t        adc_out                       = 0;              // Latest ADC reading for volume control.
 
 // External variables from audio_engine
 extern FilterConfig_TypeDef filter_cfg;
@@ -202,6 +202,8 @@ int main(void)
   // as it increases power consumption and could cause unintended behavior if left operating by accident.
   if( (CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk) != 0U ) {
     HAL_DBGMCU_EnableDBGSleepMode();
+    HAL_DBGMCU_EnableDBGStandbyMode();
+    HAL_DBGMCU_EnableDBGStopMode();
   }
 #endif
 
@@ -270,7 +272,13 @@ int main(void)
     //   I2S_AUDIOFREQ_22K, 16, DIDGERIDOO16B16K1C_PB_FMT );
     PlaySample( secret_door16b16k1c, SECRET_DOOR16B16K1C_SZ,
       I2S_AUDIOFREQ_16K, 16, SECRET_DOOR16B16K1C_PB_FMT );
-    WaitForSampleEnd();
+      while( GetPlaybackState() == PB_Playing ) {
+        percent = GetPlaybackProgressPercent();
+        HAL_Delay( 100 );
+        // Could do other processing here if needed, but just wait in this example
+      }
+
+    // WaitForSampleEnd();
 
     ShutDownAudio();
 

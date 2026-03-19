@@ -2,6 +2,21 @@
 
 All notable changes to the CR2-VSCode Audio Engine project are documented here.
 
+## [2026-03-19] - Playback Progress API + Documentation Suite Sync
+
+### Added
+- **audio_engine.h/.c**: Added playback progress getters `GetPlaybackProgressSamples()` and `GetPlaybackProgressPercent()`.
+- **audio_engine.c**: Added DMA-half retirement tracking (`RetireCompletedDmaHalf`) and per-half valid-sample accounting so reported progress reflects played source samples.
+
+### Changed
+- **audio_engine.h**: Exposed filter-chain master controls `SetFilterChain16BitEnable()` and `SetFilterChain8BitEnable()` in the public API section.
+- **main.c**: Updated example playback flow to poll playback state and progress percentage during playback loop.
+- **main.c**: Enabled debug stop/standby debug mode configuration alongside debug sleep mode when debugger is attached.
+
+### Documentation
+- **Docs**: Updated API/reference manuals to align with current public API signatures and counts (64 documented functions), including playback progress and filter-chain controls.
+- **Docs**: Synced mirrored documentation under `Docs/site/assets/docs/` with top-level markdown manuals.
+
 ## [2026-03-08] - Fades Decoupled from Filter Chain
 
 ### Changed

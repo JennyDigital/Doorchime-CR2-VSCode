@@ -337,7 +337,7 @@ This project includes extensive documentation to help you understand and use the
 1. **First-time users**: Start with this README, then read [AUDIO_ENGINE_MANUAL.md](AUDIO_ENGINE_MANUAL.md)
 2. **Quick lookup**: Check [QUICK_REFERENCE.md](QUICK_REFERENCE.md) for common patterns
 3. **Function search**: Use [FUNCTION_INDEX.md](FUNCTION_INDEX.md) to find functions alphabetically or by category
-4. **API details**: See [API_REFERENCE.md](API_REFERENCE.md) for all 44+ functions with examples
+4. **API details**: See [API_REFERENCE.md](API_REFERENCE.md) for all 64 functions with examples
 5. **IDE integration**: Hover over function names in your editor to see Doxygen documentation from audio_engine.h
 6. **Technical deep-dive**: Read the source code in `audio_engine.c` with inline comments
 

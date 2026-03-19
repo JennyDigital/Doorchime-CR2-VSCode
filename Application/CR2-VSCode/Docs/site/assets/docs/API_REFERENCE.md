@@ -488,6 +488,28 @@ uint8_t GetSoftClippingEnable(void);
 
 **Returns:** 1 if enabled, 0 if disabled
 
+### `SetFilterChain16BitEnable()`
+
+Enable or bypass the full 16-bit filter chain.
+
+```c
+void SetFilterChain16BitEnable(uint8_t enabled);
+```
+
+**Parameters:**
+- `enabled`: Non-zero to enable, zero to bypass
+
+### `SetFilterChain8BitEnable()`
+
+Enable or bypass the full 8-bit filter chain.
+
+```c
+void SetFilterChain8BitEnable(uint8_t enabled);
+```
+
+**Parameters:**
+- `enabled`: Non-zero to enable, zero to bypass
+
 ---
 
 ## Low-Pass Filter (LPF) Control
@@ -1177,14 +1199,16 @@ void AudioEngine_OnPlaybackEnd(void)
 Query current playback status (external declaration).
 
 ```c
-uint8_t GetPlaybackState(void);
+PB_StatusTypeDef GetPlaybackState(void);
 ```
 
 **Returns:** One of:
 - `PB_Idle`: No playback active
 - `PB_Playing`: Playback in progress
+- `PB_Pausing`: Fade-out in progress
 - `PB_Paused`: Paused
 - `PB_Error`: Error state
+- `PB_PlayingFailed`: DMA start failed
 
 **Example:**
 ```c
@@ -1211,6 +1235,42 @@ uint32_t GetPlaybackSpeed(void);
 ```c
 uint32_t sr = GetPlaybackSpeed();
 printf("Playback speed: %lu Hz\n", sr);
+```
+
+### `GetPlaybackProgressSamples()`
+
+Query playback progress in interleaved source samples.
+
+```c
+uint32_t GetPlaybackProgressSamples(void);
+```
+
+**Returns:** Number of source samples already played (0 when idle)
+
+**Notes:**
+- Updated once per DMA half-buffer callback
+- For stereo, left and right channel samples are both counted
+
+**Example:**
+```c
+uint32_t played = GetPlaybackProgressSamples();
+printf("Played samples: %lu\n", played);
+```
+
+### `GetPlaybackProgressPercent()`
+
+Query playback progress as a percentage.
+
+```c
+float GetPlaybackProgressPercent(void);
+```
+
+**Returns:** Playback progress in range `0.0f` to `100.0f` (0.0 when idle)
+
+**Example:**
+```c
+float pct = GetPlaybackProgressPercent();
+printf("Progress: %.1f%%\n", pct);
 ```
 
 ---
@@ -1293,6 +1353,8 @@ void demo_interactive_control(void) {
 | `GetLpf16BitCustomAlphaFromCutoff()` | LPF        | Calculate 16-bit alpha from cutoff    |
 | `GetLpf8BitLevel()`                  | LPF        | Get 8-bit filter aggressiveness       |
 | `GetPauseFadeTime()`                 | Fade       | Get pause fade-out duration           |
+| `GetPlaybackProgressPercent()`       | Status     | Get playback progress percentage      |
+| `GetPlaybackProgressSamples()`       | Status     | Get playback progress in samples      |
 | `GetPlaybackSpeed()`                 | Status     | Get current playback sample rate      |
 | `GetPlaybackState()`                 | Status     | Get current playback state            |
 | `GetResumeFadeTime()`                | Fade       | Get resume fade-in duration           |
@@ -1311,6 +1373,8 @@ void demo_interactive_control(void) {
 | `SetFadeInTime()`                    | Fade       | Set fade-in duration                  |
 | `SetFadeOutTime()`                   | Fade       | Set fade-out duration                 |
 | `SetFilterConfig()`                  | Filter     | Apply complete filter configuration   |
+| `SetFilterChain16BitEnable()`        | Filter     | Enable/disable full 16-bit chain      |
+| `SetFilterChain8BitEnable()`         | Filter     | Enable/disable full 8-bit chain       |
 | `SetLpf16BitCustomAlpha()`           | LPF        | Set custom 16-bit LPF alpha           |
 | `SetLpf16BitLevel()`                 | LPF        | Set 16-bit filter aggressiveness      |
 | `SetLpf8BitCustomAlpha()`            | LPF        | Set custom 8-bit LPF alpha            |

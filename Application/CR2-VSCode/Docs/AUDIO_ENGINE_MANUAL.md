@@ -15,7 +15,7 @@
 11. [Troubleshooting](#troubleshooting)
 12. [Performance Notes](#performance-notes)
 
-**📖 Complete API Reference:** See [API_REFERENCE.md](API_REFERENCE.md) for detailed documentation of all 60+ functions including getters, setters, and control functions.
+**📖 Complete API Reference:** See [API_REFERENCE.md](API_REFERENCE.md) for detailed documentation of all 64 functions including getters, setters, and control functions.
 
 ---
 
@@ -597,11 +597,11 @@ SetLpfMakeupGain8Bit(1.15f);  // Boost 8-bit audio by 15%
 Query current playback state (for non-blocking polling).
 
 ```c
-uint8_t GetPlaybackState(void);
+PB_StatusTypeDef GetPlaybackState(void);
 ```
 
 **Returns:**
-- `PB_Idle`, `PB_Playing`, `PB_Paused`, etc.
+- `PB_Idle`, `PB_Playing`, `PB_Pausing`, `PB_Paused`, `PB_Error`, `PB_PlayingFailed`
 
 **Example:**
 ```c
@@ -615,6 +615,20 @@ Get current sample rate.
 
 ```c
 uint32_t GetPlaybackSpeed(void);
+```
+
+##### `GetPlaybackProgressSamples()`
+Get playback progress in interleaved source samples.
+
+```c
+uint32_t GetPlaybackProgressSamples(void);
+```
+
+##### `GetPlaybackProgressPercent()`
+Get playback progress as a percentage (`0.0f` to `100.0f`).
+
+```c
+float GetPlaybackProgressPercent(void);
 ```
 
 ---

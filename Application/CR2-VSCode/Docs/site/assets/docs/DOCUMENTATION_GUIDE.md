@@ -62,7 +62,7 @@ The Audio Engine includes **comprehensive, multi-layered documentation** designe
 
 | File | Purpose | Best For | Length |
 |------|---------|----------|--------|
-| [API_REFERENCE.md](API_REFERENCE.md) | 44+ functions with examples | Detailed implementation | 20 min |
+| [API_REFERENCE.md](API_REFERENCE.md) | 64 functions with examples | Detailed implementation | 20 min |
 | [FUNCTION_INDEX.md](FUNCTION_INDEX.md) | Function catalog | Quick lookup | 3 min |
 | [audio_engine.h](../Core/Libraries/audio_engine.h) | Doxygen-documented header | IDE integration | N/A |
 | [HEADER_DOCUMENTATION.md](HEADER_DOCUMENTATION.md) | Guide to header docs | Understanding Doxygen | 5 min |
@@ -236,9 +236,9 @@ The Audio Engine includes **comprehensive, multi-layered documentation** designe
 
 | Documentation Type | Coverage | Status |
 |-------------------|----------|--------|
-| **Function Signatures** | 40+/40+ (100%) | ✅ Complete |
-| **Function Descriptions** | 40+/40+ (100%) | ✅ Complete |
-| **Code Examples** | 40+/40+ (100%) | ✅ Complete |
+| **Function Signatures** | 64/64 (100%) | ✅ Complete |
+| **Function Descriptions** | 64/64 (100%) | ✅ Complete |
+| **Code Examples** | 64/64 (100%) | ✅ Complete |
 | **Architecture Diagrams** | 5/5 (100%) | ✅ Complete |
 | **Filter Graphs** | 3/3 (100%) | ✅ Complete |
 | **Use Case Patterns** | 5/5 (100%) | ✅ Complete |

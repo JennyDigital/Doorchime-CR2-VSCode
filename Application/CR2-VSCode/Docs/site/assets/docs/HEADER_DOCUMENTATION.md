@@ -72,7 +72,7 @@ The header is organized into logical groups of related functions:
 9. **DAC Power Control** (2 functions)
    - `SetDAC_Control()` / `GetDAC_Control()` - DAC power control
 
-10. **Volume Response Control** (3 functions)
+10. **Volume Response Control** (4 functions)
    - `SetVolumeResponseNonlinear()` / `GetVolumeResponseNonlinear()` - Enable/disable non-linear response
    - `SetVolumeResponseGamma()` / `GetVolumeResponseGamma()` - Gamma curve control
 
@@ -89,10 +89,11 @@ The header is organized into logical groups of related functions:
    - `HAL_I2S_TxHalfCpltCallback()` - Half-buffer complete
    - `HAL_I2S_TxCpltCallback()` - Full-buffer complete
 
-13. **Playback State (Internal)** (6 functions)
+13. **Playback State (Internal)** (8 functions)
    - `GetPlaybackState()` / `SetPlaybackState()`
    - `GetHalfToFill()` / `SetHalfToFill()`
    - `GetPlaybackSpeed()` / `SetPlaybackSpeed()`
+   - `GetPlaybackProgressSamples()` / `GetPlaybackProgressPercent()`
 
 ## Key Documentation Elements
 
@@ -231,7 +232,7 @@ The `ReadVolume` callback returns 1-65535:
 
 ## Function Count Summary
 
-Total documented functions: **63**
+Total documented functions: **64**
 
 - **Initialization**: 1
 - **Application Callbacks**: 1
@@ -246,7 +247,7 @@ Total documented functions: **63**
 - **Chunk Processing**: 3
 - **Air Effect**: 9
 - **DMA Callbacks**: 2
-- **Internal State**: 6
+- **Internal State**: 8
 
 ## Standards Used
 

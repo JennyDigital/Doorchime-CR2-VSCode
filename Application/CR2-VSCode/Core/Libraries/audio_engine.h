@@ -414,6 +414,16 @@ void                SetResumeFadeTime                 ( float seconds );
  */
 float               GetResumeFadeTime                 ( void );
 
+/** Set whether the 16-bit filter chain is enabled or not.
+ * @param[in] 1 = Filter chain enabled, 0 = filter chain disabled
+ */
+void                SetFilterChain16BitEnable         ( uint8_t enabled );
+
+/** Set whether the 8-bit filter chain is enabled or not.
+ * @param[in] 1 = Filter chain enabled, 0 = filter chain disabled
+ */
+void                SetFilterChain8BitEnable         ( uint8_t enabled );
+
 /* Playback control functions */
 /**
  * @brief Calculate a sample offset from time, sample rate, and mode
@@ -652,6 +662,20 @@ void                SetHalfToFill                     ( uint8_t half );
  * @return Sample rate in Hz (e.g., 22000, 44100)
  */
 uint32_t            GetPlaybackSpeed                  ( void );
+
+/**
+ * @brief Get current playback progress in source samples
+ * @return Number of interleaved source samples already played, or 0 when idle
+ * @note Updated once per DMA half-buffer. For stereo, left and right samples are both counted.
+ */
+uint32_t            GetPlaybackProgressSamples        ( void );
+
+/**
+ * @brief Get current playback progress as a percentage
+ * @return Playback progress from 0.0 to 100.0, or 0.0 when idle
+ * @note Updated once per DMA half-buffer and based on interleaved source samples.
+ */
+float               GetPlaybackProgressPercent        ( void );
 
 /**
  * @brief Set playback sample rate (internal use)

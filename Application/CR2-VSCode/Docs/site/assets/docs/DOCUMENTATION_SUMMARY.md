@@ -7,8 +7,8 @@ Complete overview of the Audio Engine Documentation Suite.
 | Metric | Count |
 |--------|-------|
 | **Total Documentation Files** | 15 |
-| **Documented Functions** | 44+ |
-| **Code Examples** | 40+ |
+| **Documented Functions** | 64 |
+| **Code Examples** | 64+ |
 | **Total Estimated Pages** | ~150 |
 | **Documentation Coverage** | 100% |
 | **Last Updated** | 2026-02-08 |
@@ -18,7 +18,7 @@ Complete overview of the Audio Engine Documentation Suite.
 ### Core Documentation (7 files)
 1. **[README.md](README.md)** - Project overview and quick start (5 min read)
 2. **[AUDIO_ENGINE_MANUAL.md](AUDIO_ENGINE_MANUAL.md)** - Complete technical manual (30 min read)
-3. **[API_REFERENCE.md](API_REFERENCE.md)** - 44+ functions with examples (20 min reference)
+3. **[API_REFERENCE.md](API_REFERENCE.md)** - 64 functions with examples (20 min reference)
 4. **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Fast lookup guide (5 min reference)
 5. **[FUNCTION_INDEX.md](FUNCTION_INDEX.md)** - Function catalog (3 min reference)
 6. **[DOCUMENTATION_GUIDE.md](DOCUMENTATION_GUIDE.md)** - Navigation guide (5 min read)
@@ -117,12 +117,12 @@ HEADER_DOCUMENTATION.md → Open audio_engine.h → Hover for docs
 | Fade Times | 8 | [API_REFERENCE.md#fade-time-control](API_REFERENCE.md#fade-time-control) |
 | Chunk Processing | 3 | [API_REFERENCE.md#chunk-processing-dma-callbacks](API_REFERENCE.md#chunk-processing-dma-callbacks) |
 | DMA Callbacks | 2 | [API_REFERENCE.md#chunk-processing-dma-callbacks](API_REFERENCE.md#chunk-processing-dma-callbacks) |
-| Internal State | 4+ | [API_REFERENCE.md#status-queries](API_REFERENCE.md#status-queries) |
+| Internal State | 8 | [API_REFERENCE.md#status-queries](API_REFERENCE.md#status-queries) |
 
 ## ✅ Documentation Features
 
 ### Complete Coverage
-✓ All 40+ public functions documented  
+✓ All 64 public functions documented  
 ✓ Every function has code example  
 ✓ All enums and structs explained  
 ✓ All constants defined  
@@ -235,7 +235,7 @@ If documentation is unclear or incorrect:
 ⭐⭐⭐ [DOCUMENTATION_GUIDE.md](DOCUMENTATION_GUIDE.md) - Navigation help  
 
 ### Key Features
-- **44+ functions fully documented** with examples
+- **64 functions fully documented** with examples
 - **100% API coverage** - every public function included
 - **Multi-layered approach** - quick reference to deep technical
 - **IDE integrated** - Doxygen tooltips in all major IDEs
@@ -262,7 +262,7 @@ If documentation is unclear or incorrect:
 
 **Documentation Version:** 2.0  
 **Last Updated:** 2026-02-07  
-**Total Functions Documented:** 40+  
+**Total Functions Documented:** 64  
 **Documentation Files:** 13  
 **Estimated Total Pages:** ~150  
 
