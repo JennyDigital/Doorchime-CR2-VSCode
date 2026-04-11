@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doorchime CR2 Quick Reference | Doorchime CR2</title>
+  <meta name="description" content="Fast reference for common setup patterns, playback calls, filter controls, and practical STM32 audio engine tasks.">
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+  <meta name="googlebot" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+  <link rel="canonical" href="https://jennys-stm32-dsp-audio-engine.netlify.app/docs/quick-reference.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Doorchime CR2">
+  <meta property="og:url" content="https://jennys-stm32-dsp-audio-engine.netlify.app/docs/quick-reference.html">
+  <meta property="og:title" content="Doorchime CR2 Quick Reference">
+  <meta property="og:description" content="Fast reference for common setup patterns, playback calls, filter controls, and practical STM32 audio engine tasks.">
+  <meta property="og:image" content="https://jennys-stm32-dsp-audio-engine.netlify.app/assets/audio-engine-logo-flashy.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Doorchime CR2 Quick Reference">
+  <meta name="twitter:description" content="Fast reference for common setup patterns, playback calls, filter controls, and practical STM32 audio engine tasks.">
+  <meta name="twitter:image" content="https://jennys-stm32-dsp-audio-engine.netlify.app/assets/audio-engine-logo-flashy.svg">
+    <link rel="stylesheet" href="../styles.css">
+  <script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Doorchime CR2 Quick Reference",
+  "description": "Fast reference for common setup patterns, playback calls, filter controls, and practical STM32 audio engine tasks.",
+  "url": "https://jennys-stm32-dsp-audio-engine.netlify.app/docs/quick-reference.html",
+  "mainEntityOfPage": "https://jennys-stm32-dsp-audio-engine.netlify.app/docs/quick-reference.html",
+  "dateModified": "2026-03-19",
+  "publisher": {
+    "@type": "Organization",
+    "name": "Doorchime CR2"
+  },
+  "about": [
+    {
+      "@type": "Thing",
+      "name": "STM32"
+    },
+    {
+      "@type": "Thing",
+      "name": "Embedded audio"
+    },
+    {
+      "@type": "Thing",
+      "name": "Digital signal processing"
+    }
+  ]
+}</script>
+</head>
+<body>
+  <div class="noise"></div>
+
+  <header class="hero docs-hero">
+    <nav class="topbar">
+      <div class="brand">DOORCHIME CR2</div>
+      <div class="actions">
+        <a class="btn ghost" href="../index.html">Home</a>
+        <a class="btn ghost" href="../docs.html">Docs Hub</a>
+      </div>
+    </nav>
+
+    <section class="panel docs-intro">
+      <p class="breadcrumbs"><a href="../index.html">Home</a> / <a href="../docs.html">Docs</a> / <span>Doorchime CR2 Quick Reference</span></p>
+      <p class="kicker">QUICK REFERENCE</p>
+      <h1>Doorchime CR2 Quick Reference</h1>
+      <p class="lead">Fast reference for common setup patterns, playback calls, filter controls, and practical STM32 audio engine tasks.</p>
+      <div class="doc-meta">Updated 2026-03-19 · Static HTML page for Google and Bing indexing</div>
+      <div class="actions doc-actions">
+        <a class="btn" href="../assets/docs/QUICK_REFERENCE.md">Source File</a>
+        <a class="btn ghost" href="../docs-viewer.html?doc=QUICK_REFERENCE.md">Interactive Viewer</a>
+      </div>
+    </section>
+  </header>
+
+  <main>
+    <article class="panel markdown-view"><h1 id="audio-engine-quick-reference-card">Audio Engine - Quick Reference Card</h1>
+<p>Fast lookup for common audio engine operations.</p>
+<h2 id="initialization">Initialization</h2>
+<pre><code class="language-c">#include "audio_engine.h"
+
+AudioEngine_Init(DAC_MasterSwitch, ReadVolume, MX_I2S2_Init);
+</code></pre>
+<h2 id="playback">Playback</h2>
+<pre><code class="language-c">// Play a sample (blocking until complete)
+PlaySample(sample_ptr, sample_count, 22000, 16, Mode_mono);
+WaitForSampleEnd();
+
+// Play non-blocking
+PlaySample(sample_ptr, sample_count, 22000, 16, Mode_mono);
+// Do other work...
+if (GetPlaybackState() == PB_Playing) { /* still playing */ }
+
+// Pause/Resume
+PausePlayback();      // Fade out and pause
+ResumePlayback();     // Fade in and resume
+
+// Stop with fade (asynchronous)
+StopPlayback();       // Request stop (returns immediately)
+while (GetPlaybackState() != PB_Idle) { /* wait for fade/stop to complete */ }
+
+// Stop all audio
+ShutDownAudio();
+</code></pre>
+<h2 id="dac-power-control">DAC Power Control</h2>
+<pre><code class="language-c">// Enable/disable automatic DAC power control
+SetDAC_Control(1);  // Engine manages DAC power (default)
+SetDAC_Control(0);  // Manual DAC control
+
+// Query current state
+if (GetDAC_Control()) {
+  // DAC power is automatic
+}
+</code></pre>
+<h2 id="application-callbacks">Application Callbacks</h2>
+<pre><code class="language-c">// Override this weak function to get playback end notifications
+void AudioEngine_OnPlaybackEnd(void)
+{
+  // Called from ISR when playback ends
+  playback_done_flag = 1;  // Set flag for main loop
+}
+
+// Usage patterns:
+// 1. Simple flag
+volatile uint8_t done = 0;
+void AudioEngine_OnPlaybackEnd(void) { done = 1; }
+
+// 2. RTOS event
+void AudioEngine_OnPlaybackEnd(void) {
+  osEventFlagsSet(audio_events, AUDIO_DONE);
+}
+
+// 3. Playlist management
+void AudioEngine_OnPlaybackEnd(void) {
+  next_track_ready = 1;
+}
+</code></pre>
+<h2 id="filter-configuration">Filter Configuration</h2>
+<pre><code class="language-c">// Set by aggressiveness level
+SetLpf16BitLevel(LPF_Soft);      // Very Soft, Soft, Medium, Firm, Aggressive
+SetLpf8BitLevel(LPF_Medium);
+
+// Query current settings
+FilterConfig_TypeDef cfg;
+GetFilterConfig(&amp;cfg);
+cfg.enable_soft_clipping = 1;
+SetFilterConfig(&amp;cfg);
+
+// Get/Set soft clipping
+GetSoftClippingEnable();
+SetSoftClippingEnable(1);
+
+// Makeup gain after filtering
+SetLpfMakeupGain8Bit(1.15f);     // 15% boost
+SetLpfMakeupGain16Bit(1.05f);    // 5% boost
+GetLpfMakeupGain16Bit();
+</code></pre>
+<h2 id="air-effect-brightening">Air Effect (Brightening)</h2>
+<pre><code class="language-c">// Easiest: Use presets
+SetAirEffectPresetDb(0);  // Off
+SetAirEffectPresetDb(1);  // +1 dB
+SetAirEffectPresetDb(2);  // +2 dB (recommended)
+SetAirEffectPresetDb(3);  // +3 dB
+
+// Cycle through presets
+CycleAirEffectPresetDb();
+
+// Manual dB control
+SetAirEffectGainDb(1.5f);
+GetAirEffectGainDb();
+
+// Get preset info
+GetAirEffectPresetIndex();      // Current preset
+GetAirEffectPresetCount();      // Number of presets
+GetAirEffectPresetDb(preset_i); // dB of specific preset
+</code></pre>
+<h2 id="fade-times">Fade Times</h2>
+<pre><code class="language-c">// Set fade durations (in seconds)
+SetFadeInTime(0.150f);      // Play start fade
+SetFadeOutTime(0.150f);     // Play end fade
+SetPauseFadeTime(0.300f);   // Pause fade out
+SetResumeFadeTime(0.200f);  // Resume fade in
+
+// Get current values
+GetFadeInTime();
+GetFadeOutTime();
+GetPauseFadeTime();
+GetResumeFadeTime();
+
+// Enable/disable faders
+SetFadersEnabled(1);
+GetFadersEnabled();
+</code></pre>
+<h2 id="custom-lpf-alpha">Custom LPF Alpha</h2>
+<pre><code class="language-c">// Calculate alpha from cutoff frequency
+uint16_t alpha = GetLpf16BitCustomAlphaFromCutoff(5000.0f);  // 5 kHz
+
+// Or with custom sample rate
+uint16_t alpha = CalcLpf16BitAlphaFromCutoff(5000.0f, 22000.0f);
+
+// Apply custom alpha
+SetLpf16BitLevel(LPF_Custom);
+SetLpf16BitCustomAlpha(alpha);
+
+// 8-bit custom alpha
+uint16_t alpha8 = CalcLpf8BitAlphaFromCutoff(4500.0f, 11000.0f);
+SetLpf8BitLevel(LPF_Custom);
+SetLpf8BitCustomAlpha(alpha8);
+GetLpf8BitCustomAlpha();
+</code></pre>
+<h2 id="status-queries">Status Queries</h2>
+<pre><code class="language-c">GetPlaybackState();    // PB_Idle, PB_Playing, PB_Pausing, PB_Paused, PB_Error, PB_PlayingFailed
+GetPlaybackSpeed();    // Current sample rate (Hz)
+GetPlaybackProgressSamples();  // Interleaved source samples already played
+GetPlaybackProgressPercent();  // Playback progress in range 0.0f to 100.0f
+</code></pre>
+<h2 id="volume-control">Volume Control</h2>
+<pre><code class="language-c">// Read volume (1-65535 scale, non-linear if enabled)
+uint16_t vol = ReadVolume();
+
+// Non-linear response (logarithmic) in main.h:
+#define VOLUME_RESPONSE_NONLINEAR
+#define VOLUME_RESPONSE_GAMMA 2.0f  // 1.0=linear, 2.0=quadratic
+</code></pre>
+<h2 id="common-patterns">Common Patterns</h2>
+<h3 id="pattern-1-simple-play-wait">Pattern 1: Simple Play &amp; Wait</h3>
+<pre><code class="language-c">PlaySample(sound_data, sound_size, 22000, 16, Mode_mono);
+WaitForSampleEnd();
+</code></pre>
+<h3 id="pattern-2-non-blocking-with-poll">Pattern 2: Non-Blocking with Poll</h3>
+<pre><code class="language-c">PlaySample(sound_data, sound_size, 22000, 16, Mode_mono);
+while (GetPlaybackState() == PB_Playing) {
+  // Do other work
+  HAL_Delay(100);
+}
+</code></pre>
+<h3 id="pattern-3-pause-resume">Pattern 3: Pause &amp; Resume</h3>
+<pre><code class="language-c">PlaySample(sound_data, sound_size, 22000, 16, Mode_mono);
+HAL_Delay(1000);
+PausePlayback();
+HAL_Delay(2000);
+ResumePlayback();
+WaitForSampleEnd();
+</code></pre>
+<h3 id="pattern-4-configure-then-play">Pattern 4: Configure Then Play</h3>
+<pre><code class="language-c">FilterConfig_TypeDef cfg;
+GetFilterConfig(&amp;cfg);
+cfg.enable_16bit_biquad_lpf = 1;
+cfg.enable_soft_clipping = 1;
+cfg.lpf_16bit_level = LPF_Soft;
+SetFilterConfig(&amp;cfg);
+
+SetAirEffectPresetDb(2);      // +2 dB brightening
+SetFadeInTime(0.200f);
+
+PlaySample(sound_data, sound_size, 22000, 16, Mode_mono);
+WaitForSampleEnd();
+</code></pre>
+<h3 id="pattern-5-interactive-control">Pattern 5: Interactive Control</h3>
+<pre><code class="language-c">// On button press
+CycleAirEffectPresetDb();
+printf("Preset: %u\n", GetAirEffectPresetIndex());
+
+// On slider change
+SetFadeOutTime(slider_value / 100.0f);  // 0.0-1.0 seconds
+</code></pre>
+<h3 id="pattern-6-event-driven-playback">Pattern 6: Event-Driven Playback</h3>
+<pre><code class="language-c">volatile uint8_t playback_done = 0;
+
+void AudioEngine_OnPlaybackEnd(void) {
+  playback_done = 1;  // Called from ISR when done
+}
+
+void main_loop(void) {
+  PlaySample(sound_data, sound_size, 22000, 16, Mode_mono);
+
+  // Continue other work while audio plays
+  while (!playback_done) {
+    UpdateDisplay();
+    ProcessButtons();
+    HAL_Delay(10);
+  }
+
+  printf("Audio finished!\n");
+}
+</code></pre>
+<h2 id="function-categories">Function Categories</h2>
+<p><strong>Playback</strong> (6): <code>PlaySample</code>, <code>WaitForSampleEnd</code>, <code>PausePlayback</code>, <code>ResumePlayback</code>, <code>StopPlayback</code>, <code>ShutDownAudio</code></p>
+<p><strong>DAC Control</strong> (2): <code>SetDAC_Control</code>, <code>GetDAC_Control</code></p>
+<p><strong>Callbacks</strong> (1): <code>AudioEngine_OnPlaybackEnd</code></p>
+<p><strong>Configuration</strong> (2): <code>SetFilterConfig</code>, <code>GetFilterConfig</code></p>
+<p><strong>Filter Chain Master</strong> (2): <code>SetFilterChain16BitEnable</code>, <code>SetFilterChain8BitEnable</code></p>
+<p><strong>Soft Clipping</strong> (2): <code>SetSoftClippingEnable</code>, <code>GetSoftClippingEnable</code></p>
+<p><strong>8-bit LPF</strong> (5): <code>SetLpf8BitLevel</code>, <code>GetLpf8BitLevel</code>, <code>SetLpf8BitCustomAlpha</code>, <code>GetLpf8BitCustomAlpha</code>, <code>CalcLpf8BitAlphaFromCutoff</code></p>
+<p><strong>16-bit LPF</strong> (4): <code>SetLpf16BitLevel</code>, <code>SetLpf16BitCustomAlpha</code>, <code>CalcLpf16BitAlphaFromCutoff</code>, <code>GetLpf16BitCustomAlphaFromCutoff</code></p>
+<p><strong>Air Effect</strong> (11): <code>SetAirEffectEnable</code>, <code>GetAirEffectEnable</code>, <code>SetAirEffectGainQ16</code>, <code>GetAirEffectGainQ16</code>, <code>SetAirEffectGainDb</code>, <code>GetAirEffectGainDb</code>, <code>SetAirEffectPresetDb</code>, <code>CycleAirEffectPresetDb</code>, <code>GetAirEffectPresetIndex</code>, <code>GetAirEffectPresetCount</code>, <code>GetAirEffectPresetDb</code></p>
+<p><strong>Fade Times</strong> (8): <code>SetFadeInTime</code>, <code>GetFadeInTime</code>, <code>SetFadeOutTime</code>, <code>GetFadeOutTime</code>, <code>SetPauseFadeTime</code>, <code>GetPauseFadeTime</code>, <code>SetResumeFadeTime</code>, <code>GetResumeFadeTime</code></p>
+<p><strong>Faders</strong> (2): <code>SetFadersEnabled</code>, <code>GetFadersEnabled</code></p>
+<p><strong>Makeup Gain</strong> (3): <code>SetLpfMakeupGain8Bit</code>, <code>SetLpfMakeupGain16Bit</code>, <code>GetLpfMakeupGain16Bit</code></p>
+<p><strong>Status</strong> (4): <code>GetPlaybackState</code>, <code>GetPlaybackSpeed</code>, <code>GetPlaybackProgressSamples</code>, <code>GetPlaybackProgressPercent</code></p>
+<p><strong>Volume Response</strong> (4): <code>SetVolumeResponseNonlinear</code>, <code>GetVolumeResponseNonlinear</code>, <code>SetVolumeResponseGamma</code>, <code>GetVolumeResponseGamma</code></p>
+<hr/>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><strong>Full API Reference</strong>: <a href="api-reference.html">API_REFERENCE.md</a> - Complete documentation for all 64 functions</li>
+<li><strong>User Manual</strong>: <a href="audio-engine-manual.html">AUDIO_ENGINE_MANUAL.md</a> - Architecture, examples, troubleshooting</li>
+<li><strong>Air Effect Guide</strong>: <a href="../assets/docs/AIR_EFFECT_QUICK_REFERENCE.md">AIR_EFFECT_QUICK_REFERENCE.md</a> - Air effect details</li>
+</ul></article>
+  </main>
+
+  <footer>
+    <p>Doorchime CR2 Documentation</p>
+  </footer>
+</body>
+</html>

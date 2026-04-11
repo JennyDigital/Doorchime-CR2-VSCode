@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doorchime CR2 Overview and Quick Start | Doorchime CR2</title>
+  <meta name="description" content="Project overview, STM32 audio engine features, quick start steps, filter setup, and documentation map.">
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+  <meta name="googlebot" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+  <link rel="canonical" href="https://jennys-stm32-dsp-audio-engine.netlify.app/docs/readme.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Doorchime CR2">
+  <meta property="og:url" content="https://jennys-stm32-dsp-audio-engine.netlify.app/docs/readme.html">
+  <meta property="og:title" content="Doorchime CR2 Overview and Quick Start">
+  <meta property="og:description" content="Project overview, STM32 audio engine features, quick start steps, filter setup, and documentation map.">
+  <meta property="og:image" content="https://jennys-stm32-dsp-audio-engine.netlify.app/assets/audio-engine-logo-flashy.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Doorchime CR2 Overview and Quick Start">
+  <meta name="twitter:description" content="Project overview, STM32 audio engine features, quick start steps, filter setup, and documentation map.">
+  <meta name="twitter:image" content="https://jennys-stm32-dsp-audio-engine.netlify.app/assets/audio-engine-logo-flashy.svg">
+    <link rel="stylesheet" href="../styles.css">
+  <script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Doorchime CR2 Overview and Quick Start",
+  "description": "Project overview, STM32 audio engine features, quick start steps, filter setup, and documentation map.",
+  "url": "https://jennys-stm32-dsp-audio-engine.netlify.app/docs/readme.html",
+  "mainEntityOfPage": "https://jennys-stm32-dsp-audio-engine.netlify.app/docs/readme.html",
+  "dateModified": "2026-04-10",
+  "publisher": {
+    "@type": "Organization",
+    "name": "Doorchime CR2"
+  },
+  "about": [
+    {
+      "@type": "Thing",
+      "name": "STM32"
+    },
+    {
+      "@type": "Thing",
+      "name": "Embedded audio"
+    },
+    {
+      "@type": "Thing",
+      "name": "Digital signal processing"
+    }
+  ]
+}</script>
+</head>
+<body>
+  <div class="noise"></div>
+
+  <header class="hero docs-hero">
+    <nav class="topbar">
+      <div class="brand">DOORCHIME CR2</div>
+      <div class="actions">
+        <a class="btn ghost" href="../index.html">Home</a>
+        <a class="btn ghost" href="../docs.html">Docs Hub</a>
+      </div>
+    </nav>
+
+    <section class="panel docs-intro">
+      <p class="breadcrumbs"><a href="../index.html">Home</a> / <a href="../docs.html">Docs</a> / <span>Doorchime CR2 Overview and Quick Start</span></p>
+      <p class="kicker">PROJECT OVERVIEW</p>
+      <h1>Doorchime CR2 Overview and Quick Start</h1>
+      <p class="lead">Project overview, STM32 audio engine features, quick start steps, filter setup, and documentation map.</p>
+      <div class="doc-meta">Updated 2026-04-10 · Static HTML page for Google and Bing indexing</div>
+      <div class="actions doc-actions">
+        <a class="btn" href="../assets/docs/README.md">Source File</a>
+        <a class="btn ghost" href="../docs-viewer.html?doc=README.md">Interactive Viewer</a>
+      </div>
+    </section>
+  </header>
+
+  <main>
+    <article class="panel markdown-view"><h1 id="audio-engine-stm32-dsp-audio-playback-system">Audio Engine - STM32 DSP Audio Playback System</h1>
+<p><img alt="Audio Engine Flash Logo" loading="lazy" src="../assets/docs/audio-engine-logo-flashy.svg"/></p>
+<p><a href="license.html"><img alt="License" src="https://img.shields.io/badge/license-MIT-blue.svg"/></a>
+<a href="https://www.st.com/en/microcontrollers-microprocessors/stm32-32-bit-arm-cortex-mcus.html"><img alt="Platform" src="https://img.shields.io/badge/platform-STM32%20with%20I2S-orange.svg"/></a>
+<a href=""><img alt="Audio" src="https://img.shields.io/badge/audio-8bit%20%7C%2016bit-green.svg"/></a>
+<a href="../assets/docs/DOCUMENTATION_GUIDE.md"><img alt="Documentation" src="https://img.shields.io/badge/docs-comprehensive-brightgreen.svg"/></a>
+<a href="api-reference.html"><img alt="API Functions" src="https://img.shields.io/badge/API-44%2B%20functions-blue.svg"/></a></p>
+<p>A professional, reusable audio playback engine for STM32 microcontrollers with I2S support (including STM32G4, STM32F4, STM32H7 series and others) with runtime-configurable DSP filter chain, supporting 8-bit and 16-bit audio playback through I2S to digital amplifiers such as the MAX98357A. Includes an Air Effect high-shelf brightening filter with presets (+1, +2, +3 dB) and direct dB control.</p>
+<blockquote>
+<p>📚 <strong>New to the project?</strong> See <a href="../assets/docs/DOCUMENTATION_GUIDE.md">DOCUMENTATION_GUIDE.md</a> for complete navigation of all 15 documentation files.</p>
+<p>🌍 <strong>Porting to other toolchains or architectures?</strong> See <a href="portability-report.html">PORTABILITY_REPORT.md</a> for compatibility risks and migration guidance.</p>
+</blockquote>
+<h2 id="table-of-contents">📋 Table of Contents</h2>
+<ul>
+<li><a href="#-features">Features</a></li>
+<li><a href="#-quick-start">Quick Start</a></li>
+<li><a href="#-filter-configuration">Filter Configuration</a></li>
+<li><a href="#-filter-response-graphs">Filter Response Graphs</a></li>
+<li><a href="#-dsp-filter-chain">DSP Filter Chain</a></li>
+<li><a href="#-hardware-setup">Hardware Setup</a></li>
+<li><a href="#-api-reference">API Reference</a></li>
+<li><a href="#-performance">Performance</a></li>
+<li><a href="#-documentation">Documentation</a></li>
+<li><a href="#-portability">Portability</a></li>
+</ul>
+<h2 id="features">✨ Features</h2>
+<ul>
+<li><strong>Dual Format Support</strong>: 8-bit unsigned PCM and 16-bit signed PCM</li>
+<li><strong>Flexible Playback</strong>: Mono and stereo modes</li>
+<li><strong>Runtime-Configurable DSP</strong>: No recompilation needed for filter adjustments</li>
+<li><strong>No FPU Required</strong>: All DSP operations use fixed-point integer math</li>
+<li><strong>DMA-Driven</strong>: Efficient I2S streaming with double-buffering</li>
+<li><strong>Professional Filters</strong>: Biquad LPF, DC blocking, soft clipping, fade in/out</li>
+<li><strong>Air Effect</strong>: Tunable high-shelf brightening (presets: +1, +2, +3 dB and direct dB control)</li>
+<li><strong>Low Latency</strong>: ~93 ms playback latency (2048-sample buffer @ 22 kHz)</li>
+<li><strong>Sample Rate Flexible</strong>: Default 22 kHz, configurable up to 48 kHz</li>
+</ul>
+<h2 id="whats-new">What's New</h2>
+<ul>
+<li><strong>Thread-Safe Stop Logic</strong>: <code>StopPlayback()</code> refactored for complete thread-safety by moving all state modifications into the DMA callback context, eliminating race conditions.</li>
+<li><strong>Playback End Callback</strong>: New weak <code>AudioEngine_OnPlaybackEnd()</code> callback for ISR-safe playback completion notifications - invoked exactly once per playback session with internal guard, ideal for event-driven applications, playlists, and RTOS integration.</li>
+<li><strong>DAC Power Control</strong>: Added <code>SetDAC_Control()</code> and <code>GetDAC_Control()</code> for optional runtime control of DAC power management - useful when sharing the audio engine across multiple applications.</li>
+<li><strong>Flash Footprint</strong>: <code>.text</code> ≈ 12.9 KB (Release build), reflecting added features and refactoring.</li>
+<li><strong>Non-Linear Volume Response</strong>: Human-perception-matched volume control with configurable gamma curve. Enable via <code>VOLUME_RESPONSE_NONLINEAR</code> (#define in main.h). Gamma=2.0 provides intuitive volume feel.</li>
+<li><strong>Air Effect Auto-Control</strong>: <code>SetAirEffectPresetDb()</code> now auto-enables/disables air effect based on preset (0 = off, &gt;0 = on). No separate <code>SetAirEffectEnable()</code> call needed.</li>
+<li><strong>Air Effect</strong>: High-shelf brightening with runtime control. Enable via <code>SetAirEffectPresetDb(preset)</code> and tune with <code>SetAirEffectGainDb()</code>.</li>
+<li><strong>Filter Warm-Up &amp; Resets</strong>: Introduced <code>WarmupBiquadFilter16Bit()</code> and consolidated resets via <code>RESET_ALL_FILTER_STATE()</code> to reduce startup transients and simplify <code>PlaySample()</code>.</li>
+<li><strong>Documentation</strong>: Updated manual and README, enhanced graphs and A4 report, syntax-highlighted code blocks, and embedded system block diagram.</li>
+<li><strong>Examples Alignment</strong>: Usage examples now match the current API and runtime configuration model.</li>
+</ul>
+<h2 id="quick-start">🚀 Quick Start</h2>
+<h3 id="1-initialize-hardware-callbacks">1. Initialize Hardware Callbacks</h3>
+<pre><code class="language-c">#include "audio_engine.h"
+
+// Set up hardware interface callbacks (in main.c)
+AudioEngine_DACSwitch = DAC_MasterSwitch;   // GPIO control for amplifier
+AudioEngine_ReadVolume = ReadVolume;        // Volume level reading
+AudioEngine_I2SInit = MX_I2S2_Init;         // I2S initialization
+
+// Configure filters (optional - defaults are pre-set)
+SetLpf16BitLevel(LPF_Soft);                 // Gentle 16-bit filtering
+</code></pre>
+<h3 id="2-play-audio">2. Play Audio</h3>
+<pre><code class="language-c">// Play a 16-bit mono sample
+extern const uint8_t doorbell_sound[];
+extern const uint32_t doorbell_sound_samples;
+
+PlaySample(
+  doorbell_sound,          // Audio data pointer
+  doorbell_sound_samples,  // Total samples (all channels combined)
+  22000,                   // Sample rate (Hz)
+  16,                      // Bit depth (8 or 16)
+  Mode_mono                // Mono/Stereo
+);
+
+WaitForSampleEnd();          // Block until playback complete
+</code></pre>
+<h3 id="3-runtime-filter-adjustment">3. Runtime Filter Adjustment</h3>
+<pre><code class="language-c">FilterConfig_TypeDef cfg;
+GetFilterConfig(&amp;cfg);
+
+cfg.enable_16bit_biquad_lpf = 1;      // Enable 16-bit LPF
+cfg.enable_soft_clipping = 1;         // Enable soft clipping
+cfg.lpf_16bit_level = LPF_Aggressive; // Strong filtering
+
+SetFilterConfig(&amp;cfg);
+</code></pre>
+<h2 id="filter-configuration">🎛️ Filter Configuration</h2>
+<h3 id="16-bit-biquad-lpf-aggressiveness-levels">16-bit Biquad LPF Aggressiveness Levels</h3>
+<p>The 16-bit path uses a <strong>second-order biquad filter</strong> where lower α values provide stronger filtering (same direction as the 8-bit one-pole architecture).</p>
+<table>
+<thead>
+<tr>
+<th>Level</th>
+<th>Alpha</th>
+<th>Characteristics</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Very Soft</strong></td>
+<td>0.625</td>
+<td>Minimal filtering / brightest tone / highest cutoff</td>
+</tr>
+<tr>
+<td><strong>Soft</strong></td>
+<td>~0.80</td>
+<td>Gentle filtering (recommended default)</td>
+</tr>
+<tr>
+<td><strong>Medium</strong></td>
+<td>0.875</td>
+<td>Balanced filtering</td>
+</tr>
+<tr>
+<td><strong>Firm</strong></td>
+<td>~0.92</td>
+<td>Firm filtering</td>
+</tr>
+<tr>
+<td><strong>Aggressive</strong></td>
+<td>~0.97</td>
+<td>Strongest filtering / darkest tone / lowest cutoff</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Recommended Input Levels:</strong></p>
+<p>The biquad's feedback can cause overshoot. To avoid clipping:</p>
+<table>
+<thead>
+<tr>
+<th>Filter Level</th>
+<th>Recommended Input Range</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Very Soft</strong></td>
+<td>75–85% of full scale (±24,500 to ±27,750)</td>
+<td>Minimal overshoot</td>
+</tr>
+<tr>
+<td><strong>Soft</strong></td>
+<td>70–80% of full scale (±22,937 to ±26,214)</td>
+<td><strong>Recommended</strong></td>
+</tr>
+<tr>
+<td><strong>Medium</strong></td>
+<td>70–75% of full scale (±22,937 to ±24,500)</td>
+<td>Increasing feedback</td>
+</tr>
+<tr>
+<td><strong>Firm</strong></td>
+<td>65–72% of full scale (±21,299 to ±23,592)</td>
+<td>Higher feedback, more headroom needed</td>
+</tr>
+<tr>
+<td><strong>Aggressive</strong></td>
+<td>60–70% of full scale (±19,660 to ±22,937)</td>
+<td>Conservative headroom essential</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Tip</strong>: Use <strong>70–80% of full scale</strong> as a safe starting point for most applications.</p>
+</blockquote>
+<h3 id="8-bit-one-pole-lpf-aggressiveness-levels">8-bit One-Pole LPF Aggressiveness Levels</h3>
+<p>The 8-bit path uses a <strong>first-order one-pole filter</strong> to avoid instability on quantized data. The alpha range is narrower than the 16-bit biquad.</p>
+<table>
+<thead>
+<tr>
+<th>Level</th>
+<th>Alpha</th>
+<th>Cutoff Freq</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Very Soft</strong></td>
+<td>0.9375</td>
+<td>~3200 Hz</td>
+<td>Minimal filtering</td>
+</tr>
+<tr>
+<td><strong>Soft</strong></td>
+<td>0.875</td>
+<td>~2800 Hz</td>
+<td>Gentle filtering</td>
+</tr>
+<tr>
+<td><strong>Medium</strong></td>
+<td>0.75</td>
+<td>~2300 Hz</td>
+<td>Balanced</td>
+</tr>
+<tr>
+<td><strong>Firm</strong></td>
+<td>0.6875</td>
+<td>~2000 Hz</td>
+<td>Firm filtering</td>
+</tr>
+<tr>
+<td><strong>Aggressive</strong></td>
+<td>0.625</td>
+<td>~1800 Hz</td>
+<td>Strong filtering</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Why Different Ranges?</strong>
+- <strong>16-bit biquad</strong> (α: 0.625 → 0.97): Lower alpha = more filtering. Wider range safe for higher bit depth.
+- <strong>8-bit one-pole</strong> (α: 0.625 → 0.9375): Higher alpha = more filtering. Narrower range prevents quantization noise amplification.</p>
+<p>Both provide the same preset names (Very Soft, Soft, Medium, Aggressive) for consistency, but underlying coefficients differ due to architectural constraints. <strong>Note:</strong> The two filter types have opposite relationships between alpha and filtering strength.</p>
+<h3 id="warm-up-behavior">Warm-Up Behavior</h3>
+<p><strong>Problem</strong>: Aggressive filtering can cause a brief "cracking" sound when the filter initializes from zero state.</p>
+<p><strong>Solution</strong>: The engine automatically runs <strong>16 warm-up passes</strong> (default, configurable via <code>BIQUAD_WARMUP_CYCLES</code> in <code>audio_engine.h</code>) when starting 16-bit playback with LPF enabled. This allows filter state to converge smoothly before DMA streaming begins, eliminating startup transients.</p>
+<h2 id="filter-response-graphs">📊 Filter Response Graphs</h2>
+<p>Visual representations of the filter characteristics are available in the project:</p>
+<h3 id="generated-graphs">Generated Graphs</h3>
+<ul>
+<li><a href="../assets/docs/filter_characteristics_enhanced.png">filter_characteristics_enhanced.png</a> - Comprehensive filter analysis</li>
+<li><a href="../assets/docs/Filter_Report_Enhanced.pdf">Filter_Report_Enhanced.pdf</a> - A4 technical report with all graphs and tables</li>
+</ul>
+<h3 id="generating-fresh-graphs">Generating Fresh Graphs</h3>
+<pre><code class="language-bash"># Generate PNG visualization (outputs to Docs/)
+python3 Docs/visualize_filters_enhanced.py
+
+# Generate comprehensive PDF report (A4 format, outputs to Docs/)
+python3 Docs/generate_filter_report_pdf.py
+</code></pre>
+<p>The PDF report includes:
+- Frequency response plots for all filter levels
+- Transfer function curves
+- Phase response analysis
+- Cutoff frequency tables
+- Comprehensive technical specifications</p>
+<h2 id="dsp-filter-chain">🔊 DSP Filter Chain</h2>
+<h3 id="16-bit-audio-processing-pipeline">16-bit Audio Processing Pipeline</h3>
+<pre><code class="language-mermaid">flowchart TD
+  classDef box fill:#70708e,stroke:#3b82f6,stroke-width:1px,color:#0f172a;
+  A["Input Sample (16-bit)"] --&gt; B["Biquad Low-Pass Filter&lt;br/&gt;(Very Soft / Soft / Medium / Agg.)&lt;br/&gt;Runtime configurable"]
+  B --&gt; C["DC Blocking Filter&lt;br/&gt;(Standard: 44 Hz / Soft: 22 Hz)&lt;br/&gt;Removes DC offset"]
+  C --&gt; D["Fade In / Fade Out&lt;br/&gt;(Quadratic curve, ~93 ms)&lt;br/&gt;Smooth transitions"]
+  D --&gt; E["Noise Gate (optional)&lt;br/&gt;Silence &lt; +/-512"]
+  E --&gt; F["Soft Clipping&lt;br/&gt;(Cubic curve above +/-28000)&lt;br/&gt;Prevents distortion"]
+  F --&gt; G["Volume Scaling&lt;br/&gt;0-3x gain"]
+  G --&gt; H["I2S DMA Output"]
+  class A,B,C,D,E,F,G,H box;
+</code></pre>
+<h3 id="8-bit-audio-processing-pipeline">8-bit Audio Processing Pipeline</h3>
+<pre><code class="language-mermaid">flowchart TD
+  classDef box fill:#70708e,stroke:#3b82f6,stroke-width:1px,color:#0f172a;
+  A["Input Sample (8-bit unsigned)"] --&gt; B["8-bit to 16-bit Conversion&lt;br/&gt;+ TPDF Dithering&lt;br/&gt;Reduces quantization noise"]
+  B --&gt; C["One-Pole Low-Pass Filter&lt;br/&gt;(Very Soft / Soft / Medium / Agg.)&lt;br/&gt;Simpler than biquad for stability"]
+  C --&gt; D["Then follow 16-bit pipeline steps 2-6"]
+  class A,B,C,D box;
+</code></pre>
+<h2 id="hardware-setup">🔧 Hardware Setup</h2>
+<h3 id="pin-configuration-example-stm32g474">Pin Configuration Example (STM32G474)</h3>
+<p>Note: Pin assignments vary by STM32 model. Consult your device's datasheet for I2S pin locations.</p>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Pin (Example)</th>
+<th>Peripheral</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>I2S Data Out</td>
+<td>PB15</td>
+<td>I2S2_SD</td>
+</tr>
+<tr>
+<td>I2S Clock</td>
+<td>PB13</td>
+<td>I2S2_CK</td>
+</tr>
+<tr>
+<td>I2S Word Select</td>
+<td>PB12</td>
+<td>I2S2_WS</td>
+</tr>
+<tr>
+<td>DAC Enable</td>
+<td>GPIO</td>
+<td>User-defined</td>
+</tr>
+<tr>
+<td>Volume Control</td>
+<td>GPIO</td>
+<td>2-bit selector</td>
+</tr>
+</tbody>
+</table>
+<h3 id="external-components">External Components</h3>
+<ul>
+<li><strong>Digital Amplifier</strong>: MAX98357A (I2S input)</li>
+<li><strong>Speaker</strong>: 8Ω, 3W (or similar)</li>
+<li><strong>Power Supply</strong>: 3.3V for STM32, 5V for amplifier</li>
+</ul>
+<h3 id="dma-configuration">DMA Configuration</h3>
+<ul>
+<li><strong>DMA Channel</strong>: DMA1 Channel 1</li>
+<li><strong>Mode</strong>: Circular (ping-pong buffering)</li>
+<li><strong>Buffer Size</strong>: 2048 samples (1024 samples per half-buffer)</li>
+<li><strong>Data Width</strong>: 16-bit half-word</li>
+</ul>
+<h2 id="api-reference">📚 API Reference</h2>
+<h3 id="playback-control">Playback Control</h3>
+<pre><code class="language-c">PB_StatusTypeDef PlaySample(
+  const void *sample_to_play,     // Pointer to audio data
+  uint32_t sample_set_sz,         // Total samples (all channels combined)
+  uint32_t playback_speed,        // Sample rate (Hz)
+  uint8_t sample_depth,           // 8 or 16 bits
+  PB_ModeTypeDef mode             // Mode_mono / Mode_stereo
+);
+
+PB_StatusTypeDef WaitForSampleEnd(void);
+PB_StatusTypeDef PausePlayback(void);
+PB_StatusTypeDef ResumePlayback(void);
+</code></pre>
+<h3 id="filter-configuration_1">Filter Configuration</h3>
+<pre><code class="language-c">void SetFilterConfig(const FilterConfig_TypeDef *cfg);
+void GetFilterConfig(FilterConfig_TypeDef *cfg);
+void SetLpf16BitLevel(LPF_Level level);     // Very Soft / Soft / Medium / Aggressive
+void SetLpfMakeupGain8Bit(float gain);      // 0.1 to 2.0
+</code></pre>
+<h3 id="filterconfig-structure">FilterConfig Structure</h3>
+<pre><code class="language-c">typedef struct {
+  uint8_t enable_16bit_biquad_lpf;      // Enable 16-bit biquad LPF
+  uint8_t enable_soft_dc_filter_16bit;  // Use soft DC filter (22 Hz vs 44 Hz)
+  uint8_t enable_8bit_lpf;              // Enable 8-bit one-pole LPF
+  uint8_t enable_noise_gate;            // Enable noise gate
+  uint8_t enable_soft_clipping;         // Enable soft clipping
+  uint32_t lpf_makeup_gain_q16;         // Q16 gain after 8-bit LPF
+  LPF_Level lpf_16bit_level;            // Filter aggressiveness level
+} FilterConfig_TypeDef;
+</code></pre>
+<h3 id="air-effect-high-shelf-brightening">Air Effect (High-Shelf Brightening)</h3>
+<p>Optional treble boost above the cutoff (default α ≈ 0.75). Enable and tune at runtime:</p>
+<p>Compile-time: set <code>AUDIO_ENGINE_ENABLE_AIR_EFFECT</code> to <code>0</code> in <code>audio_engine.h</code> to
+compile out Air Effect support and save flash (~272 bytes in our build).</p>
+<pre><code class="language-c">FilterConfig_TypeDef cfg;
+GetFilterConfig(&amp;cfg);
+cfg.enable_air_effect = 1;            // Enable high-shelf brightening
+SetFilterConfig(&amp;cfg);
+
+// Choose a preset or set dB directly
+SetAirEffectPresetDb(2);              // +3 dB preset (presets: +1, +2, +3 dB)
+// or
+SetAirEffectGainDb(2.0f);             // +2 dB boost at ω=π
+</code></pre>
+<h2 id="performance">⚡ Performance</h2>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>CPU Usage</strong></td>
+<td>~15% @ 170 MHz (during playback, full filter chain)</td>
+</tr>
+<tr>
+<td><strong>Latency</strong></td>
+<td>~93 ms total (~50 ms buffer + warm-up @ 22 kHz)</td>
+</tr>
+<tr>
+<td><strong>Memory (RAM)</strong></td>
+<td>~4 KB (playback buffer size is set by macro in audio_engine.h)</td>
+</tr>
+<tr>
+<td><strong>Memory (Flash)</strong></td>
+<td>≈12.9 KB (.text/.rodata, Release build)</td>
+</tr>
+<tr>
+<td><strong>Max Sample Rate</strong></td>
+<td>I2S can exceed 48 kHz; MAX98347A is limited to 96 kHz and higher rates are not recommended on embedded targets</td>
+</tr>
+<tr>
+<td><strong>Typical Sample Rate</strong></td>
+<td>22 kHz (11 kHz Nyquist)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>DMA callback inlining:</strong> Set <code>AUDIO_ENGINE_INLINE_DMA_CALLBACK</code> in <code>audio_engine.h</code> to trade size for speed.
+Disabling inlining saved ~376 bytes of flash at the cost of a small cycle increase.</p>
+<h2 id="documentation">📖 Documentation</h2>
+<h3 id="comprehensive-documentation-suite">Comprehensive Documentation Suite</h3>
+<p>This project includes extensive documentation to help you understand and use the audio engine:</p>
+<h4 id="user-guides">📘 User Guides</h4>
+<ul>
+<li><strong>README.md</strong> (this file) - Quick start and overview</li>
+<li><a href="audio-engine-manual.html">AUDIO_ENGINE_MANUAL.md</a> - Complete technical manual with architecture details</li>
+<li><a href="quick-reference.html">QUICK_REFERENCE.md</a> - Fast lookup guide for common tasks</li>
+</ul>
+<h4 id="api-documentation">📗 API Documentation</h4>
+<ul>
+<li><a href="api-reference.html">API_REFERENCE.md</a> - Comprehensive function reference with 44+ documented functions and code examples</li>
+<li><a href="../assets/docs/HEADER_DOCUMENTATION.md">HEADER_DOCUMENTATION.md</a> - Guide to using the Doxygen-documented header file</li>
+<li><strong>audio_engine.h</strong> - All public functions include Doxygen documentation for IDE integration</li>
+</ul>
+<h4 id="technical-reports">📕 Technical Reports</h4>
+<ul>
+<li><a href="../assets/docs/Filter_Report_Enhanced.pdf">Filter_Report_Enhanced.pdf</a> - A4 technical report with filter response graphs and specifications</li>
+<li><a href="../assets/docs/Audio_Engine_Manual.pdf">Audio_Engine_Manual.pdf</a> - PDF version of the complete manual</li>
+<li><a href="../assets/docs/filter_characteristics_enhanced.png">filter_characteristics_enhanced.png</a> - Visual filter analysis</li>
+</ul>
+<h4 id="air-effect-documentation">📙 Air Effect Documentation</h4>
+<ul>
+<li><a href="../assets/docs/AIR_EFFECT_QUICK_REFERENCE.md">AIR_EFFECT_QUICK_REFERENCE.md</a> - High-shelf brightening filter guide</li>
+<li><a href="../assets/docs/AIR_EFFECT_INTEGRATION.md">AIR_EFFECT_INTEGRATION.md</a> - Integration examples</li>
+</ul>
+<h3 id="using-the-documentation">Using the Documentation</h3>
+<p><strong>New to the project?</strong> See <a href="../assets/docs/DOCUMENTATION_GUIDE.md">DOCUMENTATION_GUIDE.md</a> for a complete guide to navigating all documentation.</p>
+<ol>
+<li><strong>First-time users</strong>: Start with this README, then read <a href="audio-engine-manual.html">AUDIO_ENGINE_MANUAL.md</a></li>
+<li><strong>Quick lookup</strong>: Check <a href="quick-reference.html">QUICK_REFERENCE.md</a> for common patterns</li>
+<li><strong>Function search</strong>: Use <a href="function-index.html">FUNCTION_INDEX.md</a> to find functions alphabetically or by category</li>
+<li><strong>API details</strong>: See <a href="api-reference.html">API_REFERENCE.md</a> for all 64 functions with examples</li>
+<li><strong>IDE integration</strong>: Hover over function names in your editor to see Doxygen documentation from audio_engine.h</li>
+<li><strong>Technical deep-dive</strong>: Read the source code in <code>audio_engine.c</code> with inline comments</li>
+</ol>
+<p><strong>📘 Documentation Navigation:</strong> For help choosing which docs to read based on your needs, see <a href="../assets/docs/DOCUMENTATION_GUIDE.md">DOCUMENTATION_GUIDE.md</a></p>
+<h3 id="included-files">Included Files</h3>
+<ul>
+<li><strong>README.md</strong> (this file) - Quick start and overview</li>
+<li><a href="../index.html">site/index.html</a> - Project website landing page</li>
+<li><a href="submit_indexnow.py">submit_indexnow.py</a> - Submit sitemap URLs to Bing/Yandex via IndexNow</li>
+<li><a href="site/6f8d3c1ab9e24d479a1f6c50d3e8b742.txt">site/6f8d3c1ab9e24d479a1f6c50d3e8b742.txt</a> - IndexNow key verification file</li>
+<li><a href="audio-engine-manual.html">AUDIO_ENGINE_MANUAL.md</a> - Complete technical manual</li>
+<li><a href="../assets/docs/Filter_Report_Enhanced.pdf">Filter_Report_Enhanced.pdf</a> - A4 technical report with graphs</li>
+<li><a href="../assets/docs/filter_characteristics_enhanced.png">filter_characteristics_enhanced.png</a> - Visual filter analysis</li>
+</ul>
+<h3 id="search-indexing-indexnow">Search Indexing (IndexNow)</h3>
+<p>This project includes an IndexNow setup for faster indexing on Bing and other IndexNow-compatible search engines.</p>
+<ol>
+<li>Ensure the key file is deployed at site root:
+  - <code>https://jennys-stm32-dsp-audio-engine.netlify.app/6f8d3c1ab9e24d479a1f6c50d3e8b742.txt</code></li>
+<li>Submit all sitemap URLs with:</li>
+</ol>
+<pre><code class="language-bash">python3 Docs/submit_indexnow.py
+</code></pre>
+<ol start="3">
+<li>Run this after major documentation or site updates.</li>
+</ol>
+<p>Optional environment overrides are supported for host/key/domain changes:</p>
+<pre><code class="language-bash">INDEXNOW_HOST=example.com INDEXNOW_KEY=&lt;your_key&gt; python3 Docs/submit_indexnow.py
+</code></pre>
+<p>Note: Google does not currently use IndexNow, so keep Google Search Console sitemap submission enabled as well.</p>
+<h3 id="key-configuration-defines">Key Configuration Defines</h3>
+<p>Located in <code>Core/Libraries/audio_engine.h</code>:</p>
+<pre><code class="language-c">#define BIQUAD_WARMUP_CYCLES  16        // Warm-up passes (default: 16)
+#define FADEOUT_SAMPLES       2048U     // Fade-out length (~100 ms @ 22 kHz)
+#define FADEIN_SAMPLES        2048U     // Fade-in length (~93 ms @ 22 kHz)
+#define SOFT_DC_FILTER_ALPHA  65216     // Soft DC filter coefficient (0.995)
+#define DC_FILTER_ALPHA       64225     // Standard DC filter coefficient (0.98)
+#define NOISE_GATE_THRESHOLD  512       // Noise gate threshold (~1.5% full scale)
+</code></pre>
+<h2 id="portability">🌍 Portability</h2>
+<p>For non-STM32 or less-compatible environments (different compilers, C runtimes, or CPU alignment/aliasing rules), use the dedicated report:</p>
+<ul>
+<li><a href="portability-report.html">PORTABILITY_REPORT.md</a></li>
+</ul>
+<p>It summarizes prioritized risks and gives a practical migration checklist.</p>
+<h2 id="usage-examples">🎯 Usage Examples</h2>
+<h3 id="example-1-simple-doorbell-sound">Example 1: Simple Doorbell Sound</h3>
+<pre><code class="language-c">#include "audio_engine.h"
+#include "doorbell_sound.h"
+
+void play_doorbell(void) {
+  SetLpf16BitLevel(LPF_Soft);
+
+  PlaySample(doorbell_sound, DOORBELL_SIZE, 
+         22000, 16, Mode_mono, LPF_Soft);
+
+  WaitForSampleEnd();
+}
+</code></pre>
+<h3 id="example-2-high-quality-music-playback">Example 2: High-Quality Music Playback</h3>
+<pre><code class="language-c">void play_music_sample(void) {
+  FilterConfig_TypeDef cfg;
+  GetFilterConfig(&amp;cfg);
+
+  cfg.enable_16bit_biquad_lpf = 1;
+  cfg.enable_soft_clipping = 1;
+  cfg.enable_soft_dc_filter_16bit = 1;  // Preserve bass
+  cfg.lpf_16bit_level = LPF_VerySoft;   // Minimal filtering
+
+  SetFilterConfig(&amp;cfg);
+
+  PlaySample(music_data, MUSIC_SIZE,
+         44100, 16, Mode_stereo, LPF_VerySoft);
+
+  WaitForSampleEnd();
+}
+</code></pre>
+<h3 id="example-3-8-bit-retro-sound-effect">Example 3: 8-bit Retro Sound Effect</h3>
+<pre><code class="language-c">void play_retro_sfx(void) {
+  FilterConfig_TypeDef cfg;
+  GetFilterConfig(&amp;cfg);
+
+  cfg.enable_8bit_lpf = 1;
+  cfg.enable_soft_clipping = 0;  // Keep retro edge
+
+  SetLpfMakeupGain8Bit(1.2f);    // Boost slightly
+  SetFilterConfig(&amp;cfg);
+
+  PlaySample(retro_sfx, SFX_SIZE,
+         11025, 8, Mode_mono, LPF_Medium);
+
+  WaitForSampleEnd();
+}
+</code></pre>
+<h2 id="troubleshooting">🔍 Troubleshooting</h2>
+<h3 id="audio-sounds-muffled">Audio Sounds Muffled</h3>
+<ul>
+<li><strong>Cause</strong>: Filter level too aggressive for sample content</li>
+<li><strong>Solution</strong>: Use <code>SetLpf16BitLevel(LPF_VerySoft)</code> or <code>LPF_Soft</code></li>
+</ul>
+<h3 id="clipping-distortion">Clipping / Distortion</h3>
+<ul>
+<li><strong>Cause</strong>: Input samples exceed recommended range for filter level</li>
+<li><strong>Solution</strong>: </li>
+<li>Reduce input amplitude to 70–80% of full scale</li>
+<li>Enable soft clipping: <code>cfg.enable_soft_clipping = 1</code></li>
+</ul>
+<h3 id="low-volume">Low Volume</h3>
+<ul>
+<li><strong>Cause</strong>: Makeup gain too low on 8-bit samples</li>
+<li><strong>Solution</strong>: <code>SetLpfMakeupGain8Bit(1.5f)</code> (range: 0.1 to 2.0)</li>
+</ul>
+<h3 id="startup-pop-sound">Startup "Pop" Sound</h3>
+<ul>
+<li><strong>Cause</strong>: Biquad filter warm-up disabled or insufficient</li>
+<li><strong>Solution</strong>: Ensure <code>BIQUAD_WARMUP_CYCLES</code> is set to 16 in <code>audio_engine.h</code></li>
+</ul>
+<h3 id="high-frequency-noise">High-Frequency Noise</h3>
+<ul>
+<li><strong>Cause</strong>: Sample rate too low for content, or no LPF enabled</li>
+<li><strong>Solution</strong>: Enable LPF and use appropriate aggressiveness level</li>
+</ul>
+<h2 id="license">📝 License</h2>
+<p>This project is provided under the MIT License. See LICENSE file for details.</p>
+<hr/>
+<p><strong>Version</strong>: 2.0<br/>
+<strong>Last Updated</strong>: January 2026<br/>
+<strong>Maintainer</strong>: Audio Engine Team</p>
+<p>For detailed technical information, see <a href="audio-engine-manual.html">AUDIO_ENGINE_MANUAL.md</a>.</p></article>
+  </main>
+
+  <footer>
+    <p>Doorchime CR2 Documentation</p>
+  </footer>
+</body>
+</html>

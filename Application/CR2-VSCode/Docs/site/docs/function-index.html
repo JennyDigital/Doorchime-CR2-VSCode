@@ -1,0 +1,738 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doorchime CR2 Function Index | Doorchime CR2</title>
+  <meta name="description" content="Browsable function index for the audio engine API, organized for fast discovery of playback, control, and configuration symbols.">
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+  <meta name="googlebot" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+  <link rel="canonical" href="https://jennys-stm32-dsp-audio-engine.netlify.app/docs/function-index.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Doorchime CR2">
+  <meta property="og:url" content="https://jennys-stm32-dsp-audio-engine.netlify.app/docs/function-index.html">
+  <meta property="og:title" content="Doorchime CR2 Function Index">
+  <meta property="og:description" content="Browsable function index for the audio engine API, organized for fast discovery of playback, control, and configuration symbols.">
+  <meta property="og:image" content="https://jennys-stm32-dsp-audio-engine.netlify.app/assets/audio-engine-logo-flashy.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Doorchime CR2 Function Index">
+  <meta name="twitter:description" content="Browsable function index for the audio engine API, organized for fast discovery of playback, control, and configuration symbols.">
+  <meta name="twitter:image" content="https://jennys-stm32-dsp-audio-engine.netlify.app/assets/audio-engine-logo-flashy.svg">
+    <link rel="stylesheet" href="../styles.css">
+  <script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Doorchime CR2 Function Index",
+  "description": "Browsable function index for the audio engine API, organized for fast discovery of playback, control, and configuration symbols.",
+  "url": "https://jennys-stm32-dsp-audio-engine.netlify.app/docs/function-index.html",
+  "mainEntityOfPage": "https://jennys-stm32-dsp-audio-engine.netlify.app/docs/function-index.html",
+  "dateModified": "2026-03-19",
+  "publisher": {
+    "@type": "Organization",
+    "name": "Doorchime CR2"
+  },
+  "about": [
+    {
+      "@type": "Thing",
+      "name": "STM32"
+    },
+    {
+      "@type": "Thing",
+      "name": "Embedded audio"
+    },
+    {
+      "@type": "Thing",
+      "name": "Digital signal processing"
+    }
+  ]
+}</script>
+</head>
+<body>
+  <div class="noise"></div>
+
+  <header class="hero docs-hero">
+    <nav class="topbar">
+      <div class="brand">DOORCHIME CR2</div>
+      <div class="actions">
+        <a class="btn ghost" href="../index.html">Home</a>
+        <a class="btn ghost" href="../docs.html">Docs Hub</a>
+      </div>
+    </nav>
+
+    <section class="panel docs-intro">
+      <p class="breadcrumbs"><a href="../index.html">Home</a> / <a href="../docs.html">Docs</a> / <span>Doorchime CR2 Function Index</span></p>
+      <p class="kicker">FUNCTION INDEX</p>
+      <h1>Doorchime CR2 Function Index</h1>
+      <p class="lead">Browsable function index for the audio engine API, organized for fast discovery of playback, control, and configuration symbols.</p>
+      <div class="doc-meta">Updated 2026-03-19 · Static HTML page for Google and Bing indexing</div>
+      <div class="actions doc-actions">
+        <a class="btn" href="../assets/docs/FUNCTION_INDEX.md">Source File</a>
+        <a class="btn ghost" href="../docs-viewer.html?doc=FUNCTION_INDEX.md">Interactive Viewer</a>
+      </div>
+    </section>
+  </header>
+
+  <main>
+    <article class="panel markdown-view"><h1 id="audio-engine-function-index">Audio Engine Function Index</h1>
+<p>Complete alphabetical index of all 64 public functions in the Audio Engine API, organized by category with quick descriptions.</p>
+<!-- Anchor targets for internal links -->
+<p><a id="advancesamplepointer"></a>
+<a id="audioengine_init"></a>
+<a id="audioengine_onplaybackend"></a>
+<a id="calclpf16bitalphafromotoff"></a>
+<a id="calclpf8bitalphafromcutoff"></a>
+<a id="calcsampleoffsetsamples"></a>
+<a id="cycleaireffectpresetdb"></a>
+<a id="getaireffectenable"></a>
+<a id="getaireffectgaindb"></a>
+<a id="getaireffectgainq16"></a>
+<a id="getaireffectpresetcount"></a>
+<a id="getaireffectpresetdb"></a>
+<a id="getaireffectpresetindex"></a>
+<a id="getdac_control"></a>
+<a id="getfadeintime"></a>
+<a id="getfadeouttime"></a>
+<a id="getfadersenabled"></a>
+<a id="getfilterconfig"></a>
+<a id="gethalftofill"></a>
+<a id="getlpf8bitcustomalpha"></a>
+<a id="getlpf8bitlevel"></a>
+<a id="getlpf16bitcustomalphafromotoff"></a>
+<a id="getlpfmakeupgain16bit"></a>
+<a id="getpausefadetime"></a>
+<a id="getplaybackprogresspercent"></a>
+<a id="getplaybackprogresssamples"></a>
+<a id="getplaybackspeed"></a>
+<a id="getplaybackstate"></a>
+<a id="getresumefadetime"></a>
+<a id="getsoftclippingenable"></a>
+<a id="getvolumeresponsegamma"></a>
+<a id="getvolumeresponsenonlinear"></a>
+<a id="hal_i2s_txcpltcallback"></a>
+<a id="hal_i2s_txhalfcpltcallback"></a>
+<a id="pauseplayback"></a>
+<a id="playsample"></a>
+<a id="processnextwavechunk"></a>
+<a id="processnextwavechunk_8_bit"></a>
+<a id="resumeplayback"></a>
+<a id="setaireffectenable"></a>
+<a id="setaireffectgaindb"></a>
+<a id="setaireffectgainq16"></a>
+<a id="setdac_control"></a>
+<a id="setfadeintime"></a>
+<a id="setfadeouttime"></a>
+<a id="setfadersenabled"></a>
+<a id="setfilterconfig"></a>
+<a id="setfilterchain16bitenable"></a>
+<a id="setfilterchain8bitenable"></a>
+<a id="sethalftofill"></a>
+<a id="setlpf8bitcustomalpha"></a>
+<a id="setlpf8bitlevel"></a>
+<a id="setlpf16bitcustomalpha"></a>
+<a id="setlpf16bitlevel"></a>
+<a id="setlpfmakeupgain8bit"></a>
+<a id="setlpfmakeupgain16bit"></a>
+<a id="setpausefadetime"></a>
+<a id="setplaybackspeed"></a>
+<a id="setplaybackstate"></a>
+<a id="setresumefadetime"></a>
+<a id="setsoftclippingenable"></a>
+<a id="setvolumeresponsegamma"></a>
+<a id="setvolumeresponsenonlinear"></a>
+<a id="shutdownaudio"></a>
+<a id="stopplayback"></a>
+<a id="waitforsampleend"></a></p>
+<h2 id="alphabetical-index">📑 Alphabetical Index</h2>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Category</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="#advancesamplepointer"><code>AdvanceSamplePointer()</code></a></td>
+<td>Chunk Processing</td>
+<td>Advance to next DMA buffer position</td>
+</tr>
+<tr>
+<td><a href="#audioengine_init"><code>AudioEngine_Init()</code></a></td>
+<td>Initialization</td>
+<td>Initialize engine with hardware callbacks</td>
+</tr>
+<tr>
+<td><a href="#audioengine_onplaybackend"><code>AudioEngine_OnPlaybackEnd()</code></a></td>
+<td>Callback</td>
+<td>Weak callback for playback end event</td>
+</tr>
+<tr>
+<td><a href="#calclpf16bitalphafromotoff"><code>CalcLpf16BitAlphaFromCutoff()</code></a></td>
+<td>16-bit LPF</td>
+<td>Calculate alpha from cutoff frequency</td>
+</tr>
+<tr>
+<td><a href="#calclpf8bitalphafromcutoff"><code>CalcLpf8BitAlphaFromCutoff()</code></a></td>
+<td>8-bit LPF</td>
+<td>Calculate alpha from cutoff frequency</td>
+</tr>
+<tr>
+<td><a href="#calcsampleoffsetsamples"><code>CalcSampleOffsetSamples()</code></a></td>
+<td>Playback Control</td>
+<td>Calculate sample offset from time, rate, and mode</td>
+</tr>
+<tr>
+<td><a href="#cycleaireffectpresetdb"><code>CycleAirEffectPresetDb()</code></a></td>
+<td>Air Effect</td>
+<td>Cycle through air effect presets</td>
+</tr>
+<tr>
+<td><a href="#getaireffectenable"><code>GetAirEffectEnable()</code></a></td>
+<td>Air Effect</td>
+<td>Read air effect enable state</td>
+</tr>
+<tr>
+<td><a href="#getaireffectgaindb"><code>GetAirEffectGainDb()</code></a></td>
+<td>Air Effect</td>
+<td>Get air effect gain in dB</td>
+</tr>
+<tr>
+<td><a href="#getaireffectgainq16"><code>GetAirEffectGainQ16()</code></a></td>
+<td>Air Effect</td>
+<td>Get air effect gain in Q16 format</td>
+</tr>
+<tr>
+<td><a href="#getaireffectpresetcount"><code>GetAirEffectPresetCount()</code></a></td>
+<td>Air Effect</td>
+<td>Get number of available presets</td>
+</tr>
+<tr>
+<td><a href="#getaireffectpresetdb"><code>GetAirEffectPresetDb()</code></a></td>
+<td>Air Effect</td>
+<td>Get dB value for a preset index</td>
+</tr>
+<tr>
+<td><a href="#getaireffectpresetindex"><code>GetAirEffectPresetIndex()</code></a></td>
+<td>Air Effect</td>
+<td>Get current preset index</td>
+</tr>
+<tr>
+<td><a href="#getdac_control"><code>GetDAC_Control()</code></a></td>
+<td>DAC Control</td>
+<td>Read DAC power control state</td>
+</tr>
+<tr>
+<td><a href="#getfadeintime"><code>GetFadeInTime()</code></a></td>
+<td>Fade Time</td>
+<td>Get fade-in duration in seconds</td>
+</tr>
+<tr>
+<td><a href="#getfadeouttime"><code>GetFadeOutTime()</code></a></td>
+<td>Fade Time</td>
+<td>Get fade-out duration in seconds</td>
+</tr>
+<tr>
+<td><a href="#getfadersenabled"><code>GetFadersEnabled()</code></a></td>
+<td>Fade Time</td>
+<td>Get fader enable state</td>
+</tr>
+<tr>
+<td><a href="#getfilterconfig"><code>GetFilterConfig()</code></a></td>
+<td>Filter Config</td>
+<td>Read current filter configuration</td>
+</tr>
+<tr>
+<td><a href="#gethalftofill"><code>GetHalfToFill()</code></a></td>
+<td>Internal State</td>
+<td>Get which buffer half to fill next</td>
+</tr>
+<tr>
+<td><a href="#getlpf8bitcustomalpha"><code>GetLpf8BitCustomAlpha()</code></a></td>
+<td>8-bit LPF</td>
+<td>Get custom 8-bit LPF alpha</td>
+</tr>
+<tr>
+<td><a href="#getlpf8bitlevel"><code>GetLpf8BitLevel()</code></a></td>
+<td>8-bit LPF</td>
+<td>Get 8-bit LPF aggressiveness level</td>
+</tr>
+<tr>
+<td><a href="#getlpf16bitcustomalphafromotoff"><code>GetLpf16BitCustomAlphaFromCutoff()</code></a></td>
+<td>16-bit LPF</td>
+<td>Get alpha from cutoff frequency</td>
+</tr>
+<tr>
+<td><a href="#getlpfmakeupgain16bit"><code>GetLpfMakeupGain16Bit()</code></a></td>
+<td>LPF</td>
+<td>Get 16-bit LPF makeup gain</td>
+</tr>
+<tr>
+<td><a href="#getpausefadetime"><code>GetPauseFadeTime()</code></a></td>
+<td>Fade Time</td>
+<td>Get pause fade duration in seconds</td>
+</tr>
+<tr>
+<td><a href="#getplaybackprogresspercent"><code>GetPlaybackProgressPercent()</code></a></td>
+<td>Internal State</td>
+<td>Get playback progress percentage</td>
+</tr>
+<tr>
+<td><a href="#getplaybackprogresssamples"><code>GetPlaybackProgressSamples()</code></a></td>
+<td>Internal State</td>
+<td>Get playback progress in source samples</td>
+</tr>
+<tr>
+<td><a href="#getplaybackspeed"><code>GetPlaybackSpeed()</code></a></td>
+<td>Internal State</td>
+<td>Get current sample rate</td>
+</tr>
+<tr>
+<td><a href="#getplaybackstate"><code>GetPlaybackState()</code></a></td>
+<td>Internal State</td>
+<td>Get current playback state</td>
+</tr>
+<tr>
+<td><a href="#getresumefadetime"><code>GetResumeFadeTime()</code></a></td>
+<td>Fade Time</td>
+<td>Get resume fade duration in seconds</td>
+</tr>
+<tr>
+<td><a href="#getsoftclippingenable"><code>GetSoftClippingEnable()</code></a></td>
+<td>Filter Config</td>
+<td>Read soft clipping enable state</td>
+</tr>
+<tr>
+<td><a href="#getvolumeresponsegamma"><code>GetVolumeResponseGamma()</code></a></td>
+<td>Volume Response</td>
+<td>Get volume response gamma</td>
+</tr>
+<tr>
+<td><a href="#getvolumeresponsenonlinear"><code>GetVolumeResponseNonlinear()</code></a></td>
+<td>Volume Response</td>
+<td>Get non-linear volume response mode</td>
+</tr>
+<tr>
+<td><a href="#hal_i2s_txcpltcallback"><code>HAL_I2S_TxCpltCallback()</code></a></td>
+<td>DMA Callbacks</td>
+<td>DMA complete callback</td>
+</tr>
+<tr>
+<td><a href="#hal_i2s_txhalfcpltcallback"><code>HAL_I2S_TxHalfCpltCallback()</code></a></td>
+<td>DMA Callbacks</td>
+<td>DMA half-complete callback</td>
+</tr>
+<tr>
+<td><a href="#pauseplayback"><code>PausePlayback()</code></a></td>
+<td>Playback Control</td>
+<td>Pause with fade-out</td>
+</tr>
+<tr>
+<td><a href="#playsample"><code>PlaySample()</code></a></td>
+<td>Playback Control</td>
+<td>Start sample playback</td>
+</tr>
+<tr>
+<td><a href="#processnextwavechunk"><code>ProcessNextWaveChunk()</code></a></td>
+<td>Chunk Processing</td>
+<td>Process 16-bit samples</td>
+</tr>
+<tr>
+<td><a href="#processnextwavechunk_8_bit"><code>ProcessNextWaveChunk_8_bit()</code></a></td>
+<td>Chunk Processing</td>
+<td>Process 8-bit samples</td>
+</tr>
+<tr>
+<td><a href="#resumeplayback"><code>ResumePlayback()</code></a></td>
+<td>Playback Control</td>
+<td>Resume from pause with fade-in</td>
+</tr>
+<tr>
+<td><a href="#setaireffectenable"><code>SetAirEffectEnable()</code></a></td>
+<td>Air Effect</td>
+<td>Enable/disable air effect</td>
+</tr>
+<tr>
+<td><a href="#setaireffectgaindb"><code>SetAirEffectGainDb()</code></a></td>
+<td>Air Effect</td>
+<td>Set air effect gain in dB</td>
+</tr>
+<tr>
+<td><a href="#setaireffectgainq16"><code>SetAirEffectGainQ16()</code></a></td>
+<td>Air Effect</td>
+<td>Set air effect gain in Q16 format</td>
+</tr>
+<tr>
+<td><a href="#setaireffectpresetdb"><code>SetAirEffectPresetDb()</code></a></td>
+<td>Air Effect</td>
+<td>Set air effect preset (auto-enable)</td>
+</tr>
+<tr>
+<td><a href="#setdac_control"><code>SetDAC_Control()</code></a></td>
+<td>DAC Control</td>
+<td>Enable/disable DAC power control</td>
+</tr>
+<tr>
+<td><a href="#setfadeintime"><code>SetFadeInTime()</code></a></td>
+<td>Fade Time</td>
+<td>Set fade-in duration in seconds</td>
+</tr>
+<tr>
+<td><a href="#setfadeouttime"><code>SetFadeOutTime()</code></a></td>
+<td>Fade Time</td>
+<td>Set fade-out duration in seconds</td>
+</tr>
+<tr>
+<td><a href="#setfadersenabled"><code>SetFadersEnabled()</code></a></td>
+<td>Fade Time</td>
+<td>Enable/disable faders</td>
+</tr>
+<tr>
+<td><a href="#setfilterconfig"><code>SetFilterConfig()</code></a></td>
+<td>Filter Config</td>
+<td>Apply complete filter configuration</td>
+</tr>
+<tr>
+<td><a href="#setfilterchain16bitenable"><code>SetFilterChain16BitEnable()</code></a></td>
+<td>Filter Config</td>
+<td>Enable/disable full 16-bit filter chain</td>
+</tr>
+<tr>
+<td><a href="#setfilterchain8bitenable"><code>SetFilterChain8BitEnable()</code></a></td>
+<td>Filter Config</td>
+<td>Enable/disable full 8-bit filter chain</td>
+</tr>
+<tr>
+<td><a href="#sethalftofill"><code>SetHalfToFill()</code></a></td>
+<td>Internal State</td>
+<td>Set which buffer half to fill next</td>
+</tr>
+<tr>
+<td><a href="#setlpf8bitcustomalpha"><code>SetLpf8BitCustomAlpha()</code></a></td>
+<td>8-bit LPF</td>
+<td>Set custom alpha coefficient</td>
+</tr>
+<tr>
+<td><a href="#setlpf8bitlevel"><code>SetLpf8BitLevel()</code></a></td>
+<td>8-bit LPF</td>
+<td>Set 8-bit LPF aggressiveness level</td>
+</tr>
+<tr>
+<td><a href="#setlpf16bitcustomalpha"><code>SetLpf16BitCustomAlpha()</code></a></td>
+<td>16-bit LPF</td>
+<td>Set custom alpha coefficient</td>
+</tr>
+<tr>
+<td><a href="#setlpf16bitlevel"><code>SetLpf16BitLevel()</code></a></td>
+<td>16-bit LPF</td>
+<td>Set 16-bit LPF aggressiveness level</td>
+</tr>
+<tr>
+<td><a href="#setlpfmakeupgain8bit"><code>SetLpfMakeupGain8Bit()</code></a></td>
+<td>8-bit LPF</td>
+<td>Set makeup gain after 8-bit LPF</td>
+</tr>
+<tr>
+<td><a href="#setlpfmakeupgain16bit"><code>SetLpfMakeupGain16Bit()</code></a></td>
+<td>LPF</td>
+<td>Set makeup gain after 16-bit LPF</td>
+</tr>
+<tr>
+<td><a href="#setpausefadetime"><code>SetPauseFadeTime()</code></a></td>
+<td>Fade Time</td>
+<td>Set pause fade duration in seconds</td>
+</tr>
+<tr>
+<td><a href="#setplaybackspeed"><code>SetPlaybackSpeed()</code></a></td>
+<td>Internal State</td>
+<td>Set sample rate</td>
+</tr>
+<tr>
+<td><a href="#setplaybackstate"><code>SetPlaybackState()</code></a></td>
+<td>Internal State</td>
+<td>Set playback state</td>
+</tr>
+<tr>
+<td><a href="#setresumefadetime"><code>SetResumeFadeTime()</code></a></td>
+<td>Fade Time</td>
+<td>Set resume fade duration in seconds</td>
+</tr>
+<tr>
+<td><a href="#setsoftclippingenable"><code>SetSoftClippingEnable()</code></a></td>
+<td>Filter Config</td>
+<td>Enable/disable soft clipping</td>
+</tr>
+<tr>
+<td><a href="#setvolumeresponsegamma"><code>SetVolumeResponseGamma()</code></a></td>
+<td>Volume Response</td>
+<td>Set volume response gamma</td>
+</tr>
+<tr>
+<td><a href="#setvolumeresponsenonlinear"><code>SetVolumeResponseNonlinear()</code></a></td>
+<td>Volume Response</td>
+<td>Enable/disable non-linear volume response</td>
+</tr>
+<tr>
+<td><a href="#shutdownaudio"><code>ShutDownAudio()</code></a></td>
+<td>Playback Control</td>
+<td>Shut down all audio hardware</td>
+</tr>
+<tr>
+<td><a href="#stopplayback"><code>StopPlayback()</code></a></td>
+<td>Playback Control</td>
+<td>Stop playback with fade-out</td>
+</tr>
+<tr>
+<td><a href="#waitforsampleend"><code>WaitForSampleEnd()</code></a></td>
+<td>Playback Control</td>
+<td>Block until playback completes</td>
+</tr>
+</tbody>
+</table>
+<h2 id="by-category">📚 By Category</h2>
+<h3 id="initialization-1-function">Initialization (1 function)</h3>
+<ul>
+<li><a href="#audioengine_init"><code>AudioEngine_Init()</code></a> - Initialize engine with hardware callbacks</li>
+</ul>
+<h3 id="playback-control-7-functions">Playback Control (7 functions)</h3>
+<ul>
+<li><a href="#calcsampleoffsetsamples"><code>CalcSampleOffsetSamples()</code></a> - Calculate sample offset from time, rate, and mode</li>
+<li><a href="#playsample"><code>PlaySample()</code></a> - Start sample playback</li>
+<li><a href="#waitforsampleend"><code>WaitForSampleEnd()</code></a> - Block until playback completes</li>
+<li><a href="#pauseplayback"><code>PausePlayback()</code></a> - Pause with fade-out</li>
+<li><a href="#resumeplayback"><code>ResumePlayback()</code></a> - Resume from pause with fade-in</li>
+<li><a href="#stopplayback"><code>StopPlayback()</code></a> - Stop playback with fade-out</li>
+<li><a href="#shutdownaudio"><code>ShutDownAudio()</code></a> - Shut down all audio hardware</li>
+</ul>
+<h3 id="dac-power-control-2-functions">DAC Power Control (2 functions)</h3>
+<ul>
+<li><a href="#setdac_control"><code>SetDAC_Control()</code></a> - Enable/disable automatic DAC power control</li>
+<li><a href="#getdac_control"><code>GetDAC_Control()</code></a> - Read current DAC power control state</li>
+</ul>
+<h3 id="application-callbacks-1-function">Application Callbacks (1 function)</h3>
+<ul>
+<li><a href="#audioengine_onplaybackend"><code>AudioEngine_OnPlaybackEnd()</code></a> - Weak callback invoked when playback ends</li>
+</ul>
+<h3 id="filter-configuration-7-functions">Filter Configuration (7 functions)</h3>
+<ul>
+<li><a href="#setfilterconfig"><code>SetFilterConfig()</code></a> - Apply complete filter configuration</li>
+<li><a href="#getfilterconfig"><code>GetFilterConfig()</code></a> - Read current filter configuration</li>
+<li><a href="#setsoftclippingenable"><code>SetSoftClippingEnable()</code></a> - Enable/disable soft clipping</li>
+<li><a href="#getsoftclippingenable"><code>GetSoftClippingEnable()</code></a> - Read soft clipping enable state</li>
+<li><a href="#setfilterchain16bitenable"><code>SetFilterChain16BitEnable()</code></a> - Enable/disable full 16-bit filter chain</li>
+<li><a href="#setfilterchain8bitenable"><code>SetFilterChain8BitEnable()</code></a> - Enable/disable full 8-bit filter chain</li>
+<li><a href="#setlpfmakeupgain8bit"><code>SetLpfMakeupGain8Bit()</code></a> - Set makeup gain after 8-bit LPF</li>
+</ul>
+<h3 id="8-bit-lpf-control-5-functions">8-bit LPF Control (5 functions)</h3>
+<ul>
+<li><a href="#setlpf8bitlevel"><code>SetLpf8BitLevel()</code></a> - Set 8-bit LPF aggressiveness level</li>
+<li><a href="#getlpf8bitlevel"><code>GetLpf8BitLevel()</code></a> - Get 8-bit LPF aggressiveness level</li>
+<li><a href="#setlpf8bitcustomalpha"><code>SetLpf8BitCustomAlpha()</code></a> - Set custom 8-bit LPF alpha</li>
+<li><a href="#getlpf8bitcustomalpha"><code>GetLpf8BitCustomAlpha()</code></a> - Get custom 8-bit LPF alpha</li>
+<li><a href="#calclpf8bitalphafromcutoff"><code>CalcLpf8BitAlphaFromCutoff()</code></a> - Calculate alpha from cutoff frequency</li>
+</ul>
+<h3 id="16-bit-lpf-control-4-functions">16-bit LPF Control (4 functions)</h3>
+<ul>
+<li><a href="#setlpf16bitlevel"><code>SetLpf16BitLevel()</code></a> - Set 16-bit LPF aggressiveness level</li>
+<li><a href="#setlpf16bitcustomalpha"><code>SetLpf16BitCustomAlpha()</code></a> - Set custom alpha coefficient</li>
+<li><a href="#calclpf16bitalphafromotoff"><code>CalcLpf16BitAlphaFromCutoff()</code></a> - Calculate alpha from cutoff frequency</li>
+<li><a href="#getlpf16bitcustomalphafromotoff"><code>GetLpf16BitCustomAlphaFromCutoff()</code></a> - Get alpha from cutoff frequency</li>
+</ul>
+<h3 id="makeup-gain-3-functions">Makeup Gain (3 functions)</h3>
+<ul>
+<li><a href="#setlpfmakeupgain8bit"><code>SetLpfMakeupGain8Bit()</code></a> - Set makeup gain after 8-bit LPF</li>
+<li><a href="#setlpfmakeupgain16bit"><code>SetLpfMakeupGain16Bit()</code></a> - Set makeup gain after 16-bit LPF</li>
+<li><a href="#getlpfmakeupgain16bit"><code>GetLpfMakeupGain16Bit()</code></a> - Get 16-bit LPF makeup gain</li>
+</ul>
+<h3 id="air-effect-control-11-functions">Air Effect Control (11 functions)</h3>
+<ul>
+<li><a href="#setaireffectenable"><code>SetAirEffectEnable()</code></a> - Enable/disable air effect</li>
+<li><a href="#getaireffectenable"><code>GetAirEffectEnable()</code></a> - Read air effect enable state</li>
+<li><a href="#setaireffectgainq16"><code>SetAirEffectGainQ16()</code></a> - Set air effect gain in Q16 format</li>
+<li><a href="#getaireffectgainq16"><code>GetAirEffectGainQ16()</code></a> - Get air effect gain in Q16 format</li>
+<li><a href="#setaireffectgaindb"><code>SetAirEffectGainDb()</code></a> - Set air effect gain in dB</li>
+<li><a href="#getaireffectgaindb"><code>GetAirEffectGainDb()</code></a> - Get air effect gain in dB</li>
+<li><a href="#setaireffectpresetdb"><code>SetAirEffectPresetDb()</code></a> - Set air effect preset (auto-enable)</li>
+<li><a href="#cycleaireffectpresetdb"><code>CycleAirEffectPresetDb()</code></a> - Cycle through air effect presets</li>
+<li><a href="#getaireffectpresetindex"><code>GetAirEffectPresetIndex()</code></a> - Get current preset index</li>
+<li><a href="#getaireffectpresetcount"><code>GetAirEffectPresetCount()</code></a> - Get number of available presets</li>
+<li><a href="#getaireffectpresetdb"><code>GetAirEffectPresetDb()</code></a> - Get dB value for a preset index</li>
+</ul>
+<h3 id="fade-time-configuration-8-functions">Fade Time Configuration (8 functions)</h3>
+<ul>
+<li><a href="#setfadeintime"><code>SetFadeInTime()</code></a> - Set fade-in duration in seconds</li>
+<li><a href="#getfadeintime"><code>GetFadeInTime()</code></a> - Get fade-in duration in seconds</li>
+<li><a href="#setfadeouttime"><code>SetFadeOutTime()</code></a> - Set fade-out duration in seconds</li>
+<li><a href="#getfadeouttime"><code>GetFadeOutTime()</code></a> - Get fade-out duration in seconds</li>
+<li><a href="#setpausefadetime"><code>SetPauseFadeTime()</code></a> - Set pause fade duration in seconds</li>
+<li><a href="#getpausefadetime"><code>GetPauseFadeTime()</code></a> - Get pause fade duration in seconds</li>
+<li><a href="#setresumefadetime"><code>SetResumeFadeTime()</code></a> - Set resume fade duration in seconds</li>
+<li><a href="#getresumefadetime"><code>GetResumeFadeTime()</code></a> - Get resume fade duration in seconds</li>
+</ul>
+<h3 id="faders-2-functions">Faders (2 functions)</h3>
+<ul>
+<li><a href="#setfadersenabled"><code>SetFadersEnabled()</code></a> - Enable/disable faders</li>
+<li><a href="#getfadersenabled"><code>GetFadersEnabled()</code></a> - Get fader enable state</li>
+</ul>
+<h3 id="chunk-processing-3-functions">Chunk Processing (3 functions)</h3>
+<ul>
+<li><a href="#processnextwavechunk"><code>ProcessNextWaveChunk()</code></a> - Process 16-bit samples</li>
+<li><a href="#processnextwavechunk_8_bit"><code>ProcessNextWaveChunk_8_bit()</code></a> - Process 8-bit samples</li>
+<li><a href="#advancesamplepointer"><code>AdvanceSamplePointer()</code></a> - Advance to next DMA buffer position</li>
+</ul>
+<h3 id="dma-callbacks-2-functions">DMA Callbacks (2 functions)</h3>
+<ul>
+<li><a href="#hal_i2s_txhalfcpltcallback"><code>HAL_I2S_TxHalfCpltCallback()</code></a> - DMA half-complete callback</li>
+<li><a href="#hal_i2s_txcpltcallback"><code>HAL_I2S_TxCpltCallback()</code></a> - DMA complete callback</li>
+</ul>
+<h3 id="internal-state-8-functions">Internal State (8 functions)</h3>
+<ul>
+<li><a href="#getplaybackstate"><code>GetPlaybackState()</code></a> - Get current playback state</li>
+<li><a href="#setplaybackstate"><code>SetPlaybackState()</code></a> - Set playback state</li>
+<li><a href="#gethalftofill"><code>GetHalfToFill()</code></a> - Get which buffer half to fill next</li>
+<li><a href="#sethalftofill"><code>SetHalfToFill()</code></a> - Set which buffer half to fill next</li>
+<li><a href="#getplaybackspeed"><code>GetPlaybackSpeed()</code></a> - Get current sample rate</li>
+<li><a href="#setplaybackspeed"><code>SetPlaybackSpeed()</code></a> - Set sample rate</li>
+<li><a href="#getplaybackprogresssamples"><code>GetPlaybackProgressSamples()</code></a> - Get playback progress in source samples</li>
+<li><a href="#getplaybackprogresspercent"><code>GetPlaybackProgressPercent()</code></a> - Get playback progress percentage</li>
+</ul>
+<h3 id="volume-response-control-4-functions">Volume Response Control (4 functions)</h3>
+<ul>
+<li><a href="#setvolumeresponsenonlinear"><code>SetVolumeResponseNonlinear()</code></a> - Enable/disable non-linear response</li>
+<li><a href="#getvolumeresponsenonlinear"><code>GetVolumeResponseNonlinear()</code></a> - Get non-linear response mode</li>
+<li><a href="#setvolumeresponsegamma"><code>SetVolumeResponseGamma()</code></a> - Set gamma exponent</li>
+<li><a href="#getvolumeresponsegamma"><code>GetVolumeResponseGamma()</code></a> - Get gamma exponent</li>
+</ul>
+<h2 id="quick-lookups">🔍 Quick Lookups</h2>
+<h3 id="by-task">By Task</h3>
+<p><strong>Play Audio:</strong>
+- Simple blocking: <a href="#playsample"><code>PlaySample()</code></a> → <a href="#waitforsampleend"><code>WaitForSampleEnd()</code></a>
+- Non-blocking: <a href="#playsample"><code>PlaySample()</code></a> → poll <a href="#getplaybackstate"><code>GetPlaybackState()</code></a>
+- Pause/Resume: <a href="#pauseplayback"><code>PausePlayback()</code></a> → <a href="#resumeplayback"><code>ResumePlayback()</code></a>
+- Stop: <a href="#stopplayback"><code>StopPlayback()</code></a> → poll <a href="#getplaybackstate"><code>GetPlaybackState()</code></a></p>
+<p><strong>Configure Filters:</strong>
+- Batch config: <a href="#getfilterconfig"><code>GetFilterConfig()</code></a> → modify → <a href="#setfilterconfig"><code>SetFilterConfig()</code></a>
+- Single setting: <a href="#setlpf16bitlevel"><code>SetLpf16BitLevel()</code></a>, <a href="#setsoftclippingenable"><code>SetSoftClippingEnable()</code></a>, etc.</p>
+<p><strong>Control Air Effect:</strong>
+- Simple: <a href="#setaireffectpresetdb"><code>SetAirEffectPresetDb(preset)</code></a> (auto-enables when preset &gt; 0)
+- Advanced: <a href="#setaireffectgaindb"><code>SetAirEffectGainDb()</code></a> + <a href="#setaireffectenable"><code>SetAirEffectEnable()</code></a>
+- UI cycling: <a href="#cycleaireffectpresetdb"><code>CycleAirEffectPresetDb()</code></a></p>
+<p><strong>Adjust Fade Times:</strong>
+- Get/Set pairs: <a href="#getfadeintime"><code>GetFadeInTime()</code></a> / <a href="#setfadeintime"><code>SetFadeInTime()</code></a>, etc.
+- Typical range: 0.0–5.0 seconds</p>
+<h3 id="most-common-functions">Most Common Functions</h3>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Usage Frequency</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PlaySample()</code></td>
+<td>⭐⭐⭐⭐⭐</td>
+<td>Start audio playback (primary API)</td>
+</tr>
+<tr>
+<td><code>WaitForSampleEnd()</code></td>
+<td>⭐⭐⭐⭐⭐</td>
+<td>Block until complete (simple use case)</td>
+</tr>
+<tr>
+<td><code>SetFilterConfig()</code></td>
+<td>⭐⭐⭐⭐</td>
+<td>Batch filter configuration</td>
+</tr>
+<tr>
+<td><code>SetAirEffectPresetDb()</code></td>
+<td>⭐⭐⭐⭐</td>
+<td>Air effect presets with auto-enable</td>
+</tr>
+<tr>
+<td><code>SetLpf16BitLevel()</code></td>
+<td>⭐⭐⭐</td>
+<td>Adjust 16-bit filter aggressiveness</td>
+</tr>
+<tr>
+<td><code>PausePlayback()</code></td>
+<td>⭐⭐⭐</td>
+<td>Pause with fade</td>
+</tr>
+<tr>
+<td><code>ResumePlayback()</code></td>
+<td>⭐⭐⭐</td>
+<td>Resume from pause</td>
+</tr>
+<tr>
+<td><code>GetPlaybackState()</code></td>
+<td>⭐⭐</td>
+<td>Non-blocking playback monitoring</td>
+</tr>
+<tr>
+<td><code>AudioEngine_Init()</code></td>
+<td>⭐</td>
+<td>One-time initialization</td>
+</tr>
+</tbody>
+</table>
+<h2 id="full-documentation">📖 Full Documentation</h2>
+<p>For complete function signatures, parameters, return values, and code examples:</p>
+<ul>
+<li><strong>Comprehensive Reference</strong>: <a href="api-reference.html">API_REFERENCE.md</a> - All 64 functions with detailed examples</li>
+<li><strong>Quick Guide</strong>: <a href="quick-reference.html">QUICK_REFERENCE.md</a> - Common patterns and fast lookup</li>
+<li><strong>Header File</strong>: <a href="../assets/audio_engine.h">audio_engine.h</a> - Doxygen-documented signatures (IDE integration)</li>
+<li><strong>Manual</strong>: <a href="audio-engine-manual.html">AUDIO_ENGINE_MANUAL.md</a> - Architecture and integration guide</li>
+</ul>
+<h2 id="function-details">📝 Function Details</h2>
+<h3 id="audioengine_init">AudioEngine_Init()</h3>
+<pre><code class="language-c">PB_StatusTypeDef AudioEngine_Init(
+  DAC_SwitchFunc dac_switch,
+  ReadVolumeFunc read_volume,
+  I2S_InitFunc i2s_init
+);
+</code></pre>
+<p>Initialize the audio engine with hardware callbacks. Must be called before any playback.</p>
+<p><strong>See</strong>: <a href="API_REFERENCE.md#initialization">API_REFERENCE.md - Initialization</a></p>
+<h3 id="playsample">PlaySample()</h3>
+<pre><code class="language-c">PB_StatusTypeDef PlaySample(
+  const void *sample_to_play,
+  uint32_t sample_set_sz,
+  uint32_t playback_speed,
+  uint8_t sample_depth,
+  PB_ModeTypeDef mode
+);
+</code></pre>
+<p>Start playback of an audio sample from memory.</p>
+<p><strong>See</strong>: <a href="API_REFERENCE.md#playback-control">API_REFERENCE.md - Playback Control</a></p>
+<h3 id="setfilterconfig">SetFilterConfig()</h3>
+<pre><code class="language-c">void SetFilterConfig(const FilterConfig_TypeDef *cfg);
+</code></pre>
+<p>Apply a complete filter configuration atomically.</p>
+<p><strong>See</strong>: <a href="API_REFERENCE.md#filter-configuration">API_REFERENCE.md - Filter Configuration</a></p>
+<h3 id="setaireffectpresetdb">SetAirEffectPresetDb()</h3>
+<pre><code class="language-c">void SetAirEffectPresetDb(uint8_t preset_index);
+</code></pre>
+<p>Set air effect using a preset index. Automatically enables air effect if preset &gt; 0, disables if preset == 0.</p>
+<p><strong>See</strong>: <a href="API_REFERENCE.md#air-effect-control">API_REFERENCE.md - Air Effect Control</a></p>
+<hr/>
+<p>For all other function details, see the comprehensive documentation files listed above.</p>
+<h2 id="related-documentation">🔗 Related Documentation</h2>
+<ul>
+<li><a href="audio-engine-manual.html">AUDIO_ENGINE_MANUAL.md</a> - Complete system architecture</li>
+<li><a href="api-reference.html">API_REFERENCE.md</a> - Detailed function reference</li>
+<li><a href="quick-reference.html">QUICK_REFERENCE.md</a> - Fast lookup guide</li>
+<li><a href="../assets/docs/HEADER_DOCUMENTATION.md">HEADER_DOCUMENTATION.md</a> - Guide to Doxygen header</li>
+<li><a href="../assets/audio_engine.h">audio_engine.h</a> - Doxygen-documented header</li>
+</ul>
+<hr/>
+<p><em>Last updated: 2026-03-01</em>
+<em>Part of the Audio Engine Documentation Suite</em></p></article>
+  </main>
+
+  <footer>
+    <p>Doorchime CR2 Documentation</p>
+  </footer>
+</body>
+</html>

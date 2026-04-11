@@ -1,0 +1,1140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doorchime CR2 API Reference | Doorchime CR2</title>
+  <meta name="description" content="Function-by-function API reference for initialization, playback control, filter configuration, DMA callbacks, and runtime queries.">
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+  <meta name="googlebot" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+  <link rel="canonical" href="https://jennys-stm32-dsp-audio-engine.netlify.app/docs/api-reference.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Doorchime CR2">
+  <meta property="og:url" content="https://jennys-stm32-dsp-audio-engine.netlify.app/docs/api-reference.html">
+  <meta property="og:title" content="Doorchime CR2 API Reference">
+  <meta property="og:description" content="Function-by-function API reference for initialization, playback control, filter configuration, DMA callbacks, and runtime queries.">
+  <meta property="og:image" content="https://jennys-stm32-dsp-audio-engine.netlify.app/assets/audio-engine-logo-flashy.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Doorchime CR2 API Reference">
+  <meta name="twitter:description" content="Function-by-function API reference for initialization, playback control, filter configuration, DMA callbacks, and runtime queries.">
+  <meta name="twitter:image" content="https://jennys-stm32-dsp-audio-engine.netlify.app/assets/audio-engine-logo-flashy.svg">
+    <link rel="stylesheet" href="../styles.css">
+  <script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Doorchime CR2 API Reference",
+  "description": "Function-by-function API reference for initialization, playback control, filter configuration, DMA callbacks, and runtime queries.",
+  "url": "https://jennys-stm32-dsp-audio-engine.netlify.app/docs/api-reference.html",
+  "mainEntityOfPage": "https://jennys-stm32-dsp-audio-engine.netlify.app/docs/api-reference.html",
+  "dateModified": "2026-03-19",
+  "publisher": {
+    "@type": "Organization",
+    "name": "Doorchime CR2"
+  },
+  "about": [
+    {
+      "@type": "Thing",
+      "name": "STM32"
+    },
+    {
+      "@type": "Thing",
+      "name": "Embedded audio"
+    },
+    {
+      "@type": "Thing",
+      "name": "Digital signal processing"
+    }
+  ]
+}</script>
+</head>
+<body>
+  <div class="noise"></div>
+
+  <header class="hero docs-hero">
+    <nav class="topbar">
+      <div class="brand">DOORCHIME CR2</div>
+      <div class="actions">
+        <a class="btn ghost" href="../index.html">Home</a>
+        <a class="btn ghost" href="../docs.html">Docs Hub</a>
+      </div>
+    </nav>
+
+    <section class="panel docs-intro">
+      <p class="breadcrumbs"><a href="../index.html">Home</a> / <a href="../docs.html">Docs</a> / <span>Doorchime CR2 API Reference</span></p>
+      <p class="kicker">API REFERENCE</p>
+      <h1>Doorchime CR2 API Reference</h1>
+      <p class="lead">Function-by-function API reference for initialization, playback control, filter configuration, DMA callbacks, and runtime queries.</p>
+      <div class="doc-meta">Updated 2026-03-19 · Static HTML page for Google and Bing indexing</div>
+      <div class="actions doc-actions">
+        <a class="btn" href="../assets/docs/API_REFERENCE.md">Source File</a>
+        <a class="btn ghost" href="../docs-viewer.html?doc=API_REFERENCE.md">Interactive Viewer</a>
+      </div>
+    </section>
+  </header>
+
+  <main>
+    <article class="panel markdown-view"><h1 id="audio-engine-api-reference">Audio Engine API Reference</h1>
+<p>Complete function reference for the STM32 Audio Engine with all getters, setters, and control functions.</p>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#initialization">Initialization</a></li>
+<li><a href="#playback-control">Playback Control</a></li>
+<li><a href="#dac-power-control">DAC Power Control</a></li>
+<li><a href="#volume-response-control">Volume Response Control</a></li>
+<li><a href="#filter-configuration">Filter Configuration</a></li>
+<li><a href="#low-pass-filter-lpf-control">Low-Pass Filter (LPF) Control</a></li>
+<li><a href="#air-effect-control">Air Effect Control</a></li>
+<li><a href="#fade-time-control">Fade Time Control</a></li>
+<li><a href="#chunk-processing-dma-callbacks">Chunk Processing (DMA Callbacks)</a></li>
+<li><a href="#application-callbacks">Application Callbacks</a></li>
+<li><a href="#status-queries">Status &amp; Queries</a></li>
+</ol>
+<hr/>
+<h2 id="initialization">Initialization</h2>
+<h3 id="audioengine_init"><code>AudioEngine_Init()</code></h3>
+<p>Initialize the audio engine with required hardware interface callbacks.</p>
+<pre><code class="language-c">PB_StatusTypeDef AudioEngine_Init(
+  DAC_SwitchFunc dac_switch,      // Function to control amplifier on/off
+  ReadVolumeFunc read_volume,     // Function to read volume setting (1-65535)
+  I2S_InitFunc i2s_init           // Function to re-initialize I2S if needed
+);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>dac_switch</code>: Callback to control DAC/amplifier GPIO (GPIO_PIN_SET or GPIO_PIN_RESET)
+- <code>read_volume</code>: Callback returning volume level 1-65535
+- <code>i2s_init</code>: Callback to initialize I2S peripheral (e.g., <code>MX_I2S2_Init</code>)</p>
+<p><strong>Returns:</strong> <code>PB_Idle</code> on success, <code>PB_Error</code> if any callback is NULL</p>
+<p><strong>Notes:</strong>
+- <strong>Must be called once</strong> before any playback functions
+- Initializes all filter state and playback variables
+- Sets up default filter configuration (overridable with <code>SetFilterConfig()</code>)
+- Does not start audio playback</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">PB_StatusTypeDef status = AudioEngine_Init(
+  DAC_MasterSwitch,
+  ReadVolume,
+  MX_I2S2_Init
+);
+
+if (status != PB_Idle) {
+  printf("Audio engine initialization failed!\n");
+  return;
+}
+</code></pre>
+<hr/>
+<h2 id="playback-control">Playback Control</h2>
+<h3 id="playsample"><code>PlaySample()</code></h3>
+<p>Start playback of an audio sample.</p>
+<pre><code class="language-c">PB_StatusTypeDef PlaySample(
+  const void *sample_to_play,     // Pointer to audio data (8-bit or 16-bit)
+  uint32_t sample_set_sz,         // Total samples (all channels combined)
+  uint32_t playback_speed,        // Sample rate in Hz (typically 22000)
+  uint8_t sample_depth,           // 8 or 16 (bits per sample)
+  PB_ModeTypeDef mode             // Mode_mono or Mode_stereo
+);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>sample_to_play</code>: Audio data pointer (must remain valid during playback)
+- <code>sample_set_sz</code>: Total samples (all channels combined)
+- <code>playback_speed</code>: Sample rate in Hz (22000 recommended, up to 48000)
+- <code>sample_depth</code>: 8 or 16
+- <code>mode</code>: <code>Mode_mono</code> or <code>Mode_stereo</code></p>
+<p><strong>Returns:</strong> <code>PB_Playing</code> if successful, <code>PB_Error</code> on invalid parameters</p>
+<p><strong>Notes:</strong>
+- Audio data must be in accessible memory (not discarded until playback completes)
+- DMA directly accesses the buffer; no copy is made
+- For 16-bit mono: <code>sample_set_sz = num_samples</code>
+- For 16-bit stereo (interleaved): <code>sample_set_sz = 2 × num_frames</code>
+- For 8-bit mono: <code>sample_set_sz = num_samples</code>
+- For 8-bit stereo (interleaved): <code>sample_set_sz = 2 × num_frames</code>
+- Briefly blocks while starting DMA</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">extern const uint8_t doorbell_16bit_mono[];
+extern const uint32_t doorbell_16bit_mono_samples;
+
+PB_StatusTypeDef result = PlaySample(
+  doorbell_16bit_mono,
+  doorbell_16bit_mono_samples,
+  22000,
+  16,
+  Mode_mono
+);
+
+if (result == PB_Playing) {
+  WaitForSampleEnd();
+}
+</code></pre>
+<h3 id="calcsampleoffsetsamples"><code>CalcSampleOffsetSamples()</code></h3>
+<p>Calculate a sample offset from time, sample rate, and playback mode.</p>
+<pre><code class="language-c">uint32_t CalcSampleOffsetSamples(
+  float seconds,                 // Desired offset in seconds (&gt;= 0)
+  uint32_t sample_rate_hz,        // Sample rate in Hz
+  PB_ModeTypeDef mode             // Mode_mono or Mode_stereo
+);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>seconds</code>: Desired offset in seconds (&gt;= 0)
+- <code>sample_rate_hz</code>: Sample rate in Hz
+- <code>mode</code>: <code>Mode_mono</code> or <code>Mode_stereo</code></p>
+<p><strong>Returns:</strong> Sample offset in interleaved samples</p>
+<p><strong>Notes:</strong>
+- Returns 0 if <code>seconds &lt;= 0</code> or <code>sample_rate_hz == 0</code>
+- For stereo, returns 2x the mono sample count</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">uint32_t offset = CalcSampleOffsetSamples(1.25f, 22000, Mode_stereo);
+// offset is 55000 samples (1.25 * 22000 * 2)
+</code></pre>
+<h3 id="waitforsampleend"><code>WaitForSampleEnd()</code></h3>
+<p>Block until playback completes.</p>
+<pre><code class="language-c">PB_StatusTypeDef WaitForSampleEnd(void);
+</code></pre>
+<p><strong>Returns:</strong> <code>PB_Idle</code> when playback finishes, <code>PB_Error</code> if no playback active</p>
+<p><strong>Notes:</strong>
+- Blocking call; use with caution in interrupt-sensitive contexts
+- Safe to call even if no playback is active
+- Blocks while playback is paused or pausing</p>
+<h3 id="pauseplayback"><code>PausePlayback()</code></h3>
+<p>Pause active playback with smooth fade-out.</p>
+<pre><code class="language-c">PB_StatusTypeDef PausePlayback(void);
+</code></pre>
+<p><strong>Returns:</strong> <code>PB_Paused</code> if successful, <code>PB_Error</code> if no playback active</p>
+<p><strong>Notes:</strong>
+- Fade-out duration set by <code>SetPauseFadeTime()</code>
+- Preserves playback position for resume
+- Handles edge cases smoothly:
+  - <strong>Pausing during fade-in:</strong> Scales pause fadeout to start from current volume level
+  - <strong>Pausing during end-of-file fadeout:</strong> Scales pause fadeout proportionally to maintain smooth volume continuity
+- All fade transitions use quadratic volume curves to prevent audible discontinuities
+- Handles edge cases smoothly:
+  - <strong>Pausing during fade-in:</strong> Scales pause fadeout to start from current volume level
+  - <strong>Pausing during end-of-file fadeout:</strong> Scales pause fadeout proportionally to maintain smooth volume continuity
+- All fade transitions use quadratic volume curves to prevent audible discontinuities</p>
+<h3 id="resumeplayback"><code>ResumePlayback()</code></h3>
+<p>Resume previously paused playback with smooth fade-in.</p>
+<pre><code class="language-c">PB_StatusTypeDef ResumePlayback(void);
+</code></pre>
+<p><strong>Returns:</strong> <code>PB_Playing</code> if successful, <code>PB_Error</code> if not paused</p>
+<p><strong>Notes:</strong>
+- Fade-in duration set by <code>SetResumeFadeTime()</code>
+- Resumes from the exact paused position
+- Audio fades in smoothly from silence using quadratic curve</p>
+<h3 id="stopplayback"><code>StopPlayback()</code></h3>
+<p>Request asynchronous stop with normal end-of-play fade-out.</p>
+<pre><code class="language-c">PB_StatusTypeDef StopPlayback(void);
+</code></pre>
+<p><strong>Returns:</strong> Current playback state, <code>PB_Idle</code> if already idle</p>
+<p><strong>Notes:</strong>
+- Returns immediately (non-blocking)
+- <strong>Thread-safe:</strong> Simply sets a flag; all stop logic runs in DMA callback context
+- Uses the normal end-of-play fade-out duration
+- DMA callback initiates fade-out and completes the stop when fade finishes
+- Fade-out duration set by <code>SetFadeOutTime()</code>
+- Use <code>GetPlaybackState()</code> to poll for completion
+- <code>AudioEngine_OnPlaybackEnd()</code> callback invoked once when stop completes</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">StopPlayback();  // Request stop (returns immediately)
+
+// Wait for stop to complete
+while (GetPlaybackState() != PB_Idle) {
+  // Can do other work here while fading out
+}
+</code></pre>
+<h3 id="shutdownaudio"><code>ShutDownAudio()</code></h3>
+<p>Stop playback and disable amplifier.</p>
+<pre><code class="language-c">void ShutDownAudio(void);
+</code></pre>
+<p><strong>Notes:</strong>
+- Waits for DMA buffer to drain before stopping
+- Calls <code>AudioEngine_DACSwitch(DAC_OFF)</code> if DAC control is enabled
+- Safe to call during or after playback</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">ShutDownAudio();
+// Amplifier is now off and I2S is stopped
+</code></pre>
+<hr/>
+<h2 id="dac-power-control">DAC Power Control</h2>
+<h3 id="setdac_control"><code>SetDAC_Control()</code></h3>
+<p>Enable or disable optional DAC power control during playback.</p>
+<pre><code class="language-c">void SetDAC_Control(uint8_t state);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>state</code>: <code>1</code> to enable DAC power control, <code>0</code> to disable</p>
+<p><strong>Notes:</strong>
+- When enabled, <code>AudioEngine_DACSwitch()</code> is called automatically during playback
+- When disabled, DAC power management is handled externally by the application
+- Default is enabled (<code>1</code>)
+- Useful when sharing the audio engine across multiple applications with different power requirements</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">// Disable automatic DAC control (manual control)
+SetDAC_Control(0);
+
+// Enable automatic DAC control (engine manages power)
+SetDAC_Control(1);
+</code></pre>
+<h3 id="getdac_control"><code>GetDAC_Control()</code></h3>
+<p>Query current DAC power control state.</p>
+<pre><code class="language-c">uint8_t GetDAC_Control(void);
+</code></pre>
+<p><strong>Returns:</strong> <code>1</code> if DAC control is enabled, <code>0</code> if disabled</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">if (GetDAC_Control()) {
+  printf("DAC power control is automatic\n");
+} else {
+  printf("DAC power control is manual\n");
+}
+</code></pre>
+<hr/>
+<h2 id="volume-response-control">Volume Response Control</h2>
+<p>Control how raw volume input values (0–65535) are mapped to actual audio gain. The audio engine supports two response modes:</p>
+<ul>
+<li><strong>Linear</strong>: Direct proportional mapping (default when non-linear is disabled)</li>
+<li><strong>Non-linear (Gamma Curve)</strong>: Perceptually uniform response matching human loudness perception</li>
+</ul>
+<p>The gamma curve applies: <code>output = input^(1/gamma)</code>, where gamma = 2.0 (typical) provides a quadratic response curve.</p>
+<h3 id="setvolumeresponsenonlinear"><code>SetVolumeResponseNonlinear()</code></h3>
+<p>Enable or disable non-linear volume response curve.</p>
+<pre><code class="language-c">void SetVolumeResponseNonlinear( uint8_t enable );
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>enable</code>: 1 to enable non-linear (gamma curve) response, 0 for linear response</p>
+<p><strong>Notes:</strong>
+- Non-linear response (enabled by default) matches human loudness perception for more intuitive volume control
+- Linear response provides direct proportional scaling (input/65535 × max_gain)
+- Change takes effect immediately on next sample processing</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">// Enable non-linear (perceptual) volume response
+SetVolumeResponseNonlinear(1);
+
+// Switch to linear volume response
+SetVolumeResponseNonlinear(0);
+</code></pre>
+<h3 id="getvolumeresponsenonlinear"><code>GetVolumeResponseNonlinear()</code></h3>
+<p>Get current volume response mode.</p>
+<pre><code class="language-c">uint8_t GetVolumeResponseNonlinear( void );
+</code></pre>
+<p><strong>Returns:</strong> 1 if non-linear mode enabled, 0 if linear mode</p>
+<h3 id="setvolumeresponsegamma"><code>SetVolumeResponseGamma()</code></h3>
+<p>Set the gamma exponent for non-linear volume response curve.</p>
+<pre><code class="language-c">void SetVolumeResponseGamma( float gamma );
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>gamma</code>: Gamma exponent (typical range: 1.0–4.0)
+  - 1.0: Linear response (same as linear mode)
+  - 2.0: Quadratic curve (recommended, matches human perception)
+  - 3.0–4.0: More aggressive curve (flattens low volumes, steepens high volumes)</p>
+<p><strong>Notes:</strong>
+- Higher gamma values create a more aggressive curve where small volume adjustments have smaller effect at low settings and larger effect at high settings
+- Typical value: 2.0 (provides balanced perceptual uniformity)
+- Change takes effect immediately on next sample processing
+- Only used when non-linear mode is enabled</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">// Set quadratic response (recommended)
+SetVolumeResponseGamma(2.0f);
+
+// Set cubic response (more aggressive)
+SetVolumeResponseGamma(3.0f);
+
+// Match human loudness perception preferences
+SetVolumeResponseGamma(2.2f);
+</code></pre>
+<h3 id="getvolumeresponsegamma"><code>GetVolumeResponseGamma()</code></h3>
+<p>Get current volume response gamma exponent.</p>
+<pre><code class="language-c">float GetVolumeResponseGamma( void );
+</code></pre>
+<p><strong>Returns:</strong> Current gamma value (typical: 1.0–4.0)</p>
+<h3 id="volume-response-usage-example">Volume Response Usage Example</h3>
+<pre><code class="language-c">// Initialize with defaults (non-linear, gamma=2.0)
+AudioEngine_Init(DAC_MasterSwitch, ReadVolume, MX_I2S2_Init);
+
+// Enable non-linear response with custom gamma for specific perception
+SetVolumeResponseNonlinear(1);           // Enable perceptual volume
+SetVolumeResponseGamma(2.2f);            // Slightly more aggressive curve
+
+// Optional: switch to linear for testing
+// SetVolumeResponseNonlinear(0);        // Linear mode (direct scaling)
+
+// Check current configuration
+uint8_t is_nonlinear = GetVolumeResponseNonlinear();  // Returns 1
+float current_gamma = GetVolumeResponseGamma();       // Returns 2.2f
+</code></pre>
+<hr/>
+<h2 id="filter-configuration">Filter Configuration</h2>
+<h3 id="setfilterconfig"><code>SetFilterConfig()</code></h3>
+<p>Apply a complete filter configuration at once.</p>
+<pre><code class="language-c">void SetFilterConfig(const FilterConfig_TypeDef *cfg);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>cfg</code>: Pointer to <code>FilterConfig_TypeDef</code> structure containing:
+  - <code>enable_16bit_biquad_lpf</code>: 1 to enable 16-bit LPF, 0 to disable
+  - <code>enable_8bit_lpf</code>: 1 to enable 8-bit one-pole LPF, 0 to disable
+  - <code>enable_soft_dc_filter_16bit</code>: 1 to enable DC blocking, 0 to disable
+  - <code>enable_noise_gate</code>: 1 to suppress low-level noise, 0 to disable
+  - <code>enable_soft_clipping</code>: 1 to prevent distortion, 0 to disable
+  - <code>enable_air_effect</code>: 1 to enable brightening, 0 to disable
+  - <code>lpf_makeup_gain_q16</code>: Makeup gain after 8-bit LPF (Q16 format)
+  - <code>lpf_makeup_gain_16bit_q16</code>: Makeup gain after 16-bit LPF (Q16 format)
+  - <code>lpf_8bit_level</code>: Filter aggressiveness for 8-bit (LPF_VerySoft to LPF_Aggressive)
+  - <code>lpf_16bit_level</code>: Filter aggressiveness for 16-bit (LPF_VerySoft to LPF_Aggressive)
+  - <code>lpf_16bit_custom_alpha</code>: Custom alpha coefficient (used if <code>lpf_16bit_level = LPF_Custom</code>)
+  - <code>lpf_8bit_custom_alpha</code>: Custom alpha coefficient (used if <code>lpf_8bit_level = LPF_Custom</code>)
+  - <code>enable_filter_chain_16bit</code>: 1 to enable the full 16-bit filter chain, 0 to bypass
+  - <code>enable_filter_chain_8bit</code>: 1 to enable the full 8-bit filter chain, 0 to bypass</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">FilterConfig_TypeDef cfg = {
+  .enable_16bit_biquad_lpf = 1,
+  .enable_8bit_lpf = 1,
+  .enable_soft_clipping = 1,
+  .lpf_16bit_level = LPF_Soft,
+  .lpf_16bit_custom_alpha = LPF_16BIT_SOFT,
+  .lpf_8bit_level = LPF_Medium,
+  .lpf_8bit_custom_alpha = LPF_MEDIUM,
+  .lpf_makeup_gain_q16 = 65536,        // 1.0x 8-bit LPF gain
+  .lpf_makeup_gain_16bit_q16 = 65536,  // 1.0x 16-bit LPF gain
+  .enable_filter_chain_16bit = 1,
+  .enable_filter_chain_8bit = 1
+};
+SetFilterConfig(&amp;cfg);
+</code></pre>
+<h3 id="getfilterconfig"><code>GetFilterConfig()</code></h3>
+<p>Retrieve the current filter configuration.</p>
+<pre><code class="language-c">void GetFilterConfig(FilterConfig_TypeDef *cfg);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>cfg</code>: Pointer to structure to populate with current settings</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">FilterConfig_TypeDef current_cfg;
+GetFilterConfig(&amp;current_cfg);
+
+// Modify one field
+current_cfg.enable_soft_clipping = 0;
+
+// Apply changes
+SetFilterConfig(&amp;current_cfg);
+</code></pre>
+<h3 id="setsoftclippingenable"><code>SetSoftClippingEnable()</code></h3>
+<p>Enable or disable soft clipping (distortion prevention).</p>
+<pre><code class="language-c">void SetSoftClippingEnable(uint8_t enabled);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>enabled</code>: Non-zero to enable, zero to disable</p>
+<h3 id="getsoftclippingenable"><code>GetSoftClippingEnable()</code></h3>
+<p>Query soft clipping state.</p>
+<pre><code class="language-c">uint8_t GetSoftClippingEnable(void);
+</code></pre>
+<p><strong>Returns:</strong> 1 if enabled, 0 if disabled</p>
+<h3 id="setfilterchain16bitenable"><code>SetFilterChain16BitEnable()</code></h3>
+<p>Enable or bypass the full 16-bit filter chain.</p>
+<pre><code class="language-c">void SetFilterChain16BitEnable(uint8_t enabled);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>enabled</code>: Non-zero to enable, zero to bypass</p>
+<h3 id="setfilterchain8bitenable"><code>SetFilterChain8BitEnable()</code></h3>
+<p>Enable or bypass the full 8-bit filter chain.</p>
+<pre><code class="language-c">void SetFilterChain8BitEnable(uint8_t enabled);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>enabled</code>: Non-zero to enable, zero to bypass</p>
+<hr/>
+<h2 id="low-pass-filter-lpf-control">Low-Pass Filter (LPF) Control</h2>
+<h3 id="8-bit-lpf-functions">8-bit LPF Functions</h3>
+<h4 id="setlpf8bitlevel"><code>SetLpf8BitLevel()</code></h4>
+<p>Set filter aggressiveness for 8-bit audio paths.</p>
+<pre><code class="language-c">void SetLpf8BitLevel(LPF_Level level);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>level</code>: One of:
+  - <code>LPF_VerySoft</code>: Minimal filtering (~3200 Hz cutoff)
+  - <code>LPF_Soft</code>: Gentle filtering (~2800 Hz cutoff)
+  - <code>LPF_Medium</code>: Balanced (~2300 Hz cutoff)
+  - <code>LPF_Firm</code>: Firm filtering (~2000 Hz cutoff)
+  - <code>LPF_Aggressive</code>: Strong filtering (~1800 Hz cutoff)
+  - <code>LPF_Custom</code>: Use custom alpha (set via <code>SetLpf8BitCustomAlpha()</code>)
+  - <code>LPF_Off</code>: Disable 8-bit LPF</p>
+<p><strong>Notes:</strong>
+- Setting to <code>LPF_Off</code> disables the filter
+- Setting any other level enables the filter
+- 8-bit uses one-pole architecture (narrower alpha range than 16-bit)</p>
+<h4 id="getlpf8bitlevel"><code>GetLpf8BitLevel()</code></h4>
+<p>Query current 8-bit LPF aggressiveness.</p>
+<pre><code class="language-c">LPF_Level GetLpf8BitLevel(void);
+</code></pre>
+<p><strong>Returns:</strong> Current <code>LPF_Level</code> setting</p>
+<h4 id="setlpf8bitcustomalpha"><code>SetLpf8BitCustomAlpha()</code></h4>
+<p>Set a custom alpha coefficient for the 8-bit one-pole LPF.</p>
+<pre><code class="language-c">void SetLpf8BitCustomAlpha(uint16_t alpha);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>alpha</code>: Q16 fixed-point coefficient (0-65535)</p>
+<p><strong>Notes:</strong>
+- Automatically sets <code>lpf_8bit_level</code> to <code>LPF_Custom</code></p>
+<h4 id="getlpf8bitcustomalpha"><code>GetLpf8BitCustomAlpha()</code></h4>
+<p>Read the current 8-bit LPF custom alpha.</p>
+<pre><code class="language-c">uint16_t GetLpf8BitCustomAlpha(void);
+</code></pre>
+<p><strong>Returns:</strong> Q16 alpha coefficient</p>
+<p><strong>Notes:</strong>
+- Value is meaningful when <code>GetLpf8BitLevel()</code> returns <code>LPF_Custom</code></p>
+<h4 id="calclpf8bitalphafromcutoff"><code>CalcLpf8BitAlphaFromCutoff()</code></h4>
+<p>Compute an 8-bit LPF alpha from cutoff frequency and sample rate.</p>
+<pre><code class="language-c">uint16_t CalcLpf8BitAlphaFromCutoff(float cutoff_hz, float sample_rate_hz);
+</code></pre>
+<p><strong>Returns:</strong> Q16 alpha coefficient</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">uint16_t alpha = CalcLpf8BitAlphaFromCutoff(4500.0f, 11000.0f);
+SetLpf8BitLevel(LPF_Custom);
+SetLpf8BitCustomAlpha(alpha);
+uint16_t current_alpha = GetLpf8BitCustomAlpha();
+</code></pre>
+<h4 id="setlpfmakeupgain8bit"><code>SetLpfMakeupGain8Bit()</code></h4>
+<p>Set makeup gain after 8-bit LPF (compensates for filter attenuation).</p>
+<pre><code class="language-c">void SetLpfMakeupGain8Bit(float gain);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>gain</code>: Boost factor (0.1 to 2.0, clamped)</p>
+<p><strong>Notes:</strong>
+- Typical range: 0.5x to 1.5x
+- Higher values restore energy lost in filtering
+ - Higher values restore energy lost in filtering</p>
+<h4 id="setlpfmakeupgain16bit"><code>SetLpfMakeupGain16Bit()</code></h4>
+<p>Set makeup gain after 16-bit LPF (compensates for filter attenuation).</p>
+<pre><code class="language-c">void SetLpfMakeupGain16Bit(float gain);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>gain</code>: Boost factor (0.1 to 2.0, clamped)</p>
+<h4 id="getlpfmakeupgain16bit"><code>GetLpfMakeupGain16Bit()</code></h4>
+<p>Read current 16-bit LPF makeup gain.</p>
+<pre><code class="language-c">float GetLpfMakeupGain16Bit(void);
+</code></pre>
+<p><strong>Returns:</strong> Current linear gain factor</p>
+<h3 id="16-bit-lpf-functions">16-bit LPF Functions</h3>
+<h4 id="setlpf16bitlevel"><code>SetLpf16BitLevel()</code></h4>
+<p>Set filter aggressiveness for 16-bit audio paths.</p>
+<pre><code class="language-c">void SetLpf16BitLevel(LPF_Level level);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>level</code>: One of:
+  - <code>LPF_VerySoft</code>: Lightest filtering (α ≈ 0.625)
+  - <code>LPF_Soft</code>: Gentle filtering (α ≈ 0.80)
+  - <code>LPF_Medium</code>: Balanced (α ≈ 0.875)
+  - <code>LPF_Firm</code>: Firm filtering (α ≈ 0.92)
+  - <code>LPF_Aggressive</code>: Strong filtering (α ≈ 0.97)
+  - <code>LPF_Custom</code>: Use custom alpha set by <code>SetLpf16BitCustomAlpha()</code>
+  - <code>LPF_Off</code>: Disable 16-bit LPF</p>
+<p><strong>Notes:</strong>
+- 16-bit uses biquad architecture (higher alpha = more filtering)
+- Setting to any non-Off level enables the filter</p>
+<h4 id="setlpf16bitcustomalpha"><code>SetLpf16BitCustomAlpha()</code></h4>
+<p>Set custom alpha coefficient for 16-bit LPF (advanced).</p>
+<pre><code class="language-c">void SetLpf16BitCustomAlpha(uint16_t alpha);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>alpha</code>: Q16 fixed-point value (0 to 65535)
+  - 0.0 (off) = 0
+  - 0.5 ≈ 32768
+  - 1.0 (full) = 65535</p>
+<p><strong>Notes:</strong>
+- Only used when <code>SetLpf16BitLevel(LPF_Custom)</code> is set
+- Typical range: 40000 to 64000</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">// Set custom alpha for ~4 kHz cutoff @ 22 kHz
+uint16_t custom_alpha = 50000;  // Approximate
+SetLpf16BitLevel(LPF_Custom);
+SetLpf16BitCustomAlpha(custom_alpha);
+</code></pre>
+<h4 id="calclpf16bitalphafromcutoff"><code>CalcLpf16BitAlphaFromCutoff()</code></h4>
+<p>Calculate alpha from desired cutoff frequency and sample rate (helper).</p>
+<pre><code class="language-c">uint16_t CalcLpf16BitAlphaFromCutoff(
+  float cutoff_hz,
+  float sample_rate_hz
+);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>cutoff_hz</code>: Desired -3dB cutoff frequency in Hz
+- <code>sample_rate_hz</code>: Sample rate in Hz</p>
+<p><strong>Returns:</strong> Q16 alpha coefficient</p>
+<p><strong>Notes:</strong>
+- Uses formula: <code>alpha = exp(-2π·fc/fs)</code>
+- Clamped to safe range (0.0 to 0.99998)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">// Calculate alpha for 5 kHz cutoff @ 22 kHz
+uint16_t alpha = CalcLpf16BitAlphaFromCutoff(5000.0f, 22000.0f);
+SetLpf16BitLevel(LPF_Custom);
+SetLpf16BitCustomAlpha(alpha);
+</code></pre>
+<h4 id="getlpf16bitcustomalphafromcutoff"><code>GetLpf16BitCustomAlphaFromCutoff()</code></h4>
+<p>Calculate alpha using current playback speed.</p>
+<pre><code class="language-c">uint16_t GetLpf16BitCustomAlphaFromCutoff(float cutoff_hz);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>cutoff_hz</code>: Desired -3dB cutoff in Hz</p>
+<p><strong>Returns:</strong> Q16 alpha coefficient (using <code>I2S_PlaybackSpeed</code> as sample rate)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">uint16_t alpha = GetLpf16BitCustomAlphaFromCutoff(4000.0f);
+SetLpf16BitLevel(LPF_Custom);
+SetLpf16BitCustomAlpha(alpha);
+</code></pre>
+<hr/>
+<h2 id="air-effect-control">Air Effect Control</h2>
+<h3 id="setaireffectenable"><code>SetAirEffectEnable()</code></h3>
+<p>Enable or disable the air effect (high-shelf brightening).</p>
+<pre><code class="language-c">void SetAirEffectEnable(uint8_t enabled);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>enabled</code>: Non-zero to enable, zero to disable</p>
+<p><strong>Notes:</strong>
+- Automatically called by <code>SetAirEffectPresetDb()</code>
+- Can be called directly for manual control</p>
+<h3 id="getaireffectenable"><code>GetAirEffectEnable()</code></h3>
+<p>Query air effect state.</p>
+<pre><code class="language-c">uint8_t GetAirEffectEnable(void);
+</code></pre>
+<p><strong>Returns:</strong> 1 if enabled, 0 if disabled</p>
+<h3 id="setaireffectgainq16"><code>SetAirEffectGainQ16()</code></h3>
+<p>Set air effect shelf gain using Q16 fixed-point format (advanced).</p>
+<pre><code class="language-c">void SetAirEffectGainQ16(uint32_t gain_q16);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>gain_q16</code>: Shelf gain in Q16 format
+  - 65536 = 1.0x (unity gain)
+  - 98304 ≈ 1.5x (default, ≈ +1.6 dB)
+  - 131072 = 2.0x (max safe, ≈ +6 dB)</p>
+<p><strong>Notes:</strong>
+- Clamped to <code>AIR_EFFECT_SHELF_GAIN_MAX</code>
+- Prefer <code>SetAirEffectGainDb()</code> for dB-based control</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">// Set to 1.5x gain (moderate brightening)
+SetAirEffectGainQ16(98304);
+SetAirEffectEnable(1);
+</code></pre>
+<h3 id="getaireffectgainq16"><code>GetAirEffectGainQ16()</code></h3>
+<p>Read current air effect gain in Q16 format.</p>
+<pre><code class="language-c">uint32_t GetAirEffectGainQ16(void);
+</code></pre>
+<p><strong>Returns:</strong> Current gain in Q16 format</p>
+<h3 id="setaireffectgaindb"><code>SetAirEffectGainDb()</code></h3>
+<p>Set air effect shelf gain using dB (recommended).</p>
+<pre><code class="language-c">void SetAirEffectGainDb(float db);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>db</code>: Desired boost in dB (positive = brightening, clamped to safe range)</p>
+<p><strong>Notes:</strong>
+- Converts dB to Q16 internally
+- Typical range: 0.0 to +3.0 dB
+- Safer and more intuitive than Q16 control</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">SetAirEffectGainDb(2.0f);  // +2 dB boost
+SetAirEffectEnable(1);
+</code></pre>
+<h3 id="getaireffectgaindb"><code>GetAirEffectGainDb()</code></h3>
+<p>Read current air effect gain in dB.</p>
+<pre><code class="language-c">float GetAirEffectGainDb(void);
+</code></pre>
+<p><strong>Returns:</strong> Current gain in dB</p>
+<h3 id="setaireffectpresetdb"><code>SetAirEffectPresetDb()</code></h3>
+<p>Select and apply an air effect preset by index (recommended usage).</p>
+<pre><code class="language-c">void SetAirEffectPresetDb(uint8_t preset_index);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>preset_index</code>: 
+  - <code>0</code>: Disable air effect
+  - <code>1</code>: +1 dB preset
+  - <code>2</code>: +2 dB preset
+  - <code>3</code>: +3 dB preset
+  - Out-of-range: Clamps to 0</p>
+<p><strong>Notes:</strong>
+- <strong>Auto-enables/disables</strong>: Preset 0 = off, preset &gt; 0 = on
+- No separate <code>SetAirEffectEnable()</code> call needed</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">SetAirEffectPresetDb(2);  // Enable +2 dB preset
+// ... playback ...
+SetAirEffectPresetDb(0);  // Disable air effect
+</code></pre>
+<h3 id="cycleaireffectpresetdb"><code>CycleAirEffectPresetDb()</code></h3>
+<p>Cycle to the next preset (useful for buttons/menus).</p>
+<pre><code class="language-c">uint8_t CycleAirEffectPresetDb(void);
+</code></pre>
+<p><strong>Returns:</strong> New preset index (0, 1, 2, 3, then wraps to 0)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">// User presses "Air Effect" button
+uint8_t new_preset = CycleAirEffectPresetDb();
+printf("Air preset: %d\n", new_preset);
+</code></pre>
+<h3 id="getaireffectpresetindex"><code>GetAirEffectPresetIndex()</code></h3>
+<p>Query current preset index.</p>
+<pre><code class="language-c">uint8_t GetAirEffectPresetIndex(void);
+</code></pre>
+<p><strong>Returns:</strong> Current preset index (0–3)</p>
+<h3 id="getaireffectpresetcount"><code>GetAirEffectPresetCount()</code></h3>
+<p>Get total number of available presets.</p>
+<pre><code class="language-c">uint8_t GetAirEffectPresetCount(void);
+</code></pre>
+<p><strong>Returns:</strong> Number of presets (typically 4: off + 3 presets)</p>
+<h3 id="getaireffectpresetdb"><code>GetAirEffectPresetDb()</code></h3>
+<p>Read the dB value of a specific preset.</p>
+<pre><code class="language-c">float GetAirEffectPresetDb(uint8_t preset_index);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>preset_index</code>: Preset to query (0–3, out-of-range clamps to current)</p>
+<p><strong>Returns:</strong> dB value of the preset</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">for (uint8_t i = 0; i &lt; GetAirEffectPresetCount(); i++) {
+  float db = GetAirEffectPresetDb(i);
+  printf("Preset %d: %.1f dB\n", i, db);
+}
+// Output:
+// Preset 0: 0.0 dB    (disabled)
+// Preset 1: 1.0 dB
+// Preset 2: 2.0 dB
+// Preset 3: 3.0 dB
+</code></pre>
+<hr/>
+<h2 id="fade-time-control">Fade Time Control</h2>
+<h3 id="setfadersenabled"><code>SetFadersEnabled()</code></h3>
+<p>Enable or disable fade-in/fade-out processing.</p>
+<pre><code class="language-c">void SetFadersEnabled(uint8_t fader_setting);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>fader_setting</code>: 1 to enable faders, 0 to bypass</p>
+<h3 id="getfadersenabled"><code>GetFadersEnabled()</code></h3>
+<p>Query current fader enable state.</p>
+<pre><code class="language-c">uint8_t GetFadersEnabled(void);
+</code></pre>
+<p><strong>Returns:</strong> 1 if faders are enabled, 0 if disabled</p>
+<h3 id="setfadeintime"><code>SetFadeInTime()</code></h3>
+<p>Set the duration of fade-in effects (start of playback, resume).</p>
+<pre><code class="language-c">void SetFadeInTime(float seconds);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>seconds</code>: Duration in seconds (clamped to 0.001–5.0)</p>
+<p><strong>Notes:</strong>
+- Automatically recalculated when playback speed changes
+- Default: ~0.150 seconds (150 ms)</p>
+<h3 id="getfadeintime"><code>GetFadeInTime()</code></h3>
+<p>Query current fade-in time.</p>
+<pre><code class="language-c">float GetFadeInTime(void);
+</code></pre>
+<p><strong>Returns:</strong> Fade-in duration in seconds</p>
+<h3 id="setfadeouttime"><code>SetFadeOutTime()</code></h3>
+<p>Set the duration of fade-out effects (end of playback, pause).</p>
+<pre><code class="language-c">void SetFadeOutTime(float seconds);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>seconds</code>: Duration in seconds (clamped to 0.001–5.0)</p>
+<p><strong>Notes:</strong>
+- Default: ~0.150 seconds (150 ms)</p>
+<h3 id="getfadeouttime"><code>GetFadeOutTime()</code></h3>
+<p>Query current fade-out time.</p>
+<pre><code class="language-c">float GetFadeOutTime(void);
+</code></pre>
+<p><strong>Returns:</strong> Fade-out duration in seconds</p>
+<h3 id="setpausefadetime"><code>SetPauseFadeTime()</code></h3>
+<p>Set the duration of fade-out when pausing playback.</p>
+<pre><code class="language-c">void SetPauseFadeTime(float seconds);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>seconds</code>: Duration in seconds (clamped to 0.001–5.0)</p>
+<p><strong>Notes:</strong>
+- Separate from main fade-out; typically longer for smooth pause
+- Default: ~1.0 seconds (1000 ms)
+- Applied intelligently when pausing:
+  - During fade-in: Scaled proportionally to current volume
+  - During end-of-file fadeout: Scaled to maintain continuity from current level
+- Applied intelligently when pausing:
+  - During fade-in: Scaled proportionally to current volume
+  - During end-of-file fadeout: Scaled to maintain continuity from current level</p>
+<h3 id="getpausefadetime"><code>GetPauseFadeTime()</code></h3>
+<p>Query current pause fade-out duration.</p>
+<pre><code class="language-c">float GetPauseFadeTime(void);
+</code></pre>
+<p><strong>Returns:</strong> Pause fade-out duration in seconds</p>
+<h3 id="setresumefadetime"><code>SetResumeFadeTime()</code></h3>
+<p>Set the duration of fade-in when resuming playback.</p>
+<pre><code class="language-c">void SetResumeFadeTime(float seconds);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>seconds</code>: Duration in seconds (clamped to 0.001–5.0)</p>
+<p><strong>Notes:</strong>
+- Applied when <code>ResumePlayback()</code> is called
+- Default: ~0.100 seconds (100 ms)</p>
+<h3 id="getresumefadetime"><code>GetResumeFadeTime()</code></h3>
+<p>Query current resume fade-in time.</p>
+<pre><code class="language-c">float GetResumeFadeTime(void);
+</code></pre>
+<p><strong>Returns:</strong> Resume fade-in duration in seconds</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">// Customize fade times for a smooth experience
+SetFadeInTime(0.200f);      // 200 ms fade in
+SetFadeOutTime(0.150f);     // 150 ms fade out
+SetPauseFadeTime(0.300f);   // 300 ms pause fade
+SetResumeFadeTime(0.200f);  // 200 ms resume fade
+
+PlaySample(sample_data, size, 22000, 16, Mode_mono);
+</code></pre>
+<hr/>
+<h2 id="chunk-processing-dma-callbacks">Chunk Processing (DMA Callbacks)</h2>
+<p>These functions are called from I2S DMA interrupt handlers. <strong>Do not call directly from application code.</strong></p>
+<p><strong>Interrupt Priority Note:</strong> By default (<code>AUDIO_ENGINE_CUSTOM_HAL_DELAY=1</code>), the library provides an interrupt-independent <code>HAL_Delay()</code> override and is less sensitive to SysTick preemption. If you disable it (<code>AUDIO_ENGINE_CUSTOM_HAL_DELAY=0</code>), HAL stop routines use tick-based timeouts again, so ensure <code>SysTick</code> has higher priority (numerically lower) than the I2S DMA IRQ. See <a href="../assets/stm32g4xx_hal_conf.h">Core/Inc/stm32g4xx_hal_conf.h</a> and <a href="../assets/main.c">Core/Src/main.c</a>.</p>
+<h3 id="processnextwavechunk"><code>ProcessNextWaveChunk()</code></h3>
+<p>Process one chunk of 16-bit samples from DMA buffer.</p>
+<pre><code class="language-c">PB_StatusTypeDef ProcessNextWaveChunk(int16_t *chunk_p);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>chunk_p</code>: Pointer to 16-bit sample chunk</p>
+<p><strong>Returns:</strong> <code>PB_Playing</code> if playback continues, <code>PB_Idle</code> if complete</p>
+<p><strong>Called by:</strong> I2S DMA complete callback (<code>HAL_I2S_TxCpltCallback</code>)</p>
+<h3 id="processnextwavechunk_8_bit"><code>ProcessNextWaveChunk_8_bit()</code></h3>
+<p>Process one chunk of 8-bit samples from DMA buffer.</p>
+<pre><code class="language-c">PB_StatusTypeDef ProcessNextWaveChunk_8_bit(uint8_t *chunk_p);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>chunk_p</code>: Pointer to 8-bit sample chunk</p>
+<p><strong>Returns:</strong> <code>PB_Playing</code> if playback continues, <code>PB_Idle</code> if complete</p>
+<p><strong>Called by:</strong> I2S DMA complete callback for 8-bit audio</p>
+<h3 id="advancesamplepointer"><code>AdvanceSamplePointer()</code></h3>
+<p>Advance internal sample pointer to next chunk.</p>
+<pre><code class="language-c">void AdvanceSamplePointer(void);
+</code></pre>
+<p><strong>Notes:</strong>
+- Called automatically by chunk processing functions
+- Internal use only</p>
+<hr/>
+<h2 id="application-callbacks">Application Callbacks</h2>
+<h3 id="audioengine_onplaybackend"><code>AudioEngine_OnPlaybackEnd()</code></h3>
+<p>Weak callback invoked when playback ends naturally or via <code>StopPlayback()</code>.</p>
+<pre><code class="language-c">void AudioEngine_OnPlaybackEnd(void);
+</code></pre>
+<p><strong>Notes:</strong>
+- <strong>Weak symbol</strong> - default implementation does nothing
+- Override in your application to receive playback end notifications
+- Called from <strong>ISR context</strong> (DMA callback) - keep implementation short and non-blocking
+- <strong>Invoked exactly once per playback session</strong> - internal guard prevents repeated calls
+- Triggered when:
+  - Sample reaches end naturally
+  - <code>StopPlayback()</code> completes its fade-out
+  - <code>StopPlayback()</code> called while paused (immediate stop)
+- Perfect for:
+  - Setting event flags
+  - Posting to RTOS queues
+  - Triggering state machine transitions
+  - Starting next sample in a playlist</p>
+<p><strong>Restrictions:</strong>
+- Do NOT call blocking functions (delays, mutexes, etc.)
+- Do NOT call complex audio engine functions
+- Keep execution time under 10 microseconds
+- Use volatile flags or RTOS primitives for communication</p>
+<p><strong>Example (Simple Flag):</strong></p>
+<pre><code class="language-c">volatile uint8_t playback_complete = 0;
+
+// Override the weak callback
+void AudioEngine_OnPlaybackEnd(void)
+{
+  playback_complete = 1;  // Set flag for main loop
+}
+
+// In main loop:
+void main(void)
+{
+  PlaySample(sample, size, 22000, 16, Mode_mono);
+
+  while (!playback_complete) {
+    // Do other work
+    UpdateDisplay();
+    CheckButtons();
+  }
+
+  printf("Playback finished!\n");
+}
+</code></pre>
+<p><strong>Example (RTOS Event):</strong></p>
+<pre><code class="language-c">extern osEventFlagsId_t audio_events;
+
+void AudioEngine_OnPlaybackEnd(void)
+{
+  osEventFlagsSet(audio_events, AUDIO_DONE_FLAG);
+}
+</code></pre>
+<p><strong>Example (Playlist):</strong></p>
+<pre><code class="language-c">volatile uint8_t current_track = 0;
+const uint8_t max_tracks = 5;
+
+void AudioEngine_OnPlaybackEnd(void)
+{
+  current_track++;
+  if (current_track &lt; max_tracks) {
+    // Signal main loop to start next track
+    next_track_ready = 1;
+  }
+}
+</code></pre>
+<hr/>
+<h2 id="status-queries">Status &amp; Queries</h2>
+<h3 id="getplaybackstate"><code>GetPlaybackState()</code></h3>
+<p>Query current playback status (external declaration).</p>
+<pre><code class="language-c">PB_StatusTypeDef GetPlaybackState(void);
+</code></pre>
+<p><strong>Returns:</strong> One of:
+- <code>PB_Idle</code>: No playback active
+- <code>PB_Playing</code>: Playback in progress
+- <code>PB_Pausing</code>: Fade-out in progress
+- <code>PB_Paused</code>: Paused
+- <code>PB_Error</code>: Error state
+- <code>PB_PlayingFailed</code>: DMA start failed</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">if (GetPlaybackState() == PB_Playing) {
+  printf("Audio is playing...\n");
+}
+</code></pre>
+<h3 id="getplaybackspeed"><code>GetPlaybackSpeed()</code></h3>
+<p>Query current playback sample rate.</p>
+<pre><code class="language-c">uint32_t GetPlaybackSpeed(void);
+</code></pre>
+<p><strong>Returns:</strong> Sample rate in Hz (typically 22000)</p>
+<p><strong>Notes:</strong>
+- Set by most recent <code>PlaySample()</code> call
+- Used internally for fade time calculations</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">uint32_t sr = GetPlaybackSpeed();
+printf("Playback speed: %lu Hz\n", sr);
+</code></pre>
+<h3 id="getplaybackprogresssamples"><code>GetPlaybackProgressSamples()</code></h3>
+<p>Query playback progress in interleaved source samples.</p>
+<pre><code class="language-c">uint32_t GetPlaybackProgressSamples(void);
+</code></pre>
+<p><strong>Returns:</strong> Number of source samples already played (0 when idle)</p>
+<p><strong>Notes:</strong>
+- Updated once per DMA half-buffer callback
+- For stereo, left and right channel samples are both counted</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">uint32_t played = GetPlaybackProgressSamples();
+printf("Played samples: %lu\n", played);
+</code></pre>
+<h3 id="getplaybackprogresspercent"><code>GetPlaybackProgressPercent()</code></h3>
+<p>Query playback progress as a percentage.</p>
+<pre><code class="language-c">float GetPlaybackProgressPercent(void);
+</code></pre>
+<p><strong>Returns:</strong> Playback progress in range <code>0.0f</code> to <code>100.0f</code> (0.0 when idle)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">float pct = GetPlaybackProgressPercent();
+printf("Progress: %.1f%%\n", pct);
+</code></pre>
+<hr/>
+<h2 id="complete-example-interactive-audio-control">Complete Example: Interactive Audio Control</h2>
+<pre><code class="language-c">#include "audio_engine.h"
+
+void demo_interactive_control(void) {
+  // Initialize
+  AudioEngine_Init(DAC_MasterSwitch, ReadVolume, MX_I2S2_Init);
+
+  // Configure filters
+  FilterConfig_TypeDef cfg;
+  GetFilterConfig(&amp;cfg);
+  cfg.enable_16bit_biquad_lpf = 1;
+  cfg.enable_soft_clipping = 1;
+  SetFilterConfig(&amp;cfg);
+
+  // Load audio
+  extern const uint8_t my_sound[];
+  extern const uint32_t my_sound_size;
+
+  // Play
+  PlaySample(my_sound, my_sound_size, 22000, 16, Mode_mono);
+
+  // User controls (e.g., in button ISR)
+  HAL_Delay(500);
+
+  // Pause
+  printf("Pausing...\n");
+  PausePlayback();
+  HAL_Delay(1000);
+
+  // Resume with custom fade
+  SetResumeFadeTime(0.500f);
+  printf("Resuming...\n");
+  ResumePlayback();
+  HAL_Delay(1000);
+
+  // Cycle air effect presets
+  for (int i = 0; i &lt; 4; i++) {
+    printf("Air preset: %u (%.1f dB)\n", 
+         GetAirEffectPresetIndex(), 
+         GetAirEffectGainDb());
+    CycleAirEffectPresetDb();
+    HAL_Delay(500);
+  }
+
+  // Wait for completion
+  WaitForSampleEnd();
+
+  // Shutdown
+  ShutDownAudio();
+  printf("Done\n");
+}
+</code></pre>
+<hr/>
+<h2 id="function-index-alphabetical">Function Index (Alphabetical)</h2>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Category</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AdvanceSamplePointer()</code></td>
+<td>Internal</td>
+<td>Advance to next sample chunk</td>
+</tr>
+<tr>
+<td><code>AudioEngine_Init()</code></td>
+<td>Init</td>
+<td>Initialize audio engine</td>
+</tr>
+<tr>
+<td><code>CalcLpf16BitAlphaFromCutoff()</code></td>
+<td>LPF</td>
+<td>Calculate alpha from cutoff frequency</td>
+</tr>
+<tr>
+<td><code>CycleAirEffectPresetDb()</code></td>
+<td>Air Effect</td>
+<td>Cycle to next air effect preset</td>
+</tr>
+<tr>
+<td><code>GetAirEffectEnable()</code></td>
+<td>Air Effect</td>
+<td>Query air effect enabled state</td>
+</tr>
+<tr>
+<td><code>GetAirEffectGainDb()</code></td>
+<td>Air Effect</td>
+<td>Read air effect gain in dB</td>
+</tr>
+<tr>
+<td><code>GetAirEffectGainQ16()</code></td>
+<td>Air Effect</td>
+<td>Read air effect gain in Q16 format</td>
+</tr>
+<tr>
+<td><code>GetAirEffectPresetCount()</code></td>
+<td>Air Effect</td>
+<td>Get number of available presets</td>
+</tr>
+<tr>
+<td><code>GetAirEffectPresetDb()</code></td>
+<td>Air Effect</td>
+<td>Get dB value of a preset</td>
+</tr>
+<tr>
+<td><code>GetAirEffectPresetIndex()</code></td>
+<td>Air Effect</td>
+<td>Get current preset index</td>
+</tr>
+<tr>
+<td><code>GetDAC_Control()</code></td>
+<td>DAC</td>
+<td>Query DAC power control state</td>
+</tr>
+<tr>
+<td><code>GetFadeInTime()</code></td>
+<td>Fade</td>
+<td>Get fade-in duration</td>
+</tr>
+<tr>
+<td><code>GetFadeOutTime()</code></td>
+<td>Fade</td>
+<td>Get fade-out duration</td>
+</tr>
+<tr>
+<td><code>GetFilterConfig()</code></td>
+<td>Filter</td>
+<td>Get complete filter configuration</td>
+</tr>
+<tr>
+<td><code>GetLpf16BitCustomAlphaFromCutoff()</code></td>
+<td>LPF</td>
+<td>Calculate 16-bit alpha from cutoff</td>
+</tr>
+<tr>
+<td><code>GetLpf8BitLevel()</code></td>
+<td>LPF</td>
+<td>Get 8-bit filter aggressiveness</td>
+</tr>
+<tr>
+<td><code>GetPauseFadeTime()</code></td>
+<td>Fade</td>
+<td>Get pause fade-out duration</td>
+</tr>
+<tr>
+<td><code>GetPlaybackProgressPercent()</code></td>
+<td>Status</td>
+<td>Get playback progress percentage</td>
+</tr>
+<tr>
+<td><code>GetPlaybackProgressSamples()</code></td>
+<td>Status</td>
+<td>Get playback progress in samples</td>
+</tr>
+<tr>
+<td><code>GetPlaybackSpeed()</code></td>
+<td>Status</td>
+<td>Get current playback sample rate</td>
+</tr>
+<tr>
+<td><code>GetPlaybackState()</code></td>
+<td>Status</td>
+<td>Get current playback state</td>
+</tr>
+<tr>
+<td><code>GetResumeFadeTime()</code></td>
+<td>Fade</td>
+<td>Get resume fade-in duration</td>
+</tr>
+<tr>
+<td><code>GetSoftClippingEnable()</code></td>
+<td>Filter</td>
+<td>Query soft clipping state</td>
+</tr>
+</tbody>
+</table>
+<p>| <code>PausePlayback()</code>                    | Playback   | Pause playback with fade              |
+| <code>PlaySample()</code>                       | Playback   | Start playback of audio sample        |
+| <code>ProcessNextWaveChunk()</code>             | Internal   | Process 16-bit sample chunk           |
+| <code>ProcessNextWaveChunk_8_bit()</code>       | Internal   | Process 8-bit sample chunk            |
+| <code>ResumePlayback()</code>                   | Playback   | Resume paused playback with fade      |
+| <code>SetAirEffectEnable()</code>               | Air Effect | Enable/disable air effect             |
+| <code>SetAirEffectGainDb()</code>               | Air Effect | Set air effect gain in dB             |
+| <code>SetAirEffectGainQ16()</code>              | Air Effect | Set air effect gain in Q16 format     |
+| <code>SetAirEffectPresetDb()</code>             | Air Effect | Select air effect preset by index     |
+| <code>SetDAC_Control()</code>                   | DAC        | Enable/disable DAC power control      |
+| <code>SetFadeInTime()</code>                    | Fade       | Set fade-in duration                  |
+| <code>SetFadeOutTime()</code>                   | Fade       | Set fade-out duration                 |
+| <code>SetFilterConfig()</code>                  | Filter     | Apply complete filter configuration   |
+| <code>SetFilterChain16BitEnable()</code>        | Filter     | Enable/disable full 16-bit chain      |
+| <code>SetFilterChain8BitEnable()</code>         | Filter     | Enable/disable full 8-bit chain       |
+| <code>SetLpf16BitCustomAlpha()</code>           | LPF        | Set custom 16-bit LPF alpha           |
+| <code>SetLpf16BitLevel()</code>                 | LPF        | Set 16-bit filter aggressiveness      |
+| <code>SetLpf8BitCustomAlpha()</code>            | LPF        | Set custom 8-bit LPF alpha            |
+| <code>GetLpf8BitCustomAlpha()</code>            | LPF        | Get custom 8-bit LPF alpha            |
+| <code>SetLpf8BitLevel()</code>                  | LPF        | Set 8-bit filter aggressiveness       |
+| <code>SetLpfMakeupGain8Bit()</code>             | LPF        | Set 8-bit LPF makeup gain             |
+| <code>SetLpfMakeupGain16Bit()</code>            | LPF        | Set 16-bit LPF makeup gain            |
+| <code>GetLpfMakeupGain16Bit()</code>            | LPF        | Get 16-bit LPF makeup gain            |
+| <code>SetFadersEnabled()</code>                 | Fade       | Enable/disable faders                 |
+| <code>GetFadersEnabled()</code>                 | Fade       | Get fader enable state                |
+| <code>CalcLpf8BitAlphaFromCutoff()</code>       | LPF        | Calculate 8-bit LPF alpha from cutoff |
+| <code>SetPauseFadeTime()</code>                 | Fade       | Set pause fade-out duration           |
+| <code>SetResumeFadeTime()</code>                | Fade       | Set resume fade-in duration           |
+| <code>SetSoftClippingEnable()</code>            | Filter     | Enable/disable soft clipping          |
+| <code>StopPlayback()</code>                     | Playback   | Request asynchronous stop with fade   |
+| <code>ShutDownAudio()</code>                    | Playback   | Stop playback and disable amplifier   |
+| <code>WaitForSampleEnd()</code>                 | Playback   | Block until playback completes        |
+| <code>AudioEngine_OnPlaybackEnd()</code>        | Callback   | Weak callback for playback end event  |</p></article>
+  </main>
+
+  <footer>
+    <p>Doorchime CR2 Documentation</p>
+  </footer>
+</body>
+</html>

@@ -9,6 +9,8 @@
   --lime: #a3ff4f;
   --orange: #ff9a3d;
   --pink: #ff4f98;
+  --font-body: "Aptos", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Bahnschrift", "Arial Narrow", "Aptos", "Segoe UI", sans-serif;
 }
 
 * {
@@ -21,7 +23,7 @@ html {
 
 body {
   margin: 0;
-  font-family: "Manrope", "Segoe UI", sans-serif;
+  font-family: var(--font-body);
   color: var(--ink);
   background:
     radial-gradient(circle at 10% 5%, #15335f 0%, transparent 35%),
@@ -60,6 +62,21 @@ footer {
   margin-bottom: 0;
 }
 
+.breadcrumbs {
+  margin: 0 0 10px;
+  color: #9fc2db;
+  font-size: 0.9rem;
+}
+
+.breadcrumbs a {
+  color: var(--teal);
+  text-decoration: none;
+}
+
+.breadcrumbs span {
+  color: #d4ecff;
+}
+
 .topbar {
   display: flex;
   justify-content: space-between;
@@ -68,7 +85,7 @@ footer {
 }
 
 .brand {
-  font-family: "Orbitron", sans-serif;
+  font-family: var(--font-display);
   font-weight: 700;
   letter-spacing: 0.12em;
   font-size: 0.88rem;
@@ -86,14 +103,14 @@ footer {
 .kicker {
   margin: 0 0 12px;
   color: var(--orange);
-  font-family: "Orbitron", sans-serif;
+  font-family: var(--font-display);
   letter-spacing: 0.14em;
   font-size: 0.78rem;
 }
 
 h1 {
   margin: 0;
-  font-family: "Orbitron", sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(2rem, 4vw, 3.2rem);
   line-height: 1.08;
   text-wrap: balance;
@@ -104,6 +121,16 @@ h1 {
   max-width: 56ch;
   font-size: 1.05rem;
   margin: 18px 0 24px;
+}
+
+.doc-meta {
+  color: #b5d1e8;
+  font-size: 0.92rem;
+  margin: -8px 0 18px;
+}
+
+.doc-actions {
+  margin-top: 6px;
 }
 
 .open-source-note {
@@ -189,7 +216,7 @@ h1 {
 
 .metrics h2 {
   margin: 0 0 8px;
-  font-family: "Orbitron", sans-serif;
+  font-family: var(--font-display);
   font-size: 1rem;
   color: var(--teal);
 }
@@ -210,7 +237,7 @@ h1 {
 
 .feature-band h3 {
   margin: 0 0 10px;
-  font-family: "Orbitron", sans-serif;
+  font-family: var(--font-display);
   font-size: 1.35rem;
 }
 
@@ -238,7 +265,7 @@ h1 {
 }
 
 .docs-search-wrap {
-  font-family: "Orbitron", sans-serif;
+  font-family: var(--font-display);
   color: #baf8ff;
   letter-spacing: 0.06em;
   font-size: 0.82rem;
@@ -278,7 +305,7 @@ h1 {
 .markdown-view h4,
 .markdown-view h5,
 .markdown-view h6 {
-  font-family: "Orbitron", sans-serif;
+  font-family: var(--font-display);
   color: #c8f7ff;
   margin-top: 1.4em;
   margin-bottom: 0.5em;
@@ -386,7 +413,7 @@ h1 {
   color: #ffd589;
   letter-spacing: 0.08em;
   font-size: 0.78rem;
-  font-family: "Orbitron", sans-serif;
+  font-family: var(--font-display);
   text-transform: uppercase;
 }
 
@@ -430,7 +457,7 @@ h1 {
 
 .doc h4 {
   margin: 0 0 8px;
-  font-family: "Orbitron", sans-serif;
+  font-family: var(--font-display);
   color: #baf8ff;
 }
 

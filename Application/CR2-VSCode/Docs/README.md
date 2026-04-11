@@ -347,9 +347,33 @@ This project includes extensive documentation to help you understand and use the
 
 - **README.md** (this file) - Quick start and overview
 - [site/index.html](site/index.html) - Project website landing page
+- [submit_indexnow.py](submit_indexnow.py) - Submit sitemap URLs to Bing/Yandex via IndexNow
+- [site/6f8d3c1ab9e24d479a1f6c50d3e8b742.txt](site/6f8d3c1ab9e24d479a1f6c50d3e8b742.txt) - IndexNow key verification file
 - [AUDIO_ENGINE_MANUAL.md](AUDIO_ENGINE_MANUAL.md) - Complete technical manual
 - [Filter_Report_Enhanced.pdf](Filter_Report_Enhanced.pdf) - A4 technical report with graphs
 - [filter_characteristics_enhanced.png](filter_characteristics_enhanced.png) - Visual filter analysis
+
+### Search Indexing (IndexNow)
+
+This project includes an IndexNow setup for faster indexing on Bing and other IndexNow-compatible search engines.
+
+1. Ensure the key file is deployed at site root:
+  - `https://jennys-stm32-dsp-audio-engine.netlify.app/6f8d3c1ab9e24d479a1f6c50d3e8b742.txt`
+2. Submit all sitemap URLs with:
+
+```bash
+python3 Docs/submit_indexnow.py
+```
+
+3. Run this after major documentation or site updates.
+
+Optional environment overrides are supported for host/key/domain changes:
+
+```bash
+INDEXNOW_HOST=example.com INDEXNOW_KEY=<your_key> python3 Docs/submit_indexnow.py
+```
+
+Note: Google does not currently use IndexNow, so keep Google Search Console sitemap submission enabled as well.
 
 ### Key Configuration Defines
 

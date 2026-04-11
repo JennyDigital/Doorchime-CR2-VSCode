@@ -1,0 +1,1660 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doorchime CR2 Audio Engine Manual | Doorchime CR2</title>
+  <meta name="description" content="Complete STM32 audio engine manual covering architecture, playback flow, filter tuning, hardware integration, and troubleshooting.">
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+  <meta name="googlebot" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+  <link rel="canonical" href="https://jennys-stm32-dsp-audio-engine.netlify.app/docs/audio-engine-manual.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Doorchime CR2">
+  <meta property="og:url" content="https://jennys-stm32-dsp-audio-engine.netlify.app/docs/audio-engine-manual.html">
+  <meta property="og:title" content="Doorchime CR2 Audio Engine Manual">
+  <meta property="og:description" content="Complete STM32 audio engine manual covering architecture, playback flow, filter tuning, hardware integration, and troubleshooting.">
+  <meta property="og:image" content="https://jennys-stm32-dsp-audio-engine.netlify.app/assets/audio-engine-logo-flashy.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Doorchime CR2 Audio Engine Manual">
+  <meta name="twitter:description" content="Complete STM32 audio engine manual covering architecture, playback flow, filter tuning, hardware integration, and troubleshooting.">
+  <meta name="twitter:image" content="https://jennys-stm32-dsp-audio-engine.netlify.app/assets/audio-engine-logo-flashy.svg">
+    <link rel="stylesheet" href="../styles.css">
+  <script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Doorchime CR2 Audio Engine Manual",
+  "description": "Complete STM32 audio engine manual covering architecture, playback flow, filter tuning, hardware integration, and troubleshooting.",
+  "url": "https://jennys-stm32-dsp-audio-engine.netlify.app/docs/audio-engine-manual.html",
+  "mainEntityOfPage": "https://jennys-stm32-dsp-audio-engine.netlify.app/docs/audio-engine-manual.html",
+  "dateModified": "2026-03-19",
+  "publisher": {
+    "@type": "Organization",
+    "name": "Doorchime CR2"
+  },
+  "about": [
+    {
+      "@type": "Thing",
+      "name": "STM32"
+    },
+    {
+      "@type": "Thing",
+      "name": "Embedded audio"
+    },
+    {
+      "@type": "Thing",
+      "name": "Digital signal processing"
+    }
+  ]
+}</script>
+</head>
+<body>
+  <div class="noise"></div>
+
+  <header class="hero docs-hero">
+    <nav class="topbar">
+      <div class="brand">DOORCHIME CR2</div>
+      <div class="actions">
+        <a class="btn ghost" href="../index.html">Home</a>
+        <a class="btn ghost" href="../docs.html">Docs Hub</a>
+      </div>
+    </nav>
+
+    <section class="panel docs-intro">
+      <p class="breadcrumbs"><a href="../index.html">Home</a> / <a href="../docs.html">Docs</a> / <span>Doorchime CR2 Audio Engine Manual</span></p>
+      <p class="kicker">TECHNICAL MANUAL</p>
+      <h1>Doorchime CR2 Audio Engine Manual</h1>
+      <p class="lead">Complete STM32 audio engine manual covering architecture, playback flow, filter tuning, hardware integration, and troubleshooting.</p>
+      <div class="doc-meta">Updated 2026-03-19 · Static HTML page for Google and Bing indexing</div>
+      <div class="actions doc-actions">
+        <a class="btn" href="../assets/docs/AUDIO_ENGINE_MANUAL.md">Source File</a>
+        <a class="btn ghost" href="../docs-viewer.html?doc=AUDIO_ENGINE_MANUAL.md">Interactive Viewer</a>
+      </div>
+    </section>
+  </header>
+
+  <main>
+    <article class="panel markdown-view"><h1 id="audio-engine-user-manual">Audio Engine User Manual</h1>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#quick-start">Quick Start</a></li>
+<li><a href="#architecture">Architecture</a></li>
+<li><a href="#api-reference">API Reference</a></li>
+<li><a href="#filter-configuration">Filter Configuration</a></li>
+<li><a href="#playing-audio">Playing Audio</a></li>
+<li><a href="#filter-parameters--tuning">Filter Parameters &amp; Tuning</a></li>
+<li><a href="#volume-control">Volume Control</a></li>
+<li><a href="#hardware-integration">Hardware Integration</a></li>
+<li><a href="#examples">Examples</a></li>
+<li><a href="#troubleshooting">Troubleshooting</a></li>
+<li><a href="#performance-notes">Performance Notes</a></li>
+</ol>
+<p><strong>📖 Complete API Reference:</strong> See <a href="api-reference.html">API_REFERENCE.md</a> for detailed documentation of all 64 functions including getters, setters, and control functions.</p>
+<hr/>
+<h2 id="overview">Overview</h2>
+<p>The Audio Engine is a reusable, embedded DSP audio playback system designed for STM32 microcontrollers with I2S support (including the STM32G4, STM32F4, STM32H7 series and others) with audio output to digital amplifiers such as the MAX98357A.</p>
+<h3 id="key-features">Key Features</h3>
+<ul>
+<li><strong>Dual Format Support</strong>: 8-bit and 16-bit audio playback</li>
+<li><strong>Flexible Modes</strong>: Mono and stereo playback</li>
+<li><strong>DSP Filter Chain</strong>: Runtime-configurable filters with fixed-point arithmetic</li>
+<li><strong>No FPU Required</strong>: All DSP operations use integer math for MCU efficiency</li>
+<li><strong>Sample Rate</strong>: Default 22 kHz (configurable)</li>
+<li><strong>DMA-Driven</strong>: Efficient I2S streaming with double-buffering</li>
+<li><strong>Low Latency</strong>: ~93 ms playback latency with 2048-sample buffer</li>
+</ul>
+<h3 id="core-capabilities">Core Capabilities</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Specification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Sample Rates</strong></td>
+<td>22 kHz (default), configurable</td>
+</tr>
+<tr>
+<td><strong>Audio Depths</strong></td>
+<td>8-bit unsigned, 16-bit signed</td>
+</tr>
+<tr>
+<td><strong>Channels</strong></td>
+<td>Mono, Stereo</td>
+</tr>
+<tr>
+<td><strong>Buffer Size</strong></td>
+<td>2048 samples (ping-pong DMA)</td>
+</tr>
+<tr>
+<td><strong>Nyquist Frequency</strong></td>
+<td>11 kHz @ 22 kHz sample rate</td>
+</tr>
+<tr>
+<td><strong>Volume Control</strong></td>
+<td>Software configurable (0-3x gain)</td>
+</tr>
+<tr>
+<td><strong>Fade Effects</strong></td>
+<td>In/Out (~93 ms at 22 kHz)</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h2 id="quick-start">Quick Start</h2>
+<h3 id="1-initialize-the-audio-engine">1. Initialize the Audio Engine</h3>
+<p>You <strong>must</strong> call <code>AudioEngine_Init()</code> to set up the audio engine with the required hardware callbacks. This function initializes all filter state and validates that the necessary hardware interface functions are provided:</p>
+<pre><code class="language-c">#include "audio_engine.h"
+
+// Step 1: I2S2 must be initialized via CubeMX
+// (This is done automatically in MX_I2S2_Init())
+
+// Step 2: Initialize the audio engine with hardware callbacks
+PB_StatusTypeDef status = AudioEngine_Init(
+  DAC_MasterSwitch,       // Function to control amplifier on/off
+  ReadVolume,             // Function to read volume setting
+  MX_I2S2_Init            // Function to re-initialize I2S if needed
+);
+
+if( status != PB_Idle ) {
+  // Handle initialization error
+}
+
+// Step 3: Configure filters (optional, defaults are pre-set)
+SetLpf16BitLevel(LPF_Soft);                    // Set filter aggressiveness
+SetFilterConfig(&amp;my_filter_config);            // Apply complete config
+
+// Audio engine is now ready to play samples
+</code></pre>
+<h3 id="2-play-a-16-bit-audio-sample">2. Play a 16-bit Audio Sample</h3>
+<pre><code class="language-c">// Assuming 'doorbell_sound' is a 16-bit mono WAV sample in flash memory
+// 44,100 samples = ~2 seconds @ 22 kHz, 16-bit mono
+
+extern const uint8_t doorbell_sound[];
+extern const uint32_t doorbell_sound_size;
+
+PB_StatusTypeDef result = PlaySample(
+  doorbell_sound,              // Pointer to audio data
+  doorbell_sound_size,         // Total samples (all channels combined)
+  22000,                       // Sample rate (Hz)
+  16,                          // Bit depth (16 = 16-bit)
+  Mode_stereo                  // Stereo playback
+);
+
+// Wait for playback to complete
+WaitForSampleEnd();
+</code></pre>
+<h3 id="3-configure-filters">3. Configure Filters</h3>
+<pre><code class="language-c">// Get current filter configuration
+FilterConfig_TypeDef cfg;
+GetFilterConfig(&amp;cfg);
+
+// Adjust filter levels
+cfg.enable_16bit_biquad_lpf = 1;      // Enable 16-bit LPF
+cfg.enable_soft_clipping = 1;         // Enable soft clipping to prevent distortion
+cfg.lpf_16bit_level = LPF_Medium;     // Medium filtering strength
+
+// Apply new configuration
+SetFilterConfig(&amp;cfg);
+
+// Or use convenience function for LPF level
+SetLpf16BitLevel(LPF_Aggressive);     // Stronger filtering
+
+// 8-bit path: set a custom LPF alpha and read it back
+SetLpf8BitLevel(LPF_Custom);
+SetLpf8BitCustomAlpha(CalcLpf8BitAlphaFromCutoff(900.0f, 11025.0f));
+uint16_t current_alpha = GetLpf8BitCustomAlpha();
+</code></pre>
+<hr/>
+<h2 id="architecture">Architecture</h2>
+<h3 id="system-block-diagram">System Block Diagram</h3>
+<p><img alt="System Block Diagram" loading="lazy" src="../assets/docs/system_block_diagram.svg"/></p>
+<p>The audio playback system follows a clear data flow from flash memory through DSP processing to the I2S output. The DMA operates in ping-pong mode, processing audio chunks as they're transmitted, ensuring continuous playback without CPU blocking.</p>
+<h3 id="filter-chain-stages-16-bit-audio">Filter Chain Stages (16-bit Audio)</h3>
+<ol>
+<li>
+<p><strong>Biquad Low-Pass Filter</strong> <em>(Optional - enable_16bit_biquad_lpf)</em>
+   - Second-order IIR filter</p>
+<ul>
+<li>Runtime-configurable aggressiveness: Very Soft → Aggressive</li>
+<li>Warm-up: 16 passes of first sample to prevent startup artefacts</li>
+<li>Cutoff range (22 kHz fs, approx): ~2.6 kHz (Very Soft), ~1.4 kHz (Soft), ~0.9 kHz (Medium), ~0.2 kHz (Aggressive)</li>
+<li>64-bit accumulator in the biquad path to prevent overflow with aggressive settings</li>
+</ul>
+</li>
+<li>
+<p><strong>DC Blocking Filter</strong> <em>(Selectable - enable_soft_dc_filter_16bit)</em>
+   - Removes DC offset and very low frequencies
+   - Two variants: standard (44 Hz) or soft (22 Hz)
+   - Prevents output drift
+   - Always active in one of the two modes</p>
+</li>
+<li>
+<p><strong>Air Effect (High-Shelf)</strong> <em>(Optional - enable_air_effect)</em>
+   - Adds presence and brightness to audio
+   - Runtime-adjustable boost (+1 dB, +2 dB, +3 dB presets)
+   - Disabled by default</p>
+</li>
+<li>
+<p><strong>Fade In/Out</strong> <em>(Enabled by default)</em>
+   - Quadratic power curve ramp
+   - Default: 2048 samples (~93 ms @ 22 kHz)
+   - Smooth entry/exit for audio transitions
+  - Can be disabled via <code>SetFadersEnabled(0)</code> if needed</p>
+</li>
+<li>
+<p><strong>Noise Gate</strong> <em>(Optional - enable_noise_gate)</em>
+   - Mutes samples below ±512 amplitude
+   - Suppresses quantization noise during silence
+   - Disabled by default</p>
+</li>
+<li>
+<p><strong>Soft Clipping</strong> <em>(Optional - enable_soft_clipping)</em>
+   - Smooth cubic curve limiting above ±28,000
+   - Prevents harsh digital clipping
+   - Musical, natural-sounding compression
+   - Recommended: keep enabled</p>
+</li>
+<li>
+<p><strong>Volume Scaling</strong> <em>(Always Active)</em>
+   - Integer multiplication (0–3x gain)
+   - Read from hardware GPIO (3-level selector)
+   - Applied per-sample</p>
+</li>
+</ol>
+<h3 id="filter-chain-stages-8-bit-audio">Filter Chain Stages (8-bit Audio)</h3>
+<ol>
+<li>
+<p><strong>8-bit to 16-bit Conversion with Dithering</strong> <em>(Always Active)</em>
+   - TPDF (Triangular PDF) dithering reduces quantization noise
+   - Upsamples to internal 16-bit working format</p>
+</li>
+<li>
+<p><strong>One-Pole Low-Pass Filter</strong> <em>(Optional - enable_8bit_lpf)</em>
+  - One-pole IIR (alpha range: 0.625 to 0.9375)
+  - Separate aggressiveness levels for 8-bit audio
+  - Custom alpha supported via <code>SetLpf8BitCustomAlpha()</code> and <code>CalcLpf8BitAlphaFromCutoff()</code>
+  - Current custom alpha can be read with <code>GetLpf8BitCustomAlpha()</code></p>
+</li>
+<li>
+<p><strong>Makeup Gain</strong> <em>(Always Active when LPF enabled)</em>
+   - Post-LPF amplitude compensation (~1.08x default)
+   - Configurable via <code>SetLpfMakeupGain8Bit()</code></p>
+</li>
+<li>
+<p><strong>DC Blocking &amp; Remaining Stages</strong>
+   - Same as 16-bit path (steps 2–7)
+   - Air Effect, Fade, Noise Gate, Soft Clipping, Volume Scaling</p>
+</li>
+</ol>
+<hr/>
+<h2 id="api-reference">API Reference</h2>
+<h3 id="enumeration-types">Enumeration Types</h3>
+<h4 id="pb_statustypedef"><code>PB_StatusTypeDef</code></h4>
+<p>Audio playback state enumeration.</p>
+<pre><code class="language-c">typedef enum {
+  PB_Idle,           // No audio playing
+  PB_Error,          // Error during playback
+  PB_Playing,        // Audio actively playing
+  PB_Pausing,        // Fade-out in progress (pause or stop)
+  PB_Paused,         // Playback paused
+  PB_PlayingFailed   // Playback failed to start
+} PB_StatusTypeDef;
+</code></pre>
+<h4 id="pb_modetypedef"><code>PB_ModeTypeDef</code></h4>
+<p>Playback channel mode.</p>
+<pre><code class="language-c">typedef enum {
+  Mode_stereo,       // Stereo (2-channel) playback
+  Mode_mono          // Mono (single-channel) playback
+} PB_ModeTypeDef;
+</code></pre>
+<h4 id="lpf_level"><code>LPF_Level</code></h4>
+<p>Low-pass filter aggressiveness level for 16-bit and 8-bit LPFs.</p>
+<pre><code class="language-c">typedef enum {
+  LPF_Off,           // Filtering disabled
+  LPF_VerySoft,      // Minimal filtering (α = 0.625)
+  LPF_Soft,          // Gentle filtering (α ≈ 0.80)
+  LPF_Medium,        // Balanced filtering (α = 0.875)
+  LPF_Firm,          // Firm filtering (α ≈ 0.92)
+  LPF_Aggressive,    // Strong filtering (α ≈ 0.97)
+  LPF_Custom         // Use custom alpha (SetLpf16BitCustomAlpha or SetLpf8BitCustomAlpha)
+} LPF_Level;
+</code></pre>
+<h3 id="structure-types">Structure Types</h3>
+<h4 id="filterconfig_typedef"><code>FilterConfig_TypeDef</code></h4>
+<p>Runtime filter configuration structure.</p>
+<pre><code class="language-c">typedef struct {
+  uint8_t enable_16bit_biquad_lpf;  // Enable/disable 16-bit biquad LPF
+  uint8_t enable_soft_dc_filter_16bit;  // Use softer DC blocking (22 Hz vs 44 Hz)
+  uint8_t enable_8bit_lpf;          // Enable/disable 8-bit one-pole LPF
+  uint8_t enable_noise_gate;        // Enable/disable noise gate
+  uint8_t enable_soft_clipping;     // Enable/disable soft clipping
+  uint8_t enable_air_effect;        // Enable/disable air effect
+  uint32_t lpf_makeup_gain_q16;     // Post-LPF gain in Q16 fixed-point
+  uint32_t lpf_makeup_gain_16bit_q16;  // Post-16-bit LPF gain in Q16 fixed-point
+  LPF_Level lpf_16bit_level;        // 16-bit LPF aggressiveness
+  uint16_t lpf_16bit_custom_alpha;  // Custom alpha for 16-bit LPF
+  LPF_Level lpf_8bit_level;         // 8-bit LPF aggressiveness
+  uint16_t lpf_8bit_custom_alpha;   // Custom alpha for 8-bit LPF
+  uint8_t enable_filter_chain_16bit;  // Master enable for entire 16-bit filter chain
+  uint8_t enable_filter_chain_8bit;   // Master enable for entire 8-bit filter chain
+} FilterConfig_TypeDef;
+</code></pre>
+<p><strong>Field Descriptions:</strong>
+- <code>lpf_makeup_gain_q16</code>: Gain value in Q16 format (65536 = 1.0x). Default: 70779 (~1.08x)
+- <code>lpf_16bit_level</code>: Filter aggressiveness affects cutoff frequency and stop-band attenuation
+- <code>lpf_16bit_custom_alpha</code>: Custom alpha used when <code>lpf_16bit_level = LPF_Custom</code>
+- <code>lpf_8bit_level</code>: Filter aggressiveness for the 8-bit one-pole LPF
+- <code>lpf_8bit_custom_alpha</code>: Custom alpha used when <code>lpf_8bit_level = LPF_Custom</code></p>
+<h4 id="audioengine_handletypedef"><code>AudioEngine_HandleTypeDef</code></h4>
+<p>Audio engine state handle (for initialization).</p>
+<pre><code class="language-c">typedef struct {
+  I2S_HandleTypeDef *hi2s;   // Pointer to I2S HAL handle
+  int16_t *pb_buffer;        // Playback buffer (2048 samples)
+  uint32_t playback_speed;   // Default playback speed (Hz)
+} AudioEngine_HandleTypeDef;
+</code></pre>
+<h3 id="function-reference">Function Reference</h3>
+<h4 id="hardware-setup-done-in-cubemx-mainc">Hardware Setup (Done in CubeMX + main.c)</h4>
+<p>Before playing audio, ensure:
+1. <strong>I2S2 is configured</strong> in CubeMX (22 kHz, 16-bit, DMA enabled)
+2. <strong><code>AudioEngine_Init()</code> is called</strong> with function pointers for:
+   - DAC on/off control
+   - Volume reading
+   - I2S re-initialization
+3. <strong>Filters are configured</strong> to desired settings (optional; defaults are applied by <code>AudioEngine_Init()</code>)</p>
+<p>Calling <code>AudioEngine_Init()</code> is <strong>required</strong> before any audio playback. It initializes the filter state, validates hardware callbacks, and sets up default filter configuration.</p>
+<h4 id="playback-control">Playback Control</h4>
+<h5 id="audioengine_init"><code>AudioEngine_Init()</code></h5>
+<p>Initialize the audio engine with required hardware callbacks.</p>
+<pre><code class="language-c">PB_StatusTypeDef AudioEngine_Init(
+  DAC_SwitchFunc dac_switch,
+  ReadVolumeFunc read_volume,
+  I2S_InitFunc i2s_init
+);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>dac_switch</code>: Function pointer for controlling amplifier on/off (GPIO control)
+- <code>read_volume</code>: Function pointer for reading current volume level
+- <code>i2s_init</code>: Function pointer for I2S peripheral re-initialization</p>
+<p><strong>Returns:</strong>
+- <code>PB_Idle</code> if initialization successful
+- <code>PB_Error</code> if any function pointer is NULL</p>
+<p><strong>Important Notes:</strong>
+- <strong>Must be called once</strong> before any call to <code>PlaySample()</code> or other playback functions
+- Initializes all filter state variables and resets playback status
+- Sets up default filter configuration (can be overridden with <code>SetFilterConfig()</code>)
+- Validates that all required hardware callbacks are provided
+- Does not start audio playback itself</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">#include "audio_engine.h"
+
+// Define these functions in your application
+void DAC_MasterSwitch(uint8_t state) {
+  if (state) {
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_SET);   // Enable amplifier
+  } else {
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_RESET);  // Disable amplifier
+  }
+}
+
+uint16_t ReadVolume(void) {
+  // Return volume level 1-65535
+  return volume_setting;
+}
+
+// In main.c initialization:
+PB_StatusTypeDef status = AudioEngine_Init(
+  DAC_MasterSwitch,
+  ReadVolume,
+  MX_I2S2_Init
+);
+
+if (status != PB_Idle) {
+  printf("Audio engine initialization failed!\n");
+  return;
+}
+
+// Now safe to call PlaySample()
+</code></pre>
+<h5 id="playsample"><code>PlaySample()</code></h5>
+<p>Start playback of an audio sample.</p>
+<pre><code class="language-c">PB_StatusTypeDef PlaySample(
+  const void *sample_to_play,
+  uint32_t sample_set_sz,
+  uint32_t playback_speed,
+  uint8_t sample_depth,
+  PB_ModeTypeDef mode
+);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>sample_to_play</code>: Pointer to audio data in flash/RAM
+- <code>sample_set_sz</code>: Total samples (all channels combined)
+- <code>playback_speed</code>: Sample rate in Hz (typically 22000)
+- <code>sample_depth</code>: 8 or 16 (bits per sample)
+- <code>mode</code>: <code>Mode_mono</code> or <code>Mode_stereo</code></p>
+<p><strong>Returns:</strong>
+- <code>PB_Playing</code> if playback started successfully
+- <code>PB_Error</code> or <code>PB_PlayingFailed</code> on error</p>
+<p><strong>Important Notes:</strong>
+- Audio data is accessed in real-time during playback (must be in accessible memory)
+- DMA directly reads from the provided buffer
+- For 16-bit mono audio: <code>sample_set_sz = num_samples</code>
+- For 16-bit stereo (interleaved): <code>sample_set_sz = 2 * num_frames</code>
+- For 8-bit mono audio: <code>sample_set_sz = num_samples</code>
+- For 8-bit stereo (interleaved): <code>sample_set_sz = 2 * num_frames</code>
+- Blocks briefly while starting DMA
+- Configure filters separately with <code>SetLpf16BitLevel()</code> or <code>SetFilterConfig()</code></p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">extern const uint8_t alert_sound_16bit_mono[];
+extern const uint32_t alert_sound_16bit_mono_size;
+
+SetLpf16BitLevel(LPF_Medium);  // Medium filtering
+
+PB_StatusTypeDef result = PlaySample(
+  alert_sound_16bit_mono,
+  alert_sound_16bit_mono_size,
+  22000,      // Sample rate
+  16,         // 16-bit
+  Mode_mono
+);
+
+if (result != PB_Playing) {
+  // Handle error
+  printf("Playback failed: %d\n", result);
+}
+</code></pre>
+<h5 id="waitforsampleend"><code>WaitForSampleEnd()</code></h5>
+<p>Block until audio playback completes.</p>
+<pre><code class="language-c">PB_StatusTypeDef WaitForSampleEnd(void);
+</code></pre>
+<p><strong>Returns:</strong>
+- <code>PB_Idle</code> when playback finishes
+- <code>PB_Error</code> if playback was interrupted</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">SetLpf16BitLevel(LPF_Soft);
+PlaySample(my_sound, my_sound_size, 22000, 16, Mode_mono);
+WaitForSampleEnd();  // Wait until done
+printf("Playback complete\n");
+</code></pre>
+<h5 id="pauseplayback"><code>PausePlayback()</code></h5>
+<p>Pause ongoing playback (can resume later) with smooth fade-out.</p>
+<pre><code class="language-c">PB_StatusTypeDef PausePlayback(void);
+</code></pre>
+<p><strong>Returns:</strong>
+- <code>PB_Paused</code> on success
+- <code>PB_Idle</code> if no audio was playing</p>
+<p><strong>Notes:</strong>
+- Pause fadeout duration set by <code>SetPauseFadeTime()</code>
+- Intelligently handles edge cases to prevent audible artefacts:
+  - <strong>Pausing during fade-in:</strong> Scales pause fadeout proportionally to start from current volume
+  - <strong>Pausing during end-of-file fadeout:</strong> Scales pause fadeout to maintain smooth volume continuity
+- All transitions use quadratic volume curves for smooth audio</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">if (user_pressed_pause_button) {
+  PausePlayback();
+}
+</code></pre>
+<h5 id="resumeplayback"><code>ResumePlayback()</code></h5>
+<p>Resume previously paused audio with smooth fade-in.</p>
+<pre><code class="language-c">PB_StatusTypeDef ResumePlayback(void);
+</code></pre>
+<p><strong>Returns:</strong>
+- <code>PB_Playing</code> on success
+- <code>PB_Idle</code> if no paused audio</p>
+<p><strong>Notes:</strong>
+- Resume fadein duration set by <code>SetResumeFadeTime()</code>
+- Audio fades in smoothly from silence using a quadratic volume curve
+- Playback resumes from the exact position where it was paused</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">if (user_pressed_play_button &amp;&amp; prev_state == PB_Paused) {
+  ResumePlayback();
+}
+</code></pre>
+<hr/>
+<h4 id="filter-configuration">Filter Configuration</h4>
+<h5 id="setfilterconfig"><code>SetFilterConfig()</code></h5>
+<p>Apply a complete filter configuration.</p>
+<pre><code class="language-c">void SetFilterConfig(const FilterConfig_TypeDef *cfg);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>cfg</code>: Pointer to filter configuration structure</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">FilterConfig_TypeDef cfg = {
+  .enable_16bit_biquad_lpf = 1,
+  .enable_soft_dc_filter_16bit = 1,
+  .enable_8bit_lpf = 1,
+  .enable_noise_gate = 0,
+  .enable_soft_clipping = 1,
+  .enable_air_effect = 0,
+  .lpf_makeup_gain_q16 = 70779,
+  .lpf_16bit_level = LPF_Medium,
+  .lpf_16bit_custom_alpha = LPF_16BIT_MEDIUM,
+  .lpf_8bit_level = LPF_Medium,
+  .lpf_8bit_custom_alpha = LPF_MEDIUM
+};
+SetFilterConfig(&amp;cfg);
+</code></pre>
+<h5 id="getfilterconfig"><code>GetFilterConfig()</code></h5>
+<p>Read current filter configuration.</p>
+<pre><code class="language-c">void GetFilterConfig(FilterConfig_TypeDef *cfg);
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">FilterConfig_TypeDef cfg;
+GetFilterConfig(&amp;cfg);
+printf("LPF Level: %d\n", cfg.lpf_16bit_level);
+</code></pre>
+<h5 id="setlpf16bitlevel"><code>SetLpf16BitLevel()</code></h5>
+<p>Change 16-bit LPF aggressiveness (convenience function).</p>
+<pre><code class="language-c">void SetLpf16BitLevel(LPF_Level level);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>level</code>: LPF_VerySoft, LPF_Soft, LPF_Medium, LPF_Firm, or LPF_Aggressive</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">SetLpf16BitLevel(LPF_Aggressive);  // Strong filtering
+</code></pre>
+<h5 id="setlpf8bitcustomalpha"><code>SetLpf8BitCustomAlpha()</code></h5>
+<p>Set custom alpha for the 8-bit one-pole LPF.</p>
+<pre><code class="language-c">void SetLpf8BitCustomAlpha(uint16_t alpha);
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">SetLpf8BitLevel(LPF_Custom);
+SetLpf8BitCustomAlpha(LPF_MEDIUM);
+</code></pre>
+<h5 id="getlpf8bitcustomalpha"><code>GetLpf8BitCustomAlpha()</code></h5>
+<p>Read the current 8-bit LPF custom alpha value.</p>
+<pre><code class="language-c">uint16_t GetLpf8BitCustomAlpha(void);
+</code></pre>
+<h5 id="calclpf8bitalphafromcutoff"><code>CalcLpf8BitAlphaFromCutoff()</code></h5>
+<p>Compute 8-bit LPF alpha from cutoff and sample rate.</p>
+<pre><code class="language-c">uint16_t CalcLpf8BitAlphaFromCutoff(float cutoff_hz, float sample_rate_hz);
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">uint16_t alpha = CalcLpf8BitAlphaFromCutoff(4500.0f, 11000.0f);
+SetLpf8BitLevel(LPF_Custom);
+SetLpf8BitCustomAlpha(alpha);
+</code></pre>
+<h5 id="setlpfmakeupgain8bit"><code>SetLpfMakeupGain8Bit()</code></h5>
+<p>Set post-LPF gain for 8-bit audio.</p>
+<pre><code class="language-c">void SetLpfMakeupGain8Bit(float gain);
+</code></pre>
+<p><strong>Parameters:</strong>
+- <code>gain</code>: Gain multiplier (e.g., 1.0 = no change, 1.08 = +8%)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">SetLpfMakeupGain8Bit(1.15f);  // Boost 8-bit audio by 15%
+</code></pre>
+<hr/>
+<h4 id="status-accessors">Status Accessors</h4>
+<h5 id="getplaybackstate"><code>GetPlaybackState()</code></h5>
+<p>Query current playback state (for non-blocking polling).</p>
+<pre><code class="language-c">PB_StatusTypeDef GetPlaybackState(void);
+</code></pre>
+<p><strong>Returns:</strong>
+- <code>PB_Idle</code>, <code>PB_Playing</code>, <code>PB_Pausing</code>, <code>PB_Paused</code>, <code>PB_Error</code>, <code>PB_PlayingFailed</code></p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-c">if (GetPlaybackState() == PB_Playing) {
+  printf("Audio is playing...\n");
+}
+</code></pre>
+<h5 id="getplaybackspeed"><code>GetPlaybackSpeed()</code></h5>
+<p>Get current sample rate.</p>
+<pre><code class="language-c">uint32_t GetPlaybackSpeed(void);
+</code></pre>
+<h5 id="getplaybackprogresssamples"><code>GetPlaybackProgressSamples()</code></h5>
+<p>Get playback progress in interleaved source samples.</p>
+<pre><code class="language-c">uint32_t GetPlaybackProgressSamples(void);
+</code></pre>
+<h5 id="getplaybackprogresspercent"><code>GetPlaybackProgressPercent()</code></h5>
+<p>Get playback progress as a percentage (<code>0.0f</code> to <code>100.0f</code>).</p>
+<pre><code class="language-c">float GetPlaybackProgressPercent(void);
+</code></pre>
+<hr/>
+<h3 id="hardware-integration-functions">Hardware Integration Functions</h3>
+<p>These must be defined by the application to integrate the audio engine with your specific hardware.</p>
+<h4 id="audioengine_dacswitch"><code>AudioEngine_DACSwitch()</code></h4>
+<p>Function pointer to control amplifier GPIO (on/off).</p>
+<pre><code class="language-c">extern DAC_SwitchFunc AudioEngine_DACSwitch;
+
+// Application must define:
+void MyDACControl(GPIO_PinState setting) {
+  if (setting == GPIO_PIN_SET) {
+    HAL_GPIO_WritePin(AMP_EN_GPIO_Port, AMP_EN_Pin, GPIO_PIN_SET);    // ON
+  } else {
+    HAL_GPIO_WritePin(AMP_EN_GPIO_Port, AMP_EN_Pin, GPIO_PIN_RESET);  // OFF
+  }
+}
+
+// In initialization:
+AudioEngine_DACSwitch = MyDACControl;
+</code></pre>
+<h4 id="audioengine_readvolume"><code>AudioEngine_ReadVolume()</code></h4>
+<p>Function pointer to read volume setting (0–65535). Raw values are scaled as gain during playback. 0 is treated as 1 for minimum volume. Values are subject to the configured volume response curve (linear by default, or non-linear gamma curve if enabled).</p>
+<pre><code class="language-c">extern ReadVolumeFunc AudioEngine_ReadVolume;
+
+// Application must define:
+uint16_t MyReadVolume(void) {
+  // Read GPIO pins or ADC to determine volume level (0–65535)
+  uint16_t volume = ReadMyVolumeSource();
+  return volume ? volume : 1;  // Treat 0 as 1 for minimum volume
+}
+
+// In initialization:
+AudioEngine_ReadVolume = MyReadVolume;
+
+// Optionally configure volume response curve:
+SetVolumeResponseNonlinear(1);      // Enable non-linear response (default)
+SetVolumeResponseGamma(2.0f);       // Set gamma exponent (1.0–4.0)
+</code></pre>
+<h4 id="audioengine_i2sinit"><code>AudioEngine_I2SInit()</code></h4>
+<p>Function pointer to re-initialize I2S if needed (called after pause/resume).</p>
+<pre><code class="language-c">extern I2S_InitFunc AudioEngine_I2SInit;
+
+// Application must define:
+void MyI2SInit(void) {
+  MX_I2S2_Init();  // STM32CubeMX-generated initialization
+}
+
+// In initialization:
+AudioEngine_I2SInit = MyI2SInit;
+</code></pre>
+<h4 id="dma-callbacks">DMA Callbacks</h4>
+<p>Connect these to your I2S DMA interrupt handlers:</p>
+<pre><code class="language-c">// In your I2S interrupt service routine:
+void HAL_I2S_TxHalfCpltCallback(I2S_HandleTypeDef *hi2s) {
+  // Called when first half of DMA buffer is transmitted
+  // Audio engine processes next chunk
+}
+
+void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s) {
+  // Called when second half of DMA buffer is transmitted
+}
+</code></pre>
+<p>The audio engine provides these implementations that will be called automatically.</p>
+<p><strong>Interrupt Priority Note:</strong> With the default setting (<code>AUDIO_ENGINE_CUSTOM_HAL_DELAY=1</code>), the audio engine uses an interrupt-independent <code>HAL_Delay()</code> override and is less dependent on SysTick preemption. If you disable it (<code>AUDIO_ENGINE_CUSTOM_HAL_DELAY=0</code>), HAL stop routines use tick-based timeouts again; in that case, ensure <code>SysTick</code> has higher priority (numerically lower) than the I2S DMA IRQ to avoid stalls. See <a href="../assets/stm32g4xx_hal_conf.h">Core/Inc/stm32g4xx_hal_conf.h</a> for <code>TICK_INT_PRIORITY</code> and <a href="../assets/main.c">Core/Src/main.c</a> for DMA IRQ priority setup.</p>
+<hr/>
+<h2 id="filter-configuration_1">Filter Configuration</h2>
+<h3 id="16-bit-lpf-aggressiveness-levels">16-bit LPF Aggressiveness Levels</h3>
+<p>The 16-bit biquad uses <strong>lower α for heavier filtering</strong> (same direction as the 8-bit one-pole). The coefficient formula <code>b0 = ((65536 - alpha) * (65536 - alpha)) &gt;&gt; 17</code> means lower alpha values result in more aggressive low-pass filtering.</p>
+<table>
+<thead>
+<tr>
+<th>Level</th>
+<th>Alpha</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Very Soft</strong></td>
+<td>0.625</td>
+<td>Minimal filtering / brightest tone / highest cutoff</td>
+</tr>
+<tr>
+<td><strong>Soft</strong></td>
+<td>~0.80</td>
+<td>Gentle filtering</td>
+</tr>
+<tr>
+<td><strong>Medium</strong></td>
+<td>0.875</td>
+<td>Balanced filtering</td>
+</tr>
+<tr>
+<td><strong>Firm</strong></td>
+<td>~0.92</td>
+<td>Firm filtering / lower cutoff</td>
+</tr>
+<tr>
+<td><strong>Aggressive</strong></td>
+<td>~0.97</td>
+<td>Strongest filtering / darkest tone / lowest cutoff</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Warm-up (16 passes) still runs to suppress startup artefacts at the most aggressive setting.</li>
+</ul>
+<p><strong>Recommended Input Range for Best Quality:</strong></p>
+<p>The 16-bit biquad has feedback that can cause overshoot and ringing, especially at aggressive filter levels. To avoid clipping while preserving dynamic range:</p>
+<table>
+<thead>
+<tr>
+<th>Level</th>
+<th>Recommended Range</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>LPF_VerySoft</strong></td>
+<td>75–85% of full scale (±24,500 to ±27,750)</td>
+<td>Minimal overshoot risk</td>
+</tr>
+<tr>
+<td><strong>LPF_Soft</strong></td>
+<td>70–80% of full scale (±22,937 to ±26,214)</td>
+<td>Good balance (recommended)</td>
+</tr>
+<tr>
+<td><strong>LPF_Medium</strong></td>
+<td>70–75% of full scale (±22,937 to ±24,500)</td>
+<td>Increasing feedback</td>
+</tr>
+<tr>
+<td><strong>LPF_Firm</strong></td>
+<td>65–75% of full scale (+/-21,300 to +/-24,500)</td>
+<td>Stronger feedback; moderate headroom</td>
+</tr>
+<tr>
+<td><strong>LPF_Aggressive</strong></td>
+<td>60–70% of full scale (±19,660 to ±22,937)</td>
+<td>Strong feedback; conservative headroom essential</td>
+</tr>
+</tbody>
+</table>
+<p><strong>General Guideline:</strong><br/>
+Use <strong>70–80% of full scale (±23,000)</strong> as a safe starting point. If using LPF_Aggressive, stay closer to 70%; if using LPF_VerySoft, you can push toward 80–85%.</p>
+<h3 id="8-bit-lpf-aggressiveness-levels">8-bit LPF Aggressiveness Levels</h3>
+<p>8-bit audio uses a <strong>first-order (one-pole) filter</strong> rather than a biquad. This architecture avoids feedback loop instability on quantized 8-bit data. As a result, the alpha range is narrower than the 16-bit biquad to maintain filter stability.</p>
+<p><strong>Filter Architecture:</strong>
+- <strong>One-pole formula</strong>: <code>output = (α × input + (1 − α) × prev_output) × makeup_gain</code>
+- <strong>Why narrower range</strong>: One-pole filters at low alpha (high filtering) can amplify quantization noise; biquads are more robust to this.</p>
+<table>
+<thead>
+<tr>
+<th>Level</th>
+<th>Alpha</th>
+<th>Cutoff Freq</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Very Soft</strong></td>
+<td>0.9375</td>
+<td>~3200 Hz</td>
+</tr>
+<tr>
+<td><strong>Soft</strong></td>
+<td>0.875</td>
+<td>~2800 Hz</td>
+</tr>
+<tr>
+<td><strong>Medium</strong></td>
+<td>0.75</td>
+<td>~2300 Hz</td>
+</tr>
+<tr>
+<td><strong>Firm</strong></td>
+<td>0.6875</td>
+<td>~2000 Hz</td>
+</tr>
+<tr>
+<td><strong>Aggressive</strong></td>
+<td>0.625</td>
+<td>~1800 Hz</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Note on Range Differences:</strong><br/>
+The 16-bit biquad (α: 0.625 → 0.97) and 8-bit one-pole (α: 0.625 → 0.9375) do <em>not</em> span the same range. This is intentional: the biquad's wider range is safe for 16-bit data, while the one-pole's narrower range prevents instability on 8-bit input. Both filters provide LPF_VerySoft, LPF_Soft, LPF_Medium, LPF_Firm, and LPF_Aggressive presets for user consistency, but their underlying coefficients differ.</p>
+<p><strong>Important:</strong> The two filter types have the <strong>same relationship</strong> between alpha and filtering: <strong>lower alpha = more filtering</strong> for both architectures. The biquad coefficient formula uses <code>(65536 - alpha)</code>, which inverts the typical relationship.</p>
+<h3 id="dc-blocking-filter">DC Blocking Filter</h3>
+<p>Removes DC offset and very low frequencies.</p>
+<table>
+<thead>
+<tr>
+<th>Variant</th>
+<th>Alpha</th>
+<th>Cutoff Freq</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Standard</strong></td>
+<td>0.98</td>
+<td>~44 Hz</td>
+<td>Normal playback</td>
+</tr>
+<tr>
+<td><strong>Soft</strong></td>
+<td>0.995</td>
+<td>~22 Hz</td>
+<td>Gentler high-pass (use if ultra-low audio needed)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>When to Enable <code>enable_soft_dc_filter_16bit</code>:</strong>
+- Music with extended bass (&lt; 44 Hz content)
+- Subwoofer testing
+- Normally leave disabled for typical speech/alerts</p>
+<h3 id="soft-clipping-threshold">Soft Clipping Threshold</h3>
+<p>Soft clipping prevents harsh digital distortion when audio peaks exceed a threshold.</p>
+<p><strong>Configuration:</strong>
+- <strong>Threshold</strong>: ±28,000 (85% of ±32,767 full scale)
+- <strong>Curve</strong>: Cubic smoothstep (s(x) = 3x² - 2x³)
+- <strong>Benefit</strong>: Musical, transparent limiting</p>
+<p><strong>When to Enable:</strong>
+- Always recommended (prevents clipping artefacts)
+- Disable only if maximum undistorted headroom needed</p>
+<h3 id="air-effect-high-shelf-brightening-filter">Air Effect (High-Shelf Brightening Filter)</h3>
+<p>The Air Effect is an optional high-shelf filter that adds presence and brightness to audio by boosting high-frequency content. It uses a simple one-pole shelving architecture for CPU efficiency.</p>
+<p><strong>Configuration (defaults):</strong>
+- <strong>Type</strong>: High-shelf one-pole filter
+- <strong>Shelf Gain (Q16)</strong>: 98304 (~1.5×, ≈ +1.6 dB at Nyquist for α=0.75)
+- <strong>Shelf Gain Max (Q16)</strong>: 131072 (2.0× cap to avoid harshness)
+- <strong>Cutoff Alpha</strong>: 0.75 (~5–6 kHz shelving frequency @ 22 kHz)
+- <strong>Default State</strong>: Disabled (<code>enable_air_effect = 0</code>)</p>
+<p><strong>Runtime Control (dB or Q16):</strong>
+- <code>SetAirEffectGainDb(float db)</code>: set target HF boost in dB (computes Q16 internally, clamped to max)
+- <code>GetAirEffectGainDb(void)</code>: read current boost in dB
+- <code>SetAirEffectGainQ16(uint32_t gain_q16)</code>: set raw Q16 shelf gain (clamped)
+- <code>GetAirEffectGainQ16(void)</code>: read raw Q16 shelf gain
+- Presets (built-in): <code>{+1 dB, +2 dB, +3 dB}</code> with helpers:
+  - <code>SetAirEffectPresetDb(uint8_t preset_index)</code>
+  - <code>CycleAirEffectPresetDb(void)</code>
+  - <code>GetAirEffectPresetIndex/Count/GetAirEffectPresetDb</code></p>
+<p><strong>Filter Characteristics:</strong>
+The Air Effect works by separating high-frequency content and amplifying it:</p>
+<ol>
+<li>Extract high-frequency component: <code>high_freq = input - prev_input</code></li>
+<li>Amplify high frequencies: <code>boost = high_freq × (1 − α) × shelf_gain</code></li>
+<li>Blend with smoothed output: <code>output = (α × input) + ((1 − α) × prev_output) + boost</code></li>
+</ol>
+<p><strong>When to Enable:</strong>
+- Muffled or dark-sounding samples → adds clarity and presence
+- Quiet samples → adds energy and perceived loudness
+- Archived audio → brightens aged or compressed recordings
+- <strong>Do not enable</strong> if audio already sounds bright or harsh (risk of harshness)</p>
+<p><strong>Typical Use Case:</strong></p>
+<pre><code class="language-c">// Enable Air Effect and choose +2 dB preset
+SetAirEffectPresetDb(2); // preset 0=off, 1=+1dB, 2=+2dB, 3=+3dB
+// (Auto-disables if preset=0, auto-enables if preset&gt;0)
+SetLpf16BitLevel(LPF_Soft);
+
+PlaySample(
+  muffled_doorbell,
+  sample_size,
+  22000,
+  16,
+  Mode_mono
+);
+
+// Adjust live (e.g., button/UART):
+CycleAirEffectPresetDb();
+</code></pre>
+<p><strong>Filter Chain Order:</strong></p>
+<p>The Air Effect is positioned after the DC blocking filter but before fade/clipping effects:</p>
+<pre><code class="language-c">16/8-bit LPF (optional: enable_16bit_biquad_lpf / enable_8bit_lpf)
+  ↓
+DC Blocking Filter (always on: standard or soft mode)
+  ↓
+AIR EFFECT (optional: enable_air_effect)
+  ↓
+Fade In/Out (always active)
+  ↓
+Noise Gate (optional: enable_noise_gate)
+  ↓
+Soft Clipping (optional: enable_soft_clipping, recommended)
+  ↓
+Volume Scaling (always active)
+</code></pre>
+<p><strong>Tuning the Effect:</strong></p>
+<ul>
+<li>For subtle brightening: use <code>SetAirEffectGainDb(1.0f)</code> or <code>SetAirEffectPresetDb(1)</code> (+1 dB).</li>
+<li>For more sparkle: use <code>SetAirEffectGainDb(2.0f)</code> or <code>SetAirEffectPresetDb(2)</code> (+2 dB).</li>
+<li>For stronger presence: <code>SetAirEffectGainDb(3.0f)</code> or preset 3 (+3 dB).</li>
+<li>For a subtle lift: <code>SetAirEffectGainDb(0.0f)</code> (flat) or reduce gain below 0 dB if adding presence elsewhere.</li>
+<li>For different sample rates (e.g., 48 kHz), raise <code>AIR_EFFECT_CUTOFF</code> (higher α) to keep the shelf in the upper band.</li>
+</ul>
+<hr/>
+<h2 id="playing-audio">Playing Audio</h2>
+<h3 id="basic-playback-workflow">Basic Playback Workflow</h3>
+<pre><code class="language-c">#include "audio_engine.h"
+
+// 1. Startup (once during initialization, e.g., in main.c)
+static void AudioEngine_Init(void) {
+  // Wire hardware hooks
+  AudioEngine_DACSwitch  = DAC_MasterSwitch;
+  AudioEngine_ReadVolume = ReadVolume;
+  AudioEngine_I2SInit    = MX_I2S2_Init;
+
+  // Configure filters
+  FilterConfig_TypeDef cfg = filter_cfg; // start from defaults
+  cfg.enable_16bit_biquad_lpf      = 0;
+  cfg.enable_8bit_lpf              = 1;
+  cfg.enable_soft_dc_filter_16bit  = 0;
+  cfg.enable_soft_clipping         = 1;
+  SetFilterConfig(&amp;cfg);
+
+  // Optional tuning
+  SetLpf16BitLevel(LPF_Soft);
+  SetAirEffectPresetDb(2); // +2 dB preset (auto-enables air effect)
+}
+
+// 2. Play an audio sample
+static void PlayAlert(void) {
+  extern const uint8_t alert_16bit_mono[];
+  extern const uint32_t alert_16bit_mono_size;
+
+  PB_StatusTypeDef result = PlaySample(
+    alert_16bit_mono,
+    alert_16bit_mono_size,
+    22000,           // Sample rate
+    16,              // 16-bit depth
+    Mode_mono        // Mono playback
+  );
+
+  if (result == PB_Playing) {
+    WaitForSampleEnd();
+  }
+}
+
+// 3. Non-blocking playback
+static void PlayAlertNonBlocking(void) {
+  PlaySample(alert_16bit_mono, alert_16bit_mono_size, 22000, 16, Mode_mono);
+  // Returns immediately; playback happens in background
+}
+
+static void CheckPlaybackStatus(void) {
+  if (GetPlaybackState() == PB_Playing) {
+    printf("Still playing...\n");
+  } else {
+    printf("Playback finished\n");
+  }
+}
+</code></pre>
+<h3 id="multi-sample-playback-sequence">Multi-Sample Playback Sequence</h3>
+<pre><code class="language-c">void PlayDoorbell(void) {
+  // First: chime sound (16-bit, gentle filtering)
+  SetLpf16BitLevel(LPF_Soft);
+  PlaySample(chime_16bit, chime_size, 22000, 16, Mode_mono);
+  WaitForSampleEnd();
+
+  // Small delay between sounds
+  HAL_Delay(500);
+
+  // Second: bell sound (16-bit, medium filtering)
+  SetLpf16BitLevel(LPF_Medium);
+  PlaySample(bell_16bit, bell_size, 22000, 16, Mode_mono);
+  WaitForSampleEnd();
+
+  printf("Doorbell sequence complete\n");
+}
+</code></pre>
+<h3 id="adjusting-playback-on-the-fly">Adjusting Playback on the Fly</h3>
+<pre><code class="language-c">void InteractivePlayback(void) {
+  // Start playback with default settings
+  SetLpf16BitLevel(LPF_Medium);
+  PlaySample(my_audio, my_audio_size, 22000, 16, Mode_mono);
+
+  while (GetPlaybackState() == PB_Playing) {
+    // Monitor user input
+    if (user_pressed_filter_button) {
+      // Change filter level mid-playback
+      SetLpf16BitLevel(LPF_Aggressive);
+    }
+
+    if (user_pressed_pause_button) {
+      PausePlayback();
+    }
+
+    if (user_pressed_resume_button) {
+      ResumePlayback();
+    }
+
+    HAL_Delay(100);
+  }
+}
+</code></pre>
+<hr/>
+<h2 id="filter-parameters-tuning">Filter Parameters &amp; Tuning</h2>
+<h3 id="understanding-alpha-coefficients">Understanding Alpha Coefficients</h3>
+<p>All filters in the audio engine use first-order or second-order IIR (infinite impulse response) filters with feedback coefficient <strong>α (alpha)</strong>.</p>
+<p><strong>First-Order Filter:</strong></p>
+<pre><code class="language-c">y[n] = α · x[n-1] + (1 - α) · y[n-1]
+</code></pre>
+<ul>
+<li>α close to 1.0: Less filtering (high frequencies pass through)</li>
+<li>α close to 0.0: More filtering (stronger attenuation)</li>
+</ul>
+<p><strong>Biquad (Second-Order) Filter:</strong></p>
+<pre><code class="language-c">y[n] = b0·x[n] + b1·x[n-1] + b2·x[n-2] - a1·y[n-1] - a2·y[n-2]
+</code></pre>
+<p>Where coefficients are derived from α:
+- b0 = ((1 - α)² ) / 2
+- b1 = 2 · b0
+- b2 = b0
+- a1 = -2 · α
+- a2 = α²</p>
+<h3 id="warm-up-behavior">Warm-Up Behavior</h3>
+<p><strong>Problem:</strong> With aggressive filtering (α = 0.625), the first playback sample causes a brief "cracking" sound due to the filter initializing from zero state.</p>
+<p><strong>Solution:</strong> <strong>Configurable Warm-Up (Default: 16 passes)</strong>
+- Automatically invoked when playing 16-bit audio with enabled LPF
+- Feeds the first audio sample through the biquad filter <code>BIQUAD_WARMUP_CYCLES</code> times on each channel (default: 16)
+- Allows filter state to converge smoothly before DMA streaming starts
+- Result: Eliminates startup transient artefacts</p>
+<p><strong>Configuration:</strong>
+The warm-up behavior can be adjusted by changing the <code>BIQUAD_WARMUP_CYCLES</code> define in <code>audio_engine.h</code>:</p>
+<pre><code class="language-c">#define BIQUAD_WARMUP_CYCLES  16  // Default: 16 passes (was 8)
+</code></pre>
+<p><strong>Code Example (from audio_engine.c):</strong></p>
+<pre><code class="language-c">if (sample_depth == 16 &amp;&amp; filter_cfg.enable_16bit_biquad_lpf) {
+  int16_t first_sample = *((int16_t *)sample_to_play);
+  // Run BIQUAD_WARMUP_CYCLES passes to let filter state settle
+  for (uint8_t i = 0; i &lt; BIQUAD_WARMUP_CYCLES; i++) {
+    ApplyLowPassFilter16Bit(first_sample, 
+      &amp;lpf_16bit_x1_left, &amp;lpf_16bit_x2_left,
+      &amp;lpf_16bit_y1_left, &amp;lpf_16bit_y2_left);
+    ApplyLowPassFilter16Bit(first_sample,
+      &amp;lpf_16bit_x1_right, &amp;lpf_16bit_x2_right,
+      &amp;lpf_16bit_y1_right, &amp;lpf_16bit_y2_right);
+  }
+}
+</code></pre>
+<h3 id="q16-fixed-point-arithmetic">Q16 Fixed-Point Arithmetic</h3>
+<p>All filter coefficients and gains use <strong>Q16 fixed-point representation</strong>:</p>
+<pre><code class="language-c">Q16 Value = Integer Value × 65536
+Example: 1.0 = 65536 (0x10000)
+     0.5 = 32768 (0x8000)
+     1.08 ≈ 70779
+</code></pre>
+<p><strong>Advantages:</strong>
+- No floating-point hardware required (faster on MCU)
+- Deterministic, no rounding surprises
+- Easy to implement in assembly if needed</p>
+<p><strong>Converting Gain to Q16:</strong></p>
+<pre><code class="language-c">float gain = 1.08;
+uint32_t gain_q16 = (uint32_t)(gain * 65536.0f);  // 70779
+SetLpfMakeupGain8Bit(gain);  // Convenience function
+</code></pre>
+<h3 id="tuning-guide">Tuning Guide</h3>
+<h4 id="for-speechalert-sounds">For Speech/Alert Sounds</h4>
+<pre><code class="language-c">FilterConfig_TypeDef cfg = {
+  .enable_16bit_biquad_lpf = 1,
+  .enable_soft_dc_filter_16bit = 0,  // Not needed for speech
+  .enable_8bit_lpf = 1,
+  .enable_noise_gate = 0,             // Or 1 if background noise
+  .enable_soft_clipping = 1,
+  .lpf_makeup_gain_q16 = 70779,       // 1.08x
+  .lpf_16bit_level = LPF_Soft         // Gentle, preserve clarity
+};
+SetFilterConfig(&amp;cfg);
+</code></pre>
+<h4 id="for-bass-heavy-music">For Bass-Heavy Music</h4>
+<pre><code class="language-c">FilterConfig_TypeDef cfg = {
+  .enable_16bit_biquad_lpf = 1,
+  .enable_soft_dc_filter_16bit = 1,  // Preserve low bass
+  .enable_8bit_lpf = 1,
+  .enable_noise_gate = 0,
+  .enable_soft_clipping = 1,
+  .lpf_makeup_gain_q16 = 65536,       // 1.0x (no boost)
+  .lpf_16bit_level = LPF_VerySoft     // Minimal filtering
+};
+SetFilterConfig(&amp;cfg);
+</code></pre>
+<h4 id="for-noisy-environments">For Noisy Environments</h4>
+<pre><code class="language-c">FilterConfig_TypeDef cfg = {
+  .enable_16bit_biquad_lpf = 1,
+  .enable_soft_dc_filter_16bit = 0,
+  .enable_8bit_lpf = 1,
+  .enable_noise_gate = 1,             // Suppress low-level noise
+  .enable_soft_clipping = 1,
+  .lpf_makeup_gain_q16 = 70779,
+  .lpf_16bit_level = LPF_Medium       // Balanced noise reduction
+};
+SetFilterConfig(&amp;cfg);
+</code></pre>
+<hr/>
+<h2 id="volume-control">Volume Control</h2>
+<h3 id="overview_1">Overview</h3>
+<p>The audio engine applies volume scaling during sample processing. <strong>Your application provides the volume input</strong> by implementing a custom <code>ReadVolume()</code> function that returns a uint16_t value in the range 1–65535.</p>
+<p>You can implement this function using various input methods:
+- <strong>Digital GPIO inputs</strong> (OPT1–OPT3 pins for 3-bit binary encoding) — example pattern provided below
+- <strong>Analog ADC input</strong> (12-bit potentiometer or variable resistance) — example pattern provided below
+- <strong>Other methods</strong> (CAN bus, UART commands, network, etc.) — follow the same scaling approach</p>
+<p>All implementations support <strong>non-linear (logarithmic) volume response</strong> to match human hearing perception.</p>
+<h3 id="non-linear-volume-response">Non-Linear Volume Response</h3>
+<p>Human hearing perceives loudness logarithmically, not linearly. The audio engine provides a configurable gamma-curve response.</p>
+<p><strong>Enable in main.h:</strong></p>
+<pre><code class="language-c">#define VOLUME_RESPONSE_NONLINEAR    // Enable non-linear curve
+#define VOLUME_RESPONSE_GAMMA 2.0f   // Gamma exponent (typical value)
+</code></pre>
+<p><strong>How it works:</strong>
+- Linear input (1–65535) is normalized to 0.0–1.0
+- Gamma curve is applied: <code>output = input^(1/gamma)</code>
+- Result scales back to 1–65535 for audio attenuation</p>
+<p><strong>Gamma Values:</strong>
+| Gamma | Perception | Use Case |
+|-------|-----------|----------|
+| <strong>1.0</strong> | Linear | Reference (no curve) |
+| <strong>2.0</strong> | Quadratic (recommended) | Most intuitive for human control |
+| <strong>2.5</strong> | Stronger curve | Aggressive low-volume response |</p>
+<p>With <strong>gamma = 2.0</strong> (quadratic):
+- <strong>Low volumes</strong> (0–50%): Small slider movement → big loudness change
+- <strong>High volumes</strong> (50–100%): Big slider movement → small loudness change
+- Result: More intuitive volume "feel" matching human perception</p>
+<p><strong>To disable and use linear scaling:</strong></p>
+<pre><code class="language-c">//#define VOLUME_RESPONSE_NONLINEAR   // Comment this out
+</code></pre>
+<h2 id="volume-control-implementation">Volume Control Implementation</h2>
+<blockquote>
+<p><strong>Note:</strong> Volume input implementation is application-specific. The audio engine simply invokes the <code>ReadVolume()</code> callback and expects a uint16_t value in the range 1–65535. The application is responsible for:
+- Choosing the volume input method (digital GPIO, ADC potentiometer, CAN bus, UART command, etc.)
+- Scaling that input to the 1–65535 range
+- Handling debouncing, hysteresis, or other input conditioning
+- Being aware that if <code>VOLUME_RESPONSE_NONLINEAR</code> is enabled, the engine applies a gamma curve to the returned value</p>
+</blockquote>
+<h3 id="application-example-digital-gpio-volume-control">Application Example: Digital GPIO Volume Control</h3>
+<p><strong>3-bit binary selector example (shows the pattern for application developers):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Selection</th>
+<th>Binary</th>
+<th>Scaled to 1–65535</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Maximum</td>
+<td>0b000</td>
+<td>65535</td>
+</tr>
+<tr>
+<td>75%</td>
+<td>0b001</td>
+<td>49151</td>
+</tr>
+<tr>
+<td>50%</td>
+<td>0b010</td>
+<td>32767</td>
+</tr>
+<tr>
+<td>...</td>
+<td>...</td>
+<td>...</td>
+</tr>
+<tr>
+<td>Minimum</td>
+<td>0b111</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example implementation in application (main.c):</strong></p>
+<pre><code class="language-c">uint16_t ReadVolume(void) {
+  // Application reads three GPIO pins for volume
+  uint8_t v =
+    ( ( (OPT3_GPIO_Port-&gt;IDR &amp; OPT3_Pin) != 0 ) &lt;&lt; 2 ) |
+    ( ( (OPT2_GPIO_Port-&gt;IDR &amp; OPT2_Pin) != 0 ) &lt;&lt; 1 ) |
+    ( ( (OPT1_GPIO_Port-&gt;IDR &amp; OPT1_Pin) != 0 ) &lt;&lt; 0 );
+
+  v = 7 - v;  // Invert so 0b000 = max volume
+  uint32_t scaled = ( (uint32_t)v * 65535U ) / 7U;  // Map 0–7 to 1–65535
+  return (uint16_t)scaled;
+}
+</code></pre>
+<h3 id="application-example-analog-adc-volume-control">Application Example: Analog ADC Volume Control</h3>
+<p><strong>Potentiometer example (shows the pattern for application developers):</strong></p>
+<p><strong>Example implementation in application (main.c):</strong></p>
+<pre><code class="language-c">uint16_t ReadVolume(void) {
+  // Application reads 12-bit ADC (0–4095)
+  // Scale to 1–65535 range
+  uint32_t lin = ((uint32_t)adc_raw * 65535U) / 4095U;
+  return (uint16_t)lin;
+}
+
+void HAL_ADC_ConvCpltCallback( ADC_HandleTypeDef *hadc )
+{
+  if( hadc == &amp;hadc1 ) {
+    adc_raw = HAL_ADC_GetValue( &amp;hadc1 );
+  }
+}
+</code></pre>
+<hr/>
+<h2 id="hardware-integration">Hardware Integration</h2>
+<h3 id="stm32cubemx-configuration">STM32CubeMX Configuration</h3>
+<ol>
+<li>
+<p><strong>I2S Setup (e.g., I2S2 or other available I2S peripheral):</strong>
+   - Mode: Master Transmit Only
+   - Sample Rate: 22000 Hz
+   - Data Format: 16-bit, Mono or Stereo
+   - DMA: Enable DMA for I2Sxext_TX (or similar based on board)</p>
+</li>
+<li>
+<p><strong>DMA Configuration:</strong>
+   - Mode: Circular
+   - Word Width: Word (32-bit)
+   - Enable both <strong>Half-Transfer Complete</strong> and <strong>Transfer Complete</strong> interrupts</p>
+</li>
+<li>
+<p><strong>GPIO:</strong>
+   - Amplifier enable pin (e.g., PE7 on STM32G474, or any available GPIO)
+   - Volume select pins (2–3 GPIO inputs for 3-level selector)
+   - LED indicators (optional)</p>
+</li>
+</ol>
+<h3 id="application-integration-template">Application Integration Template</h3>
+<pre><code class="language-c">#include "audio_engine.h"
+#include "stm32g4xx_hal.h"
+
+/* Hardware control functions (application-specific) */
+void DAC_MasterSwitch(GPIO_PinState setting) {
+  HAL_GPIO_WritePin(AMP_EN_GPIO_Port, AMP_EN_Pin, setting);
+}
+
+uint16_t ReadVolume(void) {
+  // Application-specific: read volume from GPIO, ADC, UART, etc.
+  // Must return 1–65535 (0 is treated as 1)
+  // The audio engine applies non-linear response if enabled
+
+  // Example: 3-bit GPIO selector
+  uint8_t v =
+    ( ( (OPT3_GPIO_Port-&gt;IDR &amp; OPT3_Pin) != 0 ) &lt;&lt; 2 ) |
+    ( ( (OPT2_GPIO_Port-&gt;IDR &amp; OPT2_Pin) != 0 ) &lt;&lt; 1 ) |
+    ( ( (OPT1_GPIO_Port-&gt;IDR &amp; OPT1_Pin) != 0 ) &lt;&lt; 0 );
+  v = 7 - v;  // Invert: 0b000 = max volume
+  uint32_t scaled = ( (uint32_t)v * 65535U ) / 7U;
+  return (uint16_t)scaled;
+}
+
+/* Main initialization (in main.c HAL_Init sequence) */
+void SystemInit_Audio(void) {
+  // Set hardware callbacks before playing audio
+  AudioEngine_DACSwitch = DAC_MasterSwitch;
+  AudioEngine_ReadVolume = ReadVolume;
+  AudioEngine_I2SInit = MX_I2S2_Init;
+
+  // Configure filter settings (optional, defaults work for most cases)
+  FilterConfig_TypeDef cfg;
+  GetFilterConfig(&amp;cfg);
+  cfg.enable_soft_clipping = 1;
+  SetFilterConfig(&amp;cfg);
+
+  printf("Audio engine ready\n");
+}
+
+/* DMA interrupt handlers (in stm32g4xx_it.c or similar) */
+void I2S2_IRQHandler(void) {
+  HAL_I2S_IRQHandler(&amp;hi2s2);
+}
+
+/* HAL weak function overrides */
+void HAL_I2S_TxHalfCpltCallback(I2S_HandleTypeDef *hi2s) {
+  if (hi2s-&gt;Instance == I2S2) {
+    // Audio engine handles this internally
+  }
+}
+
+void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s) {
+  if (hi2s-&gt;Instance == I2S2) {
+    // Audio engine handles this internally
+  }
+}
+</code></pre>
+<hr/>
+<h2 id="examples">Examples</h2>
+<h3 id="example-1-simple-doorbell">Example 1: Simple Doorbell</h3>
+<pre><code class="language-c">#include "audio_engine.h"
+
+// Audio data (define in flash)
+extern const uint8_t doorbell_mono_16bit[];
+extern const uint32_t doorbell_mono_16bit_size;
+
+void PlayDoorbell(void) {
+  SetLpf16BitLevel(LPF_Soft);
+  PB_StatusTypeDef result = PlaySample(
+    doorbell_mono_16bit,
+    doorbell_mono_16bit_size,
+    22000,           // 22 kHz
+    16,              // 16-bit
+    Mode_mono        // Mono
+  );
+
+  if (result == PB_Playing) {
+    WaitForSampleEnd();
+    printf("Doorbell complete\n");
+  } else {
+    printf("Failed to play doorbell\n");
+  }
+}
+</code></pre>
+<h3 id="example-2-multi-tone-alert-with-different-filters">Example 2: Multi-Tone Alert with Different Filters</h3>
+<pre><code class="language-c">void PlayAlert(void) {
+  extern const uint8_t tone1[], tone2[], tone3[];
+  extern const uint32_t tone1_size, tone2_size, tone3_size;
+
+  // First tone: gentle
+  SetLpf16BitLevel(LPF_VerySoft);
+  PlaySample(tone1, tone1_size, 22000, 16, Mode_mono);
+  WaitForSampleEnd();
+  HAL_Delay(200);
+
+  // Second tone: medium
+  SetLpf16BitLevel(LPF_Medium);
+  PlaySample(tone2, tone2_size, 22000, 16, Mode_mono);
+  WaitForSampleEnd();
+  HAL_Delay(200);
+
+  // Third tone: aggressive (emphasis)
+  SetLpf16BitLevel(LPF_Aggressive);
+  PlaySample(tone3, tone3_size, 22000, 16, Mode_mono);
+  WaitForSampleEnd();
+}
+</code></pre>
+<h3 id="example-3-voice-message-with-configurable-filtering">Example 3: Voice Message with Configurable Filtering</h3>
+<pre><code class="language-c">void PlayVoiceMessage(LPF_Level filter_level) {
+  extern const uint8_t message_16bit[];
+  extern const uint32_t message_16bit_size;
+
+  // Set filter before playback
+  SetLpf16BitLevel(filter_level);
+
+  PB_StatusTypeDef result = PlaySample(
+    message_16bit,
+    message_16bit_size,
+    22000,
+    16,
+    Mode_mono
+  );
+
+  if (result == PB_Playing) {
+    printf("Message playing with filter level %d\n", filter_level);
+  }
+}
+
+// Usage:
+// PlayVoiceMessage(LPF_Soft);      // Clear
+// PlayVoiceMessage(LPF_Aggressive); // Compressed
+</code></pre>
+<h3 id="example-4-pauseresume-functionality">Example 4: Pause/Resume Functionality</h3>
+<pre><code class="language-c">volatile uint8_t pause_requested = 0;
+
+void PlaybackTask(void) {
+  SetLpf16BitLevel(LPF_Medium);
+  PlaySample(my_audio, my_audio_size, 22000, 16, Mode_mono);
+
+  while (GetPlaybackState() == PB_Playing) {
+    if (pause_requested) {
+      PausePlayback();
+      printf("Paused\n");
+
+      while (!resume_requested &amp;&amp; GetPlaybackState() == PB_Paused) {
+        HAL_Delay(50);
+      }
+
+      ResumePlayback();
+      printf("Resumed\n");
+      pause_requested = 0;
+      resume_requested = 0;
+    }
+
+    HAL_Delay(50);
+  }
+}
+
+// Button handler:
+void EXTI_PauseButton_Handler(void) {
+  pause_requested = 1;
+}
+
+void EXTI_ResumeButton_Handler(void) {
+  resume_requested = 1;
+}
+</code></pre>
+<h3 id="example-5-non-blocking-playback-with-status-checking">Example 5: Non-Blocking Playback with Status Checking</h3>
+<pre><code class="language-c">void NonBlockingPlayback(void) {
+  // Start playing
+  SetLpf16BitLevel(LPF_VerySoft);
+  PlaySample(background_music, bg_music_size, 22000, 16, Mode_stereo);
+
+  // Do other work while audio plays
+  for (int i = 0; i &lt; 100; i++) {
+    if (GetPlaybackState() == PB_Playing) {
+      printf("Playing: %d%% complete\n", (i+1));
+    } else {
+      printf("Playback finished\n");
+      break;
+    }
+
+    HAL_Delay(100);  // 10 second total wait
+  }
+}
+</code></pre>
+<h3 id="example-6-accessibility-filter-settings-for-hard-of-hearing">Example 6: Accessibility — Filter Settings for Hard of Hearing</h3>
+<p>This example demonstrates filter configuration optimized for users with hearing loss, emphasizing speech clarity and presence without over-filtering.</p>
+<pre><code class="language-c">void SetAccessibleAudio(void) {
+  // Configuration optimized for hearing-impaired listeners
+  // Focus: speech clarity and presence in 2–6 kHz band
+  FilterConfig_TypeDef cfg = {
+    .enable_16bit_biquad_lpf = 1,
+    .lpf_16bit_level = LPF_Soft,        // Gentle filtering preserves clarity
+    .enable_soft_dc_filter_16bit = 1,   // Softer DC removal (22 Hz cutoff)
+    .enable_8bit_lpf = 1,
+    .enable_noise_gate = 0,             // Keep quiet consonants (s, th, sh)
+    .enable_soft_clipping = 1,          // Reduce harsh peaks
+    .enable_air_effect = 1,             // Boost presence in 2–6 kHz
+    .lpf_makeup_gain_q16 = 82000        // ~1.25x gain (Q16 fixed-point)
+  };
+
+  SetFilterConfig(&amp;cfg);
+  SetAirEffectPresetDb(2);                // +2 dB presence boost (mid-range)
+}
+
+// Usage in doorbell application
+void play_accessible_alert(void) {
+  SetAccessibleAudio();
+
+  PlaySample(alert_tone, alert_size, 22000, 16, Mode_mono);
+  WaitForSampleEnd();
+}
+</code></pre>
+<p><strong>Design Rationale:</strong>
+- <strong>LPF_Soft</strong> (α ≈ 0.80) — Gentler than Medium/Aggressive; prevents over-smoothing that muddies speech
+- <strong>No Noise Gate</strong> — Preserves subtle consonants and quiet speech details critical for comprehension
+- <strong>Air Effect +2 dB</strong> — Compensates for typical age-related high-frequency loss; boosts presence band (2–6 kHz where speech consonants live)
+- <strong>Makeup Gain ~1.25x</strong> — Offsets the LPF attenuation, maintaining perceived loudness
+- <strong>Soft DC Filter</strong> — Gentler transition than standard DC blocking; avoids unnatural clicks</p>
+<p><strong>Alternative for Severe Loss:</strong></p>
+<pre><code class="language-c">// For users with more pronounced loss, use Very Soft + stronger presence
+cfg.lpf_16bit_level = LPF_VerySoft;     // Lightest filtering
+SetFilterConfig(&amp;cfg);
+SetAirEffectPresetDb(3);                // +3 dB (strongest preset)
+</code></pre>
+<hr/>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="issue-audio-not-playing">Issue: Audio Not Playing</h3>
+<p><strong>Symptoms:</strong> <code>PlaySample()</code> returns <code>PB_Error</code> or <code>PB_PlayingFailed</code></p>
+<p><strong>Solutions:</strong>
+1. Verify I2S2 is initialized via <code>MX_I2S2_Init()</code>
+2. Check that <code>AudioEngine_I2SInit</code> callback is set
+3. Confirm DMA is enabled for I2S2 TX
+4. Check amplifier GPIO is working: <code>HAL_GPIO_WritePin(AMP_EN_GPIO_Port, AMP_EN_Pin, GPIO_PIN_SET)</code>
+5. Verify audio data pointer is valid (in flash or accessible RAM)</p>
+<p><strong>Debug:</strong></p>
+<pre><code class="language-c">uint8_t state = GetPlaybackState();
+printf("Playback state: %d\n", state);  // 0=Idle, 2=Playing, etc.
+
+SetLpf16BitLevel(LPF_Soft);
+PB_StatusTypeDef result = PlaySample(my_audio, my_size, 22000, 16, Mode_mono);
+printf("PlaySample result: %d\n", result);
+</code></pre>
+<h3 id="issue-audio-playing-but-distorted-or-crackling">Issue: Audio Playing but Distorted or Crackling</h3>
+<p><strong>Symptoms:</strong> Output contains harsh noise or crackles, especially at start</p>
+<p><strong>Solutions:</strong>
+1. <strong>Enable soft clipping:</strong></p>
+<pre><code class="language-c">   FilterConfig_TypeDef cfg;
+   GetFilterConfig(&amp;cfg);
+   cfg.enable_soft_clipping = 1;
+   SetFilterConfig(&amp;cfg);
+</code></pre>
+<ol start="2">
+<li><strong>Adjust filter level to reduce aggressive processing:</strong></li>
+</ol>
+<pre><code class="language-c">   SetLpf16BitLevel(LPF_Medium);  // Instead of LPF_Aggressive
+</code></pre>
+<ol start="3">
+<li>
+<p><strong>Reduce volume:</strong>
+   - Check that hardware volume setting (GPIO or analog input) is at reasonable level
+   - Audio data may have peaks at or near ±32,767</p>
+</li>
+<li>
+<p><strong>Verify audio data:</strong> 
+   - Check that 16-bit samples are properly formatted (little-endian on ARM)
+   - Ensure sample rate matches playback speed</p>
+</li>
+</ol>
+<h3 id="issue-filter-sounds-too-thinbright">Issue: Filter Sounds Too Thin/Bright</h3>
+<p><strong>Symptoms:</strong> High frequencies dominate, lacks bass/warmth</p>
+<p><strong>Solutions:</strong></p>
+<pre><code class="language-c">// Increase filtering aggressiveness
+SetLpf16BitLevel(LPF_Aggressive);
+
+// Or enable soft DC blocking for extended low end
+FilterConfig_TypeDef cfg;
+GetFilterConfig(&amp;cfg);
+cfg.enable_soft_dc_filter_16bit = 1;  // 22 Hz instead of 44 Hz
+SetFilterConfig(&amp;cfg);
+</code></pre>
+<h3 id="issue-filter-sounds-too-muffleddull">Issue: Filter Sounds Too Muffled/Dull</h3>
+<p><strong>Symptoms:</strong> High frequencies are suppressed, loss of clarity</p>
+<p><strong>Solutions:</strong></p>
+<pre><code class="language-c">// Reduce filtering aggressiveness
+SetLpf16BitLevel(LPF_VerySoft);
+
+// Or disable some filters entirely
+FilterConfig_TypeDef cfg;
+GetFilterConfig(&amp;cfg);
+cfg.enable_8bit_lpf = 0;  // If playing 16-bit audio
+SetFilterConfig(&amp;cfg);
+</code></pre>
+<h3 id="issue-8-bit-audio-sounds-noisy">Issue: 8-bit Audio Sounds Noisy</h3>
+<p><strong>Symptoms:</strong> Audible quantization noise from 8-bit samples</p>
+<p><strong>Solutions:</strong>
+1. <strong>Enable TPDF dithering (automatic)</strong> - should already be on by default
+2. <strong>Increase makeup gain:</strong></p>
+<pre><code class="language-c">   SetLpfMakeupGain8Bit(1.15f);  // Boost by 15%
+</code></pre>
+<ol start="3">
+<li><strong>Use 16-bit audio if available</strong> - much better quality</li>
+</ol>
+<h3 id="issue-memory-corruption-hard-fault">Issue: Memory Corruption / Hard Fault</h3>
+<p><strong>Symptoms:</strong> Microcontroller resets or freezes during audio playback</p>
+<p><strong>Common Causes:</strong>
+1. <strong>Audio buffer pointer is invalid or not in accessible memory</strong>
+   - Audio data must be in flash (constant) or main RAM
+   - Not in stack-only RAM</p>
+<ol start="2">
+<li>
+<p><strong>DMA configuration issue</strong>
+   - Verify DMA word width is 32-bit (not 8 or 16)
+   - Check DMA direction is I2S TX (transmit)</p>
+</li>
+<li>
+<p><strong>I2S interrupt interfering with audio processing</strong>
+   - Ensure <code>HAL_I2S_IRQHandler()</code> is called in ISR
+   - Verify DMA interrupt priorities don't conflict</p>
+<ul>
+<li><strong>SysTick must have higher priority (numerically lower) than the I2S DMA IRQ</strong>. HAL stop routines invoked from DMA callbacks rely on <code>HAL_GetTick()</code> timeouts, which can stall if SysTick cannot preempt the DMA IRQ.</li>
+</ul>
+</li>
+</ol>
+<p><strong>Debug:</strong></p>
+<pre><code class="language-c">// Add validation before playing
+if ((uint32_t)audio_ptr &lt; 0x08000000 &amp;&amp; (uint32_t)audio_ptr &gt;= 0x0A000000) {
+  printf("Invalid audio pointer: 0x%08X\n", (uint32_t)audio_ptr);
+}
+</code></pre>
+<hr/>
+<h2 id="performance-notes">Performance Notes</h2>
+<h3 id="cpu-load">CPU Load</h3>
+<ul>
+<li><strong>Processing overhead:</strong> &lt; 5% @ 22 kHz with full filter chain enabled</li>
+<li><strong>Per-sample time:</strong> ~50 CPU cycles for all filters</li>
+<li><strong>DMA-driven:</strong> Most processing offloaded from main CPU loop</li>
+</ul>
+<h3 id="memory-usage">Memory Usage</h3>
+<pre><code class="language-c">Flash (.text/.rodata, Release): ~12.9 KB (audio engine + filters + Air Effect presets)
+RAM:   ~2.5 KB (state variables + playback buffer)
+</code></pre>
+<h3 id="latency">Latency</h3>
+<ul>
+<li><strong>Playback latency:</strong> ~93 ms (2048 samples @ 22 kHz)</li>
+<li>50 ms for DMA buffer</li>
+<li>43 ms for warm-up and initial processing</li>
+<li><strong>Pause/Resume:</strong> Immediate (within one DMA block, ~45 ms)</li>
+</ul>
+<h3 id="quality-metrics">Quality Metrics</h3>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Value</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Sample Rate</strong></td>
+<td>22 kHz</td>
+<td>Nyquist: 11 kHz</td>
+</tr>
+<tr>
+<td><strong>Bit Depth</strong></td>
+<td>16-bit (native)</td>
+<td>8-bit with TPDF dithering</td>
+</tr>
+<tr>
+<td><strong>Dynamic Range</strong></td>
+<td>96 dB (16-bit)</td>
+<td>48 dB (8-bit effective)</td>
+</tr>
+<tr>
+<td><strong>SNR (w/ dithering)</strong></td>
+<td>102 dB (8-bit)</td>
+<td>TPDF reduces quantization noise</td>
+</tr>
+<tr>
+<td><strong>THD (soft clipping)</strong></td>
+<td>&lt; 0.1%</td>
+<td>Cubic smoothstep minimizes distortion</td>
+</tr>
+</tbody>
+</table>
+<h3 id="power-consumption">Power Consumption</h3>
+<ul>
+<li><strong>STM32G474 (typical):</strong> ≤40 mA (core + peripherals)</li>
+<li><strong>I2S + DMA Active:</strong> ~10 mA additional</li>
+<li><strong>Amplifier (MAX98357A):</strong> ~100 mA @ 0.5W output, &gt;1W capable</li>
+<li><strong>Total System @ 0.5W audio:</strong> ~150 mA @ 5V</li>
+<li><strong>Total System @ 1W audio:</strong> ~200 mA @ 5V</li>
+</ul>
+<p><strong>Note:</strong> The MAX98357A amplifier can deliver over 1W to an 8Ω speaker, significantly exceeding the STM32's typical current draw.</p>
+<hr/>
+<h2 id="summary">Summary</h2>
+<p>The Audio Engine provides a complete, production-ready solution for embedded audio playback with professional DSP filtering. Key design principles:</p>
+<ol>
+<li><strong>Fixed-Point Integer Math</strong> - No FPU required, deterministic on MCU</li>
+<li><strong>Modular Filter Chain</strong> - Enable/disable each stage independently</li>
+<li><strong>Runtime Configuration</strong> - Adjust filter parameters without recompilation</li>
+<li><strong>DMA-Driven Streaming</strong> - Efficient background audio playback</li>
+<li><strong>Warm-Up Initialization</strong> - Eliminates startup artefacts with aggressive filtering</li>
+</ol>
+<p>For questions or issues, refer to the troubleshooting section or review the provided code examples.</p>
+<hr/>
+<p><strong>Document Version:</strong> 1.0<br/>
+<strong>Last Updated:</strong> 2026-03-01<br/>
+<strong>Audio Engine Version:</strong> Modularized with Widened 16-bit LPF &amp; Warm-Up Support</p></article>
+  </main>
+
+  <footer>
+    <p>Doorchime CR2 Documentation</p>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doorchime CR2 Portability Report | Doorchime CR2</title>
+  <meta name="description" content="Portability guidance for adapting the STM32 audio engine to other microcontrollers, toolchains, and hardware environments.">
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+  <meta name="googlebot" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+  <link rel="canonical" href="https://jennys-stm32-dsp-audio-engine.netlify.app/docs/portability-report.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Doorchime CR2">
+  <meta property="og:url" content="https://jennys-stm32-dsp-audio-engine.netlify.app/docs/portability-report.html">
+  <meta property="og:title" content="Doorchime CR2 Portability Report">
+  <meta property="og:description" content="Portability guidance for adapting the STM32 audio engine to other microcontrollers, toolchains, and hardware environments.">
+  <meta property="og:image" content="https://jennys-stm32-dsp-audio-engine.netlify.app/assets/audio-engine-logo-flashy.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Doorchime CR2 Portability Report">
+  <meta name="twitter:description" content="Portability guidance for adapting the STM32 audio engine to other microcontrollers, toolchains, and hardware environments.">
+  <meta name="twitter:image" content="https://jennys-stm32-dsp-audio-engine.netlify.app/assets/audio-engine-logo-flashy.svg">
+    <link rel="stylesheet" href="../styles.css">
+  <script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Doorchime CR2 Portability Report",
+  "description": "Portability guidance for adapting the STM32 audio engine to other microcontrollers, toolchains, and hardware environments.",
+  "url": "https://jennys-stm32-dsp-audio-engine.netlify.app/docs/portability-report.html",
+  "mainEntityOfPage": "https://jennys-stm32-dsp-audio-engine.netlify.app/docs/portability-report.html",
+  "dateModified": "2026-03-12",
+  "publisher": {
+    "@type": "Organization",
+    "name": "Doorchime CR2"
+  },
+  "about": [
+    {
+      "@type": "Thing",
+      "name": "STM32"
+    },
+    {
+      "@type": "Thing",
+      "name": "Embedded audio"
+    },
+    {
+      "@type": "Thing",
+      "name": "Digital signal processing"
+    }
+  ]
+}</script>
+</head>
+<body>
+  <div class="noise"></div>
+
+  <header class="hero docs-hero">
+    <nav class="topbar">
+      <div class="brand">DOORCHIME CR2</div>
+      <div class="actions">
+        <a class="btn ghost" href="../index.html">Home</a>
+        <a class="btn ghost" href="../docs.html">Docs Hub</a>
+      </div>
+    </nav>
+
+    <section class="panel docs-intro">
+      <p class="breadcrumbs"><a href="../index.html">Home</a> / <a href="../docs.html">Docs</a> / <span>Doorchime CR2 Portability Report</span></p>
+      <p class="kicker">PORTABILITY REPORT</p>
+      <h1>Doorchime CR2 Portability Report</h1>
+      <p class="lead">Portability guidance for adapting the STM32 audio engine to other microcontrollers, toolchains, and hardware environments.</p>
+      <div class="doc-meta">Updated 2026-03-12 · Static HTML page for Google and Bing indexing</div>
+      <div class="actions doc-actions">
+        <a class="btn" href="../assets/docs/PORTABILITY_REPORT.md">Source File</a>
+        <a class="btn ghost" href="../docs-viewer.html?doc=PORTABILITY_REPORT.md">Interactive Viewer</a>
+      </div>
+    </section>
+  </header>
+
+  <main>
+    <article class="panel markdown-view"><h1 id="audio-engine-portability-report">Audio Engine Portability Report</h1>
+<p>Date: 2026-03-08
+Scope: <code>Core/Libraries/audio_engine.c</code> and <code>Core/Libraries/audio_engine.h</code></p>
+<p>This report highlights non-STM32-specific portability concerns for teams moving the audio engine to less compatible compilers, C runtimes, or CPU architectures.</p>
+<h2 id="executive-summary">Executive Summary</h2>
+<p>The audio engine is mostly portable C99 code, but it assumes several GCC-style language extensions, ARM-friendly memory/alignment behavior, and simple ISR/main-loop concurrency semantics. On stricter or different targets (non-GNU compilers, unaligned-sensitive CPUs, weak C runtimes), these assumptions can cause build failures, undefined behavior, or subtle runtime bugs.</p>
+<h2 id="priority-risks">Priority Risks</h2>
+<h3 id="1-unaligned-and-aliasing-sensitive-sample-access-high">1) Unaligned and aliasing-sensitive sample access (High)</h3>
+<ul>
+<li>Locations:</li>
+<li><code>Core/Libraries/audio_engine.c:1989</code></li>
+<li><code>Core/Libraries/audio_engine.c:1992</code></li>
+<li><code>Core/Libraries/audio_engine.c:1997</code></li>
+<li>Pattern:</li>
+<li><code>const void *</code> sample data is cast to <code>int16_t *</code>/<code>uint16_t *</code> and dereferenced.</li>
+<li>Why this matters:</li>
+<li>Some architectures fault on unaligned 16-bit loads.</li>
+<li>Strict aliasing can be violated if backing data object type does not match the cast type.</li>
+<li>Porting guidance:</li>
+<li>Enforce 2-byte alignment for 16-bit sample assets.</li>
+<li>Consider replacing direct casts with <code>memcpy</code>-based read helpers when target may trap on unaligned access.</li>
+<li>Document ownership/type rules for <code>sample_to_play</code> at API boundary.</li>
+</ul>
+<h3 id="2-compiler-extension-dependence-for-attributes-high">2) Compiler extension dependence for attributes (High)</h3>
+<ul>
+<li>Locations:</li>
+<li><code>Core/Libraries/audio_engine.c:55</code></li>
+<li><code>Core/Libraries/audio_engine.c:57</code></li>
+<li><code>Core/Libraries/audio_engine.c:127</code></li>
+<li>Pattern:</li>
+<li><code>__attribute__((always_inline))</code>, <code>__attribute__((noinline))</code>, <code>__attribute__((weak))</code>.</li>
+<li>Why this matters:</li>
+<li>Non-GNU compilers may reject these or interpret differently.</li>
+<li>Porting guidance:</li>
+<li>Wrap attributes behind macros in the header, e.g. <code>AUDIO_WEAK</code>, <code>AUDIO_NOINLINE</code>, <code>AUDIO_ALWAYS_INLINE</code>.</li>
+<li>Provide fallback empty definitions for unsupported compilers.</li>
+</ul>
+<h3 id="3-hal-type-leakage-in-public-api-medium">3) HAL type leakage in public API (Medium)</h3>
+<ul>
+<li>Location:</li>
+<li><code>Core/Libraries/audio_engine.h:195</code></li>
+<li>Pattern:</li>
+<li><code>DAC_SwitchFunc</code> takes <code>GPIO_PinState</code>, a platform-specific type.</li>
+<li>Why this matters:</li>
+<li>Blocks portability even if function implementation is replaced.</li>
+<li>Porting guidance:</li>
+<li>Introduce a project-local type (<code>AudioDacState</code> enum or <code>uint8_t</code>) in the audio API.</li>
+<li>Keep platform mapping in platform glue layer, not in core header.</li>
+</ul>
+<h3 id="4-volatile-based-synchronization-only-medium">4) Volatile-based synchronization only (Medium)</h3>
+<ul>
+<li>Locations:</li>
+<li>Shared state declarations around <code>Core/Libraries/audio_engine.c:166</code> onward.</li>
+<li>State read/write paths in playback callbacks and control functions.</li>
+<li>Pattern:</li>
+<li>ISR/main-loop shared variables are mostly <code>volatile</code>, without atomic operations or barriers.</li>
+<li>Why this matters:</li>
+<li><code>volatile</code> does not guarantee atomicity or memory ordering.</li>
+<li>Works on many MCU cases, but less robust on SMP/OOO systems or aggressive optimizers.</li>
+<li>Porting guidance:</li>
+<li>Define a minimal synchronization policy:<ul>
+<li>single-core ISR model with explicit critical sections, or</li>
+<li>C11 atomics for shared flags/counters.</li>
+</ul>
+</li>
+<li>Make update/read ownership explicit in comments and API docs.</li>
+</ul>
+<h3 id="5-c-math-library-assumptions-medium">5) C math library assumptions (Medium)</h3>
+<ul>
+<li>Locations:</li>
+<li><code>Core/Libraries/audio_engine.c:521</code></li>
+<li><code>Core/Libraries/audio_engine.c:542</code></li>
+<li><code>Core/Libraries/audio_engine.c:729</code></li>
+<li><code>Core/Libraries/audio_engine.c:749</code></li>
+<li><code>Core/Libraries/audio_engine.c:2233</code></li>
+<li>Pattern:</li>
+<li><code>powf</code>, <code>expf</code>, <code>log10f</code> used for runtime controls.</li>
+<li>Why this matters:</li>
+<li>Some embedded toolchains need explicit <code>-lm</code>.</li>
+<li>Accuracy/performance can vary widely.</li>
+<li>Porting guidance:</li>
+<li>Confirm link flags (<code>-lm</code>) and acceptable precision/cycles.</li>
+<li>Optional: provide fixed-point or LUT alternatives for constrained targets.</li>
+</ul>
+<h3 id="6-byte-fill-silence-macro-is-value-sensitive-low">6) Byte-fill silence macro is value-sensitive (Low)</h3>
+<ul>
+<li>Location:</li>
+<li><code>Core/Libraries/audio_engine.h:132</code></li>
+<li>Pattern:</li>
+<li><code>MIDPOINT_FILL_BUFFER()</code> uses <code>memset</code> on <code>int16_t</code> buffer.</li>
+<li>Why this matters:</li>
+<li>Safe now only because <code>SAMPLE16_MIDPOINT == 0</code>.</li>
+<li>Would be incorrect for non-zero 16-bit silence values.</li>
+<li>Porting guidance:</li>
+<li>Keep midpoint at zero, or replace with element-wise fill helper if non-zero silence is needed.</li>
+</ul>
+<h3 id="7-c-language-baseline-is-c99-low">7) C language baseline is C99+ (Low)</h3>
+<ul>
+<li>Locations:</li>
+<li>Designated initializers and <code>&lt;stdbool.h&gt;</code> usage (e.g. <code>Core/Libraries/audio_engine.c:143</code>).</li>
+<li>Why this matters:</li>
+<li>C90-only or non-conforming compilers will fail.</li>
+<li>Porting guidance:</li>
+<li>Require C99 in build docs, or backport constructs for older compilers.</li>
+</ul>
+<h2 id="compatibility-checklist">Compatibility Checklist</h2>
+<p>Use this checklist before first port build:</p>
+<ol>
+<li>Compiler supports C99 and <code>stdint.h</code>/<code>stdbool.h</code>.</li>
+<li>Attribute macros are abstracted for non-GNU compilers.</li>
+<li>Public API types do not expose platform HAL types.</li>
+<li>16-bit sample pointers are aligned and alias-safe.</li>
+<li>Math library is linked and profiled (<code>powf/expf/log10f</code>).</li>
+<li>Shared state policy documented (<code>volatile</code> + critical sections or atomics).</li>
+<li>Endianness and sample packing assumptions are validated with test vectors.</li>
+</ol>
+<h2 id="recommended-porting-strategy">Recommended Porting Strategy</h2>
+<ol>
+<li>Create a platform shim layer:
+   - Keep all platform-specific types and callbacks outside core audio headers.</li>
+<li>Add compile-time portability macros:
+   - Centralize weak/noinline/always_inline handling.</li>
+<li>Add sample-access helpers:
+   - Use alignment-safe reads for 16-bit sample data when needed.</li>
+<li>Add a tiny portability test suite:
+   - Build-only tests for compiler compatibility.
+   - Runtime tests for filter output sanity and callback state transitions.</li>
+</ol>
+<h2 id="validation-suggestions-for-porters">Validation Suggestions for Porters</h2>
+<ul>
+<li>Run with <code>-Wall -Wextra -Wconversion -Wsign-conversion</code> (or compiler equivalent).</li>
+<li>Add UB checks where available (<code>-fsanitize=undefined</code> on host builds).</li>
+<li>Compare reference output blocks (CRC or RMS/error metrics) across original and ported targets.</li>
+</ul>
+<h2 id="notes">Notes</h2>
+<ul>
+<li>This report intentionally excludes STM32 HAL function call replacement details.</li>
+<li>Findings focus on code portability hazards that remain even after HAL abstraction.</li>
+</ul></article>
+  </main>
+
+  <footer>
+    <p>Doorchime CR2 Documentation</p>
+  </footer>
+</body>
+</html>
