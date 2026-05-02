@@ -64,10 +64,14 @@ The header is organized into logical groups of related functions:
    - `StopPlayback()` - Stop with fade-out
    - `ShutDownAudio()` - Stop all audio hardware
 
-8. **Chunk Processing (DMA Callbacks)** (3 functions)
-   - `ProcessNextWaveChunk()` - 16-bit sample processing
-   - `ProcessNextWaveChunk_8_bit()` - 8-bit sample processing
-   - `AdvanceSamplePointer()` - Update playback position
+8. **Chunk Processing (DMA Callbacks)** (4 functions)
+    - `ProcessNextWaveChunk()` - 16-bit sample processing
+    - `ProcessNextWaveChunk_8_bit()` - 8-bit sample processing
+    - `ProcessNextWaveChunk_ADPCM()` - ADPCM compressed sample processing
+    - `AdvanceSamplePointer()` - Update playback position
+
+9. **ADPCM Decoding (Internal)** (1 function)
+    - `DecodeImaAdpcmNibble()` - Decode 4-bit ADPCM nibble to 16-bit PCM
 
 9. **DAC Power Control** (2 functions)
    - `SetDAC_Control()` / `GetDAC_Control()` - DAC power control
@@ -86,8 +90,11 @@ The header is organized into logical groups of related functions:
    - `GetAirEffectPresetDb()` - Query specific preset's dB level
 
 12. **DMA Callbacks** (2 functions)
-   - `HAL_I2S_TxHalfCpltCallback()` - Half-buffer complete
-   - `HAL_I2S_TxCpltCallback()` - Full-buffer complete
+    - `HAL_I2S_TxHalfCpltCallback()` - Half-buffer complete
+    - `HAL_I2S_TxCpltCallback()` - Full-buffer complete
+
+13. **ADPCM State Management (Internal)** (1 function)
+    - `IsAdpcmPlaybackMode()` - Check if current mode is ADPCM
 
 13. **Playback State (Internal)** (8 functions)
    - `GetPlaybackState()` / `SetPlaybackState()`

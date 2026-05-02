@@ -7,11 +7,11 @@ Complete overview of the Audio Engine Documentation Suite.
 | Metric | Count |
 |--------|-------|
 | **Total Documentation Files** | 15 |
-| **Documented Functions** | 64 |
-| **Code Examples** | 64+ |
-| **Total Estimated Pages** | ~150 |
+| **Documented Functions** | 66+ |
+| **Code Examples** | 66+ |
+| **Total Estimated Pages** | ~155 |
 | **Documentation Coverage** | 100% |
-| **Last Updated** | 2026-02-08 |
+| **Last Updated** | 2026-05-02 |
 
 ## 📁 All Documentation Files
 
@@ -79,7 +79,7 @@ HEADER_DOCUMENTATION.md → Open audio_engine.h → Hover for docs
 
 ### Using Specific Features
 - [AIR_EFFECT_QUICK_REFERENCE.md](AIR_EFFECT_QUICK_REFERENCE.md) - Air effect
-- [QUICK_REFERENCE.md](QUICK_REFERENCE.md) - Pause/resume, fades, etc.
+- [QUICK_REFERENCE.md](QUICK_REFERENCE.md) - Pause/resume, fades, ADPCM, etc.
 
 ### Integrating with IDE
 - [HEADER_DOCUMENTATION.md](HEADER_DOCUMENTATION.md) - Doxygen guide
@@ -97,6 +97,7 @@ HEADER_DOCUMENTATION.md → Open audio_engine.h → Hover for docs
 | Play audio | [QUICK_REFERENCE.md](QUICK_REFERENCE.md) | [API_REFERENCE.md](API_REFERENCE.md) |
 | Configure filters | [AUDIO_ENGINE_MANUAL.md](AUDIO_ENGINE_MANUAL.md) | [API_REFERENCE.md](API_REFERENCE.md) |
 | Use air effect | [AIR_EFFECT_QUICK_REFERENCE.md](AIR_EFFECT_QUICK_REFERENCE.md) | [API_REFERENCE.md](API_REFERENCE.md) |
+| Play ADPCM audio | [README.md](README.md) | [AUDIO_ENGINE_MANUAL.md](AUDIO_ENGINE_MANUAL.md) |
 | Pause/resume | [QUICK_REFERENCE.md](QUICK_REFERENCE.md) | [API_REFERENCE.md](API_REFERENCE.md) |
 | Adjust fades | [API_REFERENCE.md](API_REFERENCE.md) | [FUNCTION_INDEX.md](FUNCTION_INDEX.md) |
 

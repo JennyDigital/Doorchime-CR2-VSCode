@@ -25,8 +25,9 @@ The Audio Engine is a reusable, embedded DSP audio playback system designed for 
 
 ### Key Features
 
-- **Dual Format Support**: 8-bit and 16-bit audio playback
-- **Flexible Modes**: Mono and stereo playback
+- **Dual Format Support**: 8-bit, 16-bit PCM, and IMA ADPCM playback
+- **Flexible Modes**: Mono and stereo, plus ADPCM variants for compressed audio
+- **ADPCM Compression**: 2:1 compression ratio using IMA ADPCM encoding
 - **DSP Filter Chain**: Runtime-configurable filters with fixed-point arithmetic
 - **No FPU Required**: All DSP operations use integer math for MCU efficiency
 - **Sample Rate**: Default 22 kHz (configurable)
@@ -38,10 +39,11 @@ The Audio Engine is a reusable, embedded DSP audio playback system designed for 
 | Feature | Specification |
 |---------|---------------|
 | **Sample Rates** | 22 kHz (default), configurable |
-| **Audio Depths** | 8-bit unsigned, 16-bit signed |
-| **Channels** | Mono, Stereo |
+| **Audio Depths** | 8-bit unsigned, 16-bit signed, IMA ADPCM |
+| **Channels** | Mono, Stereo, Mono ADPCM, Stereo ADPCM |
 | **Buffer Size** | 2048 samples (ping-pong DMA) |
 | **Nyquist Frequency** | 11 kHz @ 22 kHz sample rate |
+| **ADPCM Compression** | 2:1 ratio (4-bit nibbles, decoded to 16-bit) |
 | **Volume Control** | Software configurable (0-3x gain) |
 | **Fade Effects** | In/Out (~93 ms at 22 kHz) |
 
@@ -170,9 +172,52 @@ The audio playback system follows a clear data flow from flash memory through DS
    - Recommended: keep enabled
 
 7. **Volume Scaling** *(Always Active)*
-   - Integer multiplication (0–3x gain)
-   - Read from hardware GPIO (3-level selector)
-   - Applied per-sample
+    - Integer multiplication (0–3x gain)
+    - Read from hardware GPIO (3-level selector)
+    - Applied per-sample
+
+### ADPCM Audio Processing Pipeline
+
+IMA ADPCM (Adaptive Differential Pulse Code Modulation) provides 2:1 compression for flash-constrained applications.
+
+**Key Characteristics:**
+- **Format**: IMA ADPCM (4-bit nibbles encoding 16-bit PCM samples)
+- **Compression**: 2:1 ratio vs 16-bit PCM (half the flash storage)
+- **Real-time Decoding**: Decoded on-the-fly during playback (no pre-decoding)
+- **Integration**: Decoded samples pass through the same DSP filter chain as PCM
+
+**Supported Modes:**
+- `Mode_mono_ADPCM`: Mono ADPCM playback
+  - Sequential nibbles: low nibble first, then high nibble from each byte
+  - Each byte produces 2 mono samples
+- `Mode_stereo_ADPCM`: Stereo ADPCM playback
+  - Each byte packs one stereo frame: low nibble = left, high nibble = right
+  - Separate predictor/step_index state maintained per channel
+
+**How It Works:**
+
+1. **ADPCM Decoding** (`DecodeImaAdpcmNibble()`):
+   - Takes 4-bit nibble, current predictor, and step index
+   - Uses IMA step table to calculate difference
+   - Updates predictor and step index based on nibble value
+   - Returns signed 16-bit PCM sample
+
+2. **Playback Process** (`ProcessNextWaveChunk_ADPCM()`):
+   - Reads ADPCM bytes from source buffer
+   - Decodes nibbles to 16-bit PCM samples
+   - Applies volume scaling, filter chain, and fade effects
+   - Outputs processed samples to DMA buffer
+
+3. **Integration with Audio Engine**:
+   - ADPCM mode selected via `PlaySample()` `mode` parameter
+   - `sample_depth` ignored for ADPCM (always decoded to 16-bit)
+   - Same API and processing pipeline as PCM playback
+   - Supports pause/resume, fade effects, and all filter configurations
+
+**Benefits:**
+- **Reduced Storage**: Half the flash memory vs 16-bit PCM
+- **Transparent Integration**: Same API and filter chain as PCM
+- **No Quality Loss in Filters**: Decoded to 16-bit before filtering
 
 ### Filter Chain Stages (8-bit Audio)
 
@@ -220,9 +265,18 @@ Playback channel mode.
 ```c
 typedef enum {
   Mode_stereo,       // Stereo (2-channel) playback
-  Mode_mono          // Mono (single-channel) playback
+  Mode_mono,         // Mono (single-channel) playback
+  Mode_mono_ADPCM,   // Mono IMA ADPCM compressed playback
+  Mode_stereo_ADPCM  // Stereo IMA ADPCM compressed playback
 } PB_ModeTypeDef;
 ```
+
+**ADPCM Mode Notes:**
+- ADPCM uses 4-bit nibbles to represent audio samples (2:1 compression vs 16-bit PCM)
+- `sample_depth` parameter is ignored for ADPCM modes (always decoded to 16-bit internally)
+- Mono ADPCM: Each byte contains two 4-bit nibbles (low nibble first, then high nibble)
+- Stereo ADPCM: Each byte contains one stereo frame (low nibble = left, high nibble = right)
+- ADPCM decoded samples pass through the same DSP filter chain as PCM samples
 
 #### `LPF_Level`
 Low-pass filter aggressiveness level for 16-bit and 8-bit LPFs.
@@ -374,8 +428,8 @@ PB_StatusTypeDef PlaySample(
 - `sample_to_play`: Pointer to audio data in flash/RAM
 - `sample_set_sz`: Total samples (all channels combined)
 - `playback_speed`: Sample rate in Hz (typically 22000)
-- `sample_depth`: 8 or 16 (bits per sample)
-- `mode`: `Mode_mono` or `Mode_stereo`
+- `sample_depth`: 8 or 16 (bits per sample, ignored for ADPCM modes)
+- `mode`: `Mode_mono`, `Mode_stereo`, `Mode_mono_ADPCM`, or `Mode_stereo_ADPCM`
 
 **Returns:**
 - `PB_Playing` if playback started successfully
@@ -388,6 +442,9 @@ PB_StatusTypeDef PlaySample(
 - For 16-bit stereo (interleaved): `sample_set_sz = 2 * num_frames`
 - For 8-bit mono audio: `sample_set_sz = num_samples`
 - For 8-bit stereo (interleaved): `sample_set_sz = 2 * num_frames`
+- For ADPCM mono: `sample_set_sz = num_samples` (each byte = 2 samples via nibbles)
+- For ADPCM stereo: `sample_set_sz = 2 * num_frames` (each byte = left+right nibbles)
+- `sample_depth` is ignored for ADPCM modes (always decoded to 16-bit internally)
 - Blocks briefly while starting DMA
 - Configure filters separately with `SetLpf16BitLevel()` or `SetFilterConfig()`
 
@@ -1445,7 +1502,52 @@ void NonBlockingPlayback(void) {
 }
 ```
 
-### Example 6: Accessibility — Filter Settings for Hard of Hearing
+### Example 6: ADPCM Compressed Audio Playback
+
+This example demonstrates playing ADPCM compressed audio, which provides 2:1 compression vs 16-bit PCM.
+
+```c
+#include "audio_engine.h"
+
+// ADPCM audio data (compressed, half the size of 16-bit PCM)
+extern const uint8_t muted_guitar_adpcm[];
+extern const uint32_t muted_guitar_adpcm_size;
+
+void PlayCompressedAudio(void) {
+  // Configure filters (ADPCM decoded to 16-bit before filtering)
+  SetLpf16BitLevel(LPF_Soft);
+  
+  // For ADPCM, sample_depth is ignored (always decoded to 16-bit)
+  // Mode_mono_ADPCM = mono ADPCM, Mode_stereo_ADPCM = stereo ADPCM
+  PB_StatusTypeDef result = PlaySample(
+    muted_guitar_adpcm,
+    muted_guitar_adpcm_size,
+    44100,                    // Sample rate
+    16,                       // Ignored for ADPCM modes
+    Mode_mono_ADPCM           // Mono ADPCM playback
+  );
+  
+  if (result == PB_Playing) {
+    WaitForSampleEnd();
+    printf("ADPCM playback complete\n");
+  } else {
+    printf("Failed to play ADPCM: %d\n", result);
+  }
+}
+```
+
+**ADPCM Benefits:**
+- **2:1 Compression**: Half the flash storage vs 16-bit PCM
+- **Transparent Quality**: Decoded to 16-bit before DSP processing
+- **Same API**: Identical interface to PCM playback
+- **Same Features**: Supports pause/resume, fade effects, all filter configurations
+
+**ADPCM Data Format:**
+- Mono: Each byte contains 2 samples (low nibble first, then high nibble)
+- Stereo: Each byte contains one stereo frame (low nibble = left, high nibble = right)
+- Use `Mode_mono_ADPCM` or `Mode_stereo_ADPCM` in `PlaySample()`
+
+### Example 7: Accessibility — Filter Settings for Hard of Hearing
 
 This example demonstrates filter configuration optimized for users with hearing loss, emphasizing speech clarity and presence without over-filtering.
 
@@ -1643,8 +1745,9 @@ RAM:   ~2.5 KB (state variables + playback buffer)
 | Metric | Value | Notes |
 |--------|-------|-------|
 | **Sample Rate** | 22 kHz | Nyquist: 11 kHz |
-| **Bit Depth** | 16-bit (native) | 8-bit with TPDF dithering |
+| **Bit Depth** | 16-bit (native) | 8-bit with TPDF dithering, IMA ADPCM |
 | **Dynamic Range** | 96 dB (16-bit) | 48 dB (8-bit effective) |
+| **ADPCM Compression** | 2:1 ratio | Half flash storage vs 16-bit PCM |
 | **SNR (w/ dithering)** | 102 dB (8-bit) | TPDF reduces quantization noise |
 | **THD (soft clipping)** | < 0.1% | Cubic smoothstep minimizes distortion |
 

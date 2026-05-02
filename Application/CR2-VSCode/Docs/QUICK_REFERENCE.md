@@ -17,6 +17,10 @@ AudioEngine_Init(DAC_MasterSwitch, ReadVolume, MX_I2S2_Init);
 PlaySample(sample_ptr, sample_count, 22000, 16, Mode_mono);
 WaitForSampleEnd();
 
+// Play ADPCM compressed audio (2:1 compression)
+PlaySample(adpcm_ptr, sample_count, 22000, 16, Mode_mono_ADPCM);
+WaitForSampleEnd();
+
 // Play non-blocking
 PlaySample(sample_ptr, sample_count, 22000, 16, Mode_mono);
 // Do other work...
@@ -32,6 +36,19 @@ while (GetPlaybackState() != PB_Idle) { /* wait for fade/stop to complete */ }
 
 // Stop all audio
 ShutDownAudio();
+```
+
+## ADPCM Modes
+
+```c
+// ADPCM mono (2:1 compression vs 16-bit PCM)
+PlaySample(adpcm_mono, size, 22000, 16, Mode_mono_ADPCM);
+
+// ADPCM stereo
+PlaySample(adpcm_stereo, size, 22000, 16, Mode_stereo_ADPCM);
+
+// Note: sample_depth is ignored for ADPCM (always decoded to 16-bit)
+// Each byte contains 2 samples (mono) or 1 stereo frame (left+right nibbles)
 ```
 
 ## DAC Power Control
@@ -205,6 +222,17 @@ ResumePlayback();
 WaitForSampleEnd();
 ```
 
+### Pattern 7: ADPCM Compressed Audio
+```c
+// ADPCM provides 2:1 compression - ideal for flash-constrained apps
+extern const uint8_t adpcm_sound[];
+extern const uint32_t adpcm_sound_size;
+
+SetLpf16BitLevel(LPF_Soft);
+PlaySample(adpcm_sound, adpcm_sound_size, 22000, 16, Mode_mono_ADPCM);
+WaitForSampleEnd();
+```
+
 ### Pattern 4: Configure Then Play
 ```c
 FilterConfig_TypeDef cfg;
@@ -256,6 +284,8 @@ void main_loop(void) {
 ## Function Categories
 
 **Playback** (6): `PlaySample`, `WaitForSampleEnd`, `PausePlayback`, `ResumePlayback`, `StopPlayback`, `ShutDownAudio`
+
+**ADPCM Modes**: Use `Mode_mono_ADPCM` or `Mode_stereo_ADPCM` with `PlaySample()` for 2:1 compressed audio
 
 **DAC Control** (2): `SetDAC_Control`, `GetDAC_Control`
 

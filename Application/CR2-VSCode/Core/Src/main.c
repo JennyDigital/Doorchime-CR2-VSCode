@@ -85,6 +85,11 @@
 #include "Emperor_dm22k1c16b.h"
 #include "didgeridoo.h"
 #include "secret_door.h"
+#include "muted_guitar22k16bm.h"
+#include "muted_guitar22k8bm.h"
+#include "muted_guitar44k8bm.h"
+#include "muted_guitar44k16bm.h"
+
 
 
 /* USER CODE END Includes */
@@ -226,12 +231,12 @@ int main(void)
   // FilterConfig_TypeDef filter_cfg;
   filter_cfg.enable_noise_gate            = 0;  // Noise gate disabled by default; enable as needed
   filter_cfg.enable_16bit_biquad_lpf      = 1;  // 16-bit biquad LPF disabled by default; enable as needed
-  filter_cfg.enable_8bit_lpf              = 0;  // 8-bit LPF disabled by default; enable as needed
+  filter_cfg.enable_8bit_lpf              = 1;  // 8-bit LPF disabled by default; enable as needed
   filter_cfg.enable_soft_dc_filter_16bit  = 1;  // Soft DC blocking filter for 16-bit samples enabled by default
   filter_cfg.enable_soft_clipping         = 1;  // Soft clipping enabled by default
   filter_cfg.enable_air_effect            = 0;  // Air effect (high-shelf brightening) disabled by default; enable as needed
   filter_cfg.enable_filter_chain_16bit    = 1;  // Master enable for entire 16-bit filter chain
-  filter_cfg.enable_filter_chain_8bit     = 0;  // Master enable for entire 8-bit filter chain
+  filter_cfg.enable_filter_chain_8bit     = 1;  // Master enable for entire 8-bit filter chain
 
   // Apply initial filter configuration
   SetFilterConfig( &filter_cfg );
@@ -270,8 +275,8 @@ int main(void)
     //
     // PlaySample( didgeridoo16b16k1c , DIDGERIDOO16B16K1C_SZ,
     //   I2S_AUDIOFREQ_22K, 16, DIDGERIDOO16B16K1C_PB_FMT );
-    PlaySample( secret_door16b16k1c, SECRET_DOOR16B16K1C_SZ,
-      I2S_AUDIOFREQ_16K, 16, SECRET_DOOR16B16K1C_PB_FMT );
+    PlaySample( muted_guitar44k16bm, MUTED_GUITAR44K16BM_SZ,
+      I2S_AUDIOFREQ_44K, 16, MUTED_GUITAR44K16BM_PB_FMT );
    WaitForSampleEnd();
 
     ShutDownAudio();

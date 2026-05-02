@@ -149,7 +149,9 @@ typedef enum {
 /* Playback mode type */
 typedef enum {
   Mode_stereo,
-  Mode_mono
+  Mode_mono,
+  Mode_mono_ADPCM,
+  Mode_stereo_ADPCM
 } PB_ModeTypeDef;
 
 /* Audio channel identifier */
@@ -429,7 +431,7 @@ void                SetFilterChain8BitEnable         ( uint8_t enabled );
  * @brief Calculate a sample offset from time, sample rate, and mode
  * @param[in] seconds Desired offset in seconds (>= 0)
  * @param[in] sample_rate_hz Sample rate in Hz
- * @param[in] mode Playback mode: Mode_mono or Mode_stereo
+ * @param[in] mode Playback mode: Mode_mono, Mode_stereo, Mode_mono_ADPCM, or Mode_stereo_ADPCM
  * @return Sample offset in interleaved samples
  * @note For stereo, the returned value is multiplied by 2 (left+right).
  */
@@ -443,8 +445,8 @@ uint32_t            CalcSampleOffsetSamples           (
  * @param[in] sample_to_play Pointer to sample data in memory
  * @param[in] sample_set_sz Total number of samples to play (all channels combined)
  * @param[in] playback_speed Sample rate in Hz (e.g., 22000, 44100)
- * @param[in] sample_depth Bits per sample: 8 or 16
- * @param[in] mode Playback mode: Mode_mono or Mode_stereo
+ * @param[in] sample_depth Bits per sample for PCM (8 or 16). Ignored for ADPCM modes.
+ * @param[in] mode Playback mode: Mode_mono, Mode_stereo, Mode_mono_ADPCM, or Mode_stereo_ADPCM
  * @return PB_Playing on success, PB_Error on failure
  */
 PB_StatusTypeDef    PlaySample                        ( 

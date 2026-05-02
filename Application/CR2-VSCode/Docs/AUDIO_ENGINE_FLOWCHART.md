@@ -8,20 +8,21 @@ This document contains flowcharts showing the architecture and data flow of the 
 flowchart TB
   subgraph Application["Application Layer"]
     User["User Code<br/>(main.c)"]
-    Callbacks["Hardware Callbacks<br/>• ReadVolume()<br/>• DAC_MasterSwitch()<br/>• MX_I2S2_Init()"]
+    Callbacks["Hardware Callbacks<br/>&middot; ReadVolume()<br/>&middot; DAC_MasterSwitch()<br/>&middot; MX_I2S2_Init()"]
   end
 
   subgraph Engine["Audio Engine Core"]
     Init["AudioEngine_Init()"]
     Play["PlaySample()"]
-    Control["Playback Control<br/>• Pause/Resume<br/>• WaitForEnd"]
-    Config["Filter Configuration<br/>• SetFilterConfig()<br/>• SetLpf16BitLevel()<br/>• SetAirEffectPresetDb()"]
+    Control["Playback Control<br/>&middot; Pause/Resume<br/>&middot; WaitForEnd"]
+    Config["Filter Configuration<br/>&middot; SetFilterConfig()<br/>&middot; SetLpf16BitLevel()<br/>&middot; SetAirEffectPresetDb()"]
   end
 
   subgraph DSP["DSP Processing Pipeline"]
     Process16["ProcessNextWaveChunk()<br/>(16-bit)"]
     Process8["ProcessNextWaveChunk_8_bit()<br/>(8-bit)"]
-    Filters["Filter Chain<br/>• Biquad LPF<br/>• DC Block<br/>• Air Effect<br/>• Soft Clip"]
+    ProcessADPCM["ProcessNextWaveChunk_ADPCM()<br/>(IMA ADPCM)"]
+    Filters["Filter Chain<br/>&middot; Biquad LPF<br/>&middot; DC Block<br/>&middot; Air Effect<br/>&middot; Soft Clip"]
   end
 
   subgraph Hardware["Hardware Layer"]
@@ -36,11 +37,11 @@ flowchart TB
     FullCplt["HAL_I2S_TxCpltCallback()"]
   end
 
-  User -->|"1. Initialize"| Init
+  User -->|"Step 1: Initialize"| Init
   Callbacks -->|"Provide"| Init
-  User -->|"2. Configure Filters"| Config
-  User -->|"3. Start Playback"| Play
-  User -->|"4. Control"| Control
+  User -->|"Step 2: Configure Filters"| Config
+  User -->|"Step 3: Start Playback"| Play
+  User -->|"Step 4: Control"| Control
 
   Play -->|"Start DMA"| I2S
   I2S <-->|"Transfer"| DMA
@@ -50,8 +51,10 @@ flowchart TB
   
   HalfCplt -->|"Process First Half"| Process16
   HalfCplt -->|"or"| Process8
+  HalfCplt -->|"or"| ProcessADPCM
   FullCplt -->|"Process Second Half"| Process16
   FullCplt -->|"or"| Process8
+  FullCplt -->|"or"| ProcessADPCM
   
   Process16 --> Filters
   Process8 --> Filters
@@ -74,9 +77,9 @@ flowchart TD
   Start([Application calls<br/>PlaySample]) --> CheckState{Playback<br/>Already Active?}
   
   CheckState -->|Yes| ReturnError[Return PB_Error]
-  CheckState -->|No| StoreParams["Store Parameters:<br/>• Sample pointer<br/>• Sample size<br/>• Sample rate<br/>• Bit depth<br/>• Mode: mono or stereo"]
+  CheckState -->|No| StoreParams["Store Parameters:<br/>&middot; Sample pointer<br/>&middot; Sample size<br/>&middot; Sample rate<br/>&middot; Bit depth<br/>&middot; Mode: mono or stereo"]
   
-  StoreParams --> ResetState["Reset Engine State:<br/>• Clear filter states<br/>• Reset fade counters<br/>• Initialize pointers"]
+  StoreParams --> ResetState["Reset Engine State:<br/>&middot; Clear filter states<br/>&middot; Reset fade counters<br/>&middot; Initialize pointers"]
   
   ResetState --> CheckDepth{16-bit or<br/>8-bit?}
   
@@ -208,7 +211,7 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-  Input8["Input Sample<br/>(8-bit unsigned)"] --> Convert["Convert to 16-bit:<br/>• Subtract 127<br/>• Scale to ±32K<br/>• Add TPDF dithering"]
+  Input8["Input Sample<br/>(8-bit unsigned)"] --> Convert["Convert to 16-bit:<br/>&middot; Subtract 127<br/>&middot; Scale to ±32K<br/>&middot; Add TPDF dithering"]
   
   Convert --> OnePoleCheck{One-Pole LPF<br/>Enabled?}
   
@@ -218,7 +221,7 @@ flowchart LR
   OnePole --> DCCheck8{DC Blocking<br/>Enabled?}
   
   DCCheck8 -->|Yes| DC8["DC Blocking Filter<br/>(Same as 16-bit)"]
-  DCCheck8 -->|No| Rest8["Remaining Pipeline:<br/>• Air Effect<br/>• Fade<br/>• Noise Gate<br/>• Soft Clipping<br/>(Same as 16-bit)"]
+  DCCheck8 -->|No| Rest8["Remaining Pipeline:<br/>&middot; Air Effect<br/>&middot; Fade<br/>&middot; Noise Gate<br/>&middot; Soft Clipping<br/>(Same as 16-bit)"]
   
   DC8 --> Rest8
   
@@ -237,13 +240,13 @@ flowchart TD
   UserConfig([User calls<br/>SetFilterConfig]) --> Batch{Batch Update or<br/>Single Function?}
   
   Batch -->|Batch| GetCurrent["GetFilterConfig<br/>Read current settings"]
-  Batch -->|Single| DirectSet["Call specific setter:<br/>• SetLpf16BitLevel<br/>• SetAirEffectPresetDb<br/>• SetSoftClippingEnable"]
+  Batch -->|Single| DirectSet["Call specific setter:<br/>&middot; SetLpf16BitLevel<br/>&middot; SetAirEffectPresetDb<br/>&middot; SetSoftClippingEnable"]
   
-  GetCurrent --> Modify["Modify FilterConfig_TypeDef:<br/>• enable_16bit_biquad_lpf<br/>• enable_air_effect<br/>• lpf_16bit_level<br/>• etc."]
+  GetCurrent --> Modify["Modify FilterConfig_TypeDef:<br/>&middot; enable_16bit_biquad_lpf<br/>&middot; enable_air_effect<br/>&middot; lpf_16bit_level<br/>&middot; etc."]
   
   Modify --> SetBatch["SetFilterConfig<br/>Apply all changes"]
   
-  SetBatch --> UpdateState["Update Internal State:<br/>• Alpha coefficients<br/>• Enable flags<br/>• Preset indices"]
+  SetBatch --> UpdateState["Update Internal State:<br/>&middot; Alpha coefficients<br/>&middot; Enable flags<br/>&middot; Preset indices"]
   DirectSet --> UpdateState
   
   UpdateState --> CheckActive{Playback<br/>Active?}
@@ -269,11 +272,11 @@ flowchart TD
   CheckMode -->|Digital| ReadGPIO["Read GPIO Pins:<br/>OPT1, OPT2, OPT3<br/>(3-bit encoding)"]
   CheckMode -->|Analog| ReadADC["Read ADC:<br/>12-bit potentiometer<br/>value"]
   
-  ReadGPIO --> PackBits["Pack bits:<br/>v = (OPT3<<2 | OPT2<<1 | OPT1)"]
+  ReadGPIO --> PackBits["Pack bits:<br/>v = (OPT3&lt;&lt;2 | OPT2&lt;&lt;1 | OPT1)"]
   ReadADC --> ScaleADC["Scale ADC:<br/>v = (raw_adc * 65535) / 4095"]
   
   PackBits --> InvertGPIO["Invert:<br/>v = 7 - v"]
-  ScaleADC --> EnsureMin1["Ensure minimum:<br/>if (v < 1) v = 1"]
+  ScaleADC --> EnsureMin1["Ensure minimum:<br/>if (v &lt; 1) v = 1"]
   
   InvertGPIO --> ScaleGPIO["Scale to 1-65535:<br/>v = (v * 65535) / 7"]
   

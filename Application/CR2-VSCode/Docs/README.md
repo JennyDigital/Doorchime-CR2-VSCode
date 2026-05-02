@@ -29,8 +29,9 @@ A professional, reusable audio playback engine for STM32 microcontrollers with I
 
 ## ✨ Features
 
-- **Dual Format Support**: 8-bit unsigned PCM and 16-bit signed PCM
-- **Flexible Playback**: Mono and stereo modes
+- **Dual Format Support**: 8-bit unsigned PCM, 16-bit signed PCM, and IMA ADPCM
+- **Flexible Playback**: Mono and stereo modes, plus ADPCM variants for compressed audio
+- **ADPCM Compression**: 2:1 compression ratio using IMA ADPCM, ideal for flash-constrained applications
 - **Runtime-Configurable DSP**: No recompilation needed for filter adjustments
 - **No FPU Required**: All DSP operations use fixed-point integer math
 - **DMA-Driven**: Efficient I2S streaming with double-buffering
@@ -41,6 +42,7 @@ A professional, reusable audio playback engine for STM32 microcontrollers with I
 
 ## What's New
 
+- **ADPCM Playback Support**: Added IMA ADPCM decoding for compressed audio playback with 2:1 compression ratio. Use `Mode_mono_ADPCM` or `Mode_stereo_ADPCM` with `PlaySample()`.
 - **Thread-Safe Stop Logic**: `StopPlayback()` refactored for complete thread-safety by moving all state modifications into the DMA callback context, eliminating race conditions.
 - **Playback End Callback**: New weak `AudioEngine_OnPlaybackEnd()` callback for ISR-safe playback completion notifications - invoked exactly once per playback session with internal guard, ideal for event-driven applications, playlists, and RTOS integration.
 - **DAC Power Control**: Added `SetDAC_Control()` and `GetDAC_Control()` for optional runtime control of DAC power management - useful when sharing the audio engine across multiple applications.
@@ -80,10 +82,28 @@ PlaySample(
   doorbell_sound_samples,  // Total samples (all channels combined)
   22000,                   // Sample rate (Hz)
   16,                      // Bit depth (8 or 16)
-  Mode_mono                // Mono/Stereo
+  Mode_mono                // Mono/Stereo (or Mode_mono_ADPCM / Mode_stereo_ADPCM for ADPCM)
 );
 
 WaitForSampleEnd();          // Block until playback complete
+```
+
+### ADPCM Audio Playback
+
+```c
+// Play an ADPCM compressed sample (2:1 compression vs 16-bit PCM)
+extern const uint8_t adpcm_sound[];
+extern const uint32_t adpcm_sound_samples;
+
+PlaySample(
+  adpcm_sound,            // ADPCM audio data pointer
+  adpcm_sound_samples,    // Total samples (all channels combined)
+  22000,                   // Sample rate (Hz)
+  16,                      // Bit depth (ignored for ADPCM, always decoded to 16-bit)
+  Mode_mono_ADPCM          // Mono ADPCM (or Mode_stereo_ADPCM for stereo)
+);
+
+WaitForSampleEnd();
 ```
 
 ### 3. Runtime Filter Adjustment
@@ -203,6 +223,21 @@ flowchart TD
   C --> D["Then follow 16-bit pipeline steps 2-6"]
   class A,B,C,D box;
 ```
+
+### ADPCM Audio Processing Pipeline
+
+```mermaid
+flowchart TD
+  classDef box fill:#70708e,stroke:#3b82f6,stroke-width:1px,color:#0f172a;
+  A["Input (IMA ADPCM)<br/>4-bit nibbles"] --> B["Decode IMA ADPCM<br/>Real-time decoding to 16-bit PCM<br/>2:1 compression ratio"]
+  B --> C["Then follow 16-bit pipeline<br/>steps 1-6 (same as PCM)"]
+  class A,B,C box;
+```
+
+**ADPCM Benefits:**
+- **2:1 Compression**: Half the flash storage vs 16-bit PCM
+- **Real-time Decoding**: No pre-decoding needed, decoded on-the-fly
+- **Same Filter Chain**: Uses identical DSP processing as PCM audio
 
 ## 🔧 Hardware Setup
 
@@ -408,7 +443,7 @@ void play_doorbell(void) {
   SetLpf16BitLevel(LPF_Soft);
   
   PlaySample(doorbell_sound, DOORBELL_SIZE, 
-         22000, 16, Mode_mono, LPF_Soft);
+          22000, 16, Mode_mono);
   
   WaitForSampleEnd();
 }
@@ -429,7 +464,7 @@ void play_music_sample(void) {
   SetFilterConfig(&cfg);
   
   PlaySample(music_data, MUSIC_SIZE,
-         44100, 16, Mode_stereo, LPF_VerySoft);
+          44100, 16, Mode_stereo);
   
   WaitForSampleEnd();
 }
@@ -449,11 +484,40 @@ void play_retro_sfx(void) {
   SetFilterConfig(&cfg);
   
   PlaySample(retro_sfx, SFX_SIZE,
-         11025, 8, Mode_mono, LPF_Medium);
+         11025, 8, Mode_mono);
   
   WaitForSampleEnd();
 }
 ```
+
+### Example 4: ADPCM Compressed Audio
+
+```c
+void play_adpcm_audio(void) {
+  // ADPCM provides 2:1 compression vs 16-bit PCM
+  extern const uint8_t muted_guitar_adpcm[];
+  extern const uint32_t muted_guitar_adpcm_size;
+  
+  FilterConfig_TypeDef cfg;
+  GetFilterConfig(&cfg);
+  
+  cfg.enable_16bit_biquad_lpf = 1;
+  cfg.lpf_16bit_level = LPF_Soft;
+  SetFilterConfig(&cfg);
+  
+  // For ADPCM, sample_depth is ignored (always decoded to 16-bit)
+  PlaySample(muted_guitar_adpcm, muted_guitar_adpcm_size,
+         44100, 16, Mode_mono_ADPCM);
+  
+  WaitForSampleEnd();
+}
+```
+
+**ADPCM Benefits:**
+- 2:1 compression ratio (half the flash storage vs 16-bit PCM)
+- Real-time decoding during playback (no pre-decoding needed)
+- Same DSP filter chain as PCM audio
+- Supports mono (`Mode_mono_ADPCM`) and stereo (`Mode_stereo_ADPCM`)
 
 ## 🔍 Troubleshooting
 

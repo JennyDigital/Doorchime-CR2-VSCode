@@ -81,8 +81,8 @@ PB_StatusTypeDef PlaySample(
 - `sample_to_play`: Audio data pointer (must remain valid during playback)
 - `sample_set_sz`: Total samples (all channels combined)
 - `playback_speed`: Sample rate in Hz (22000 recommended, up to 48000)
-- `sample_depth`: 8 or 16
-- `mode`: `Mode_mono` or `Mode_stereo`
+- `sample_depth`: 8 or 16 (ignored for ADPCM modes)
+- `mode`: `Mode_mono`, `Mode_stereo`, `Mode_mono_ADPCM`, or `Mode_stereo_ADPCM`
 
 **Returns:** `PB_Playing` if successful, `PB_Error` on invalid parameters
 
@@ -93,6 +93,9 @@ PB_StatusTypeDef PlaySample(
 - For 16-bit stereo (interleaved): `sample_set_sz = 2 × num_frames`
 - For 8-bit mono: `sample_set_sz = num_samples`
 - For 8-bit stereo (interleaved): `sample_set_sz = 2 × num_frames`
+- For ADPCM mono: `sample_set_sz = num_samples` (each byte = 2 samples via nibbles)
+- For ADPCM stereo: `sample_set_sz = 2 × num_frames` (each byte = left+right nibbles)
+- `sample_depth` is ignored for ADPCM modes (always decoded to 16-bit)
 - Briefly blocks while starting DMA
 
 **Example:**
@@ -1095,6 +1098,28 @@ PB_StatusTypeDef ProcessNextWaveChunk_8_bit(uint8_t *chunk_p);
 
 **Called by:** I2S DMA complete callback for 8-bit audio
 
+### `ProcessNextWaveChunk_ADPCM()`
+
+Process one chunk of ADPCM compressed samples from DMA buffer.
+
+```c
+PB_StatusTypeDef ProcessNextWaveChunk_ADPCM(uint8_t *chunk_p);
+```
+
+**Parameters:**
+- `chunk_p`: Pointer to ADPCM compressed sample chunk
+
+**Returns:** `PB_Playing` if playback continues, `PB_Idle` if complete
+
+**Called by:** I2S DMA complete callback for ADPCM audio
+
+**Notes:**
+- Decodes IMA ADPCM 4-bit nibbles to 16-bit PCM samples in real-time
+- Applies the same DSP filter chain as PCM audio
+- Mono ADPCM: Each byte produces 2 samples (low nibble first, then high nibble)
+- Stereo ADPCM: Each byte contains one stereo frame (low nibble = left, high nibble = right)
+- Uses separate predictor and step index state per channel
+
 ### `AdvanceSamplePointer()`
 
 Advance internal sample pointer to next chunk.
@@ -1359,11 +1384,13 @@ void demo_interactive_control(void) {
 | `GetPlaybackState()`                 | Status     | Get current playback state            |
 | `GetResumeFadeTime()`                | Fade       | Get resume fade-in duration           |
 | `GetSoftClippingEnable()`            | Filter     | Query soft clipping state             |
+| `DecodeImaAdpcmNibble()`            | Internal   | Decode 4-bit ADPCM nibble to 16-bit  |
 
 | `PausePlayback()`                    | Playback   | Pause playback with fade              |
 | `PlaySample()`                       | Playback   | Start playback of audio sample        |
 | `ProcessNextWaveChunk()`             | Internal   | Process 16-bit sample chunk           |
 | `ProcessNextWaveChunk_8_bit()`       | Internal   | Process 8-bit sample chunk            |
+| `ProcessNextWaveChunk_ADPCM()`       | Internal   | Process ADPCM compressed chunk        |
 | `ResumePlayback()`                   | Playback   | Resume paused playback with fade      |
 | `SetAirEffectEnable()`               | Air Effect | Enable/disable air effect             |
 | `SetAirEffectGainDb()`               | Air Effect | Set air effect gain in dB             |
@@ -1393,3 +1420,4 @@ void demo_interactive_control(void) {
 | `ShutDownAudio()`                    | Playback   | Stop playback and disable amplifier   |
 | `WaitForSampleEnd()`                 | Playback   | Block until playback completes        |
 | `AudioEngine_OnPlaybackEnd()`        | Callback   | Weak callback for playback end event  |
+| `IsAdpcmPlaybackMode()`             | Internal   | Check if current mode is ADPCM       |

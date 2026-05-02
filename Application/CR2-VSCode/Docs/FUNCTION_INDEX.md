@@ -41,6 +41,9 @@ Complete alphabetical index of all 64 public functions in the Audio Engine API, 
 <a id="playsample"></a>
 <a id="processnextwavechunk"></a>
 <a id="processnextwavechunk_8_bit"></a>
+<a id="processnextwavechunk_adpcm"></a>
+<a id="decodeimaadpcmnibble"></a>
+<a id="isadpcmplaybackmode"></a>
 <a id="resumeplayback"></a>
 <a id="setaireffectenable"></a>
 <a id="setaireffectgaindb"></a>
@@ -112,6 +115,9 @@ Complete alphabetical index of all 64 public functions in the Audio Engine API, 
 | [`PlaySample()`](#playsample) | Playback Control | Start sample playback |
 | [`ProcessNextWaveChunk()`](#processnextwavechunk) | Chunk Processing | Process 16-bit samples |
 | [`ProcessNextWaveChunk_8_bit()`](#processnextwavechunk_8_bit) | Chunk Processing | Process 8-bit samples |
+| [`ProcessNextWaveChunk_ADPCM()`](#processnextwavechunk_adpcm) | Chunk Processing | Process ADPCM compressed samples |
+| [`DecodeImaAdpcmNibble()`](#decodeimaadpcmnibble) | ADPCM Decoding | Decode 4-bit ADPCM nibble to 16-bit |
+| [`IsAdpcmPlaybackMode()`](#isadpcmplaybackmode) | ADPCM State | Check if current mode is ADPCM |
 | [`ResumePlayback()`](#resumeplayback) | Playback Control | Resume from pause with fade-in |
 | [`SetAirEffectEnable()`](#setaireffectenable) | Air Effect | Enable/disable air effect |
 | [`SetAirEffectGainDb()`](#setaireffectgaindb) | Air Effect | Set air effect gain in dB |
@@ -162,6 +168,9 @@ Complete alphabetical index of all 64 public functions in the Audio Engine API, 
 
 ### Application Callbacks (1 function)
 - [`AudioEngine_OnPlaybackEnd()`](#audioengine_onplaybackend) - Weak callback invoked when playback ends
+
+### ADPCM Decoding (1 function)
+- [`DecodeImaAdpcmNibble()`](#decodeimaadpcmnibble) - Decode 4-bit ADPCM nibble to 16-bit PCM
 
 ### Filter Configuration (7 functions)
 - [`SetFilterConfig()`](#setfilterconfig) - Apply complete filter configuration
@@ -217,10 +226,14 @@ Complete alphabetical index of all 64 public functions in the Audio Engine API, 
 - [`SetFadersEnabled()`](#setfadersenabled) - Enable/disable faders
 - [`GetFadersEnabled()`](#getfadersenabled) - Get fader enable state
 
-### Chunk Processing (3 functions)
+### Chunk Processing (4 functions)
 - [`ProcessNextWaveChunk()`](#processnextwavechunk) - Process 16-bit samples
 - [`ProcessNextWaveChunk_8_bit()`](#processnextwavechunk_8_bit) - Process 8-bit samples
+- [`ProcessNextWaveChunk_ADPCM()`](#processnextwavechunk_adpcm) - Process ADPCM compressed samples
 - [`AdvanceSamplePointer()`](#advancesamplepointer) - Advance to next DMA buffer position
+
+### ADPCM Decoding (1 function)
+- [`DecodeImaAdpcmNibble()`](#decodeimaadpcmnibble) - Decode 4-bit ADPCM nibble to 16-bit PCM
 
 ### DMA Callbacks (2 functions)
 - [`HAL_I2S_TxHalfCpltCallback()`](#hal_i2s_txhalfcpltcallback) - DMA half-complete callback
@@ -235,6 +248,9 @@ Complete alphabetical index of all 64 public functions in the Audio Engine API, 
 - [`SetPlaybackSpeed()`](#setplaybackspeed) - Set sample rate
 - [`GetPlaybackProgressSamples()`](#getplaybackprogresssamples) - Get playback progress in source samples
 - [`GetPlaybackProgressPercent()`](#getplaybackprogresspercent) - Get playback progress percentage
+
+### ADPCM State (1 function)
+- [`IsAdpcmPlaybackMode()`](#isadpcmplaybackmode) - Check if current mode is ADPCM
 
 ### Volume Response Control (4 functions)
 - [`SetVolumeResponseNonlinear()`](#setvolumeresponsenonlinear) - Enable/disable non-linear response
