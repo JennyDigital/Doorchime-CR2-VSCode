@@ -38,6 +38,7 @@
 #include "newchallenger11k.h"
 #include "guitar.h"
 #include "mind_the_door.h"
+#include "stm32g474xx.h"
 #include "three_tone_arrival_c.h"
 #include "tunnelbarra.h"
 #include "tunnelbarra16.h"
@@ -122,6 +123,11 @@ volatile  uint16_t        trig_counter                  = 0;              // Cou
 volatile  uint8_t         trig_timeout_flag             = 0;              // Flag indicating trigger timeout has occurred
 volatile  uint16_t        trig_timeout_counter          = 0;              // Counter for trigger timeout duration
 volatile  uint8_t         trig_status                   = TRIGGER_CLR;    // Current trigger status  (SET or CLR)
+volatile  uint8_t         trig_irq_latched              = 0;              // Set by EXTI edge to avoid missing wake events while SysTick is suspended
+volatile  uint8_t         trig_irq_state                = TRIGGER_CLR;    // Trigger level sampled in EXTI callback when wake edge arrives
+
+// Sleep Settings
+uint8_t sleep_setting                                   = 1;              // Defaults to sleep permitted.
 
 volatile  uint16_t        adc_out                       = 0;              // Latest ADC reading for volume control.
 
@@ -140,14 +146,14 @@ static  void                MX_ADC1_Init                ( void );
 static  void                MX_TIM7_Init                ( void );
 #endif
 /* USER CODE BEGIN PFP */
-
-// Hardware-specific function prototypes
-        void                DAC_MasterSwitch            ( GPIO_PinState setting );    // Used in audio_engine
-        uint16_t            ReadVolume                  ( void );                     // Used in audio_engine
-        void                WaitForTrigger              ( uint8_t trig_to_wait_for );
+        void                SetSleepSetting             ( uint8_t setting );
+        uint8_t             GetSleepSetting             ( void );
+        void                EnterSleepMode              ( void );
+        void                DAC_MasterSwitch            ( GPIO_PinState setting );
+        uint16_t            ReadVolume                  ( void );
         uint8_t             GetTriggerOption            ( void );
         void                LPSystemClock_Config        ( void );
-      // ...existing code...
+        void                WaitForTrigger              ( uint8_t trig_to_wait_for );
 
 /* USER CODE END PFP */
 
@@ -256,6 +262,7 @@ int main(void)
   //SetLpf16BitCustomAlpha( CalcLpf16BitAlphaFromCutoff( 3000, I2S_AUDIOFREQ_22K ) );  // Set 16-bit biquad LPF cutoff to 20 kHz for 22 kHz sample rate
   SetLpfMakeupGain16Bit( 1.0f );  // Set at 1 for testing purposes.
   
+  SetSleepSetting( 1 );  // Disable sleep mode, enable as needed.
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -270,14 +277,19 @@ int main(void)
       WaitForTrigger( TRIGGER_SET );
     }
 #endif
- 
     // Start playback of sound sample
-    //
-    // PlaySample( didgeridoo16b16k1c , DIDGERIDOO16B16K1C_SZ,
-    //   I2S_AUDIOFREQ_22K, 16, DIDGERIDOO16B16K1C_PB_FMT );
-    PlaySample( muted_guitar44k16bm, MUTED_GUITAR44K16BM_SZ,
-      I2S_AUDIOFREQ_44K, 16, MUTED_GUITAR44K16BM_PB_FMT );
-   WaitForSampleEnd();
+    while( true ) {
+      PlaySample( didgeridoo16b16k1c , DIDGERIDOO16B16K1C_SZ,
+        I2S_AUDIOFREQ_22K, 16, DIDGERIDOO16B16K1C_PB_FMT );
+      WaitForTrigger( TRIGGER_CLR );  // Wait for trigger to clear before allowing next playback
+      StopPlayback();
+      WaitForSampleEnd();
+      PlaySample( muted_guitar44k16bm, MUTED_GUITAR44K16BM_SZ,
+        I2S_AUDIOFREQ_44K, 16, MUTED_GUITAR44K16BM_PB_FMT );
+      WaitForTrigger( TRIGGER_SET );
+      StopPlayback();
+      WaitForSampleEnd();
+    }
 
     ShutDownAudio();
 
@@ -692,6 +704,36 @@ void HAL_ADC_ConvCpltCallback( ADC_HandleTypeDef *hadc )
 }
 
 
+/** Determine whether the mcu can enter sleep mode or not.
+  *
+  * @param: setting. 1 = permitted, 0 = no sleep permitted
+  * @retval: none
+  */
+void SetSleepSetting( uint8_t setting )
+{
+  sleep_setting = setting ? 1 : 0;
+}
+
+/** Get the current sleep setting.
+  *
+  * @param: none
+  * @retval: 1 = sleep permitted, 0 = sleep not permitted
+  */
+uint8_t GetSleepSetting( void )
+{
+  return sleep_setting;
+}
+
+
+/** Read trigger pin state directly from GPIO input data register.
+  *
+  * @retval: TRIGGER_SET when pin is high, TRIGGER_CLR when pin is low
+  */
+static inline uint8_t ReadRawTriggerState( void )
+{
+  return ( ( TRIGGER_GPIO_Port->IDR & TRIGGER_Pin ) != 0U ) ? TRIGGER_SET : TRIGGER_CLR;
+}
+
 /** Wait for the trigger signal
  *
  * Waits until the trigger signal is received.
@@ -703,9 +745,21 @@ void HAL_ADC_ConvCpltCallback( ADC_HandleTypeDef *hadc )
 void WaitForTrigger( uint8_t trig_to_wait_for )
 {
   while( 1 ) {
+    /* Fast-path: if the physical input is already at target level, do not sleep. */
+    if( ReadRawTriggerState() == trig_to_wait_for ) {
+      trig_status = trig_to_wait_for;
+      return;
+    }
+
     trig_timeout_flag = 0;
     while( trig_status != trig_to_wait_for ) {
       HAL_Delay( 1 );
+
+      if( ReadRawTriggerState() == trig_to_wait_for ) {
+        trig_status = trig_to_wait_for;
+        return;
+      }
+
       trig_timeout_counter++;
       if( trig_timeout_counter >= TRIG_TIMEOUT_MS ) {
         trig_timeout_flag = 1;
@@ -715,38 +769,36 @@ void WaitForTrigger( uint8_t trig_to_wait_for )
     }
     if( trig_status == trig_to_wait_for ) return;
 
+    /* Re-check level after timeout to avoid sleeping through already-valid input. */
+    if( ReadRawTriggerState() == trig_to_wait_for ) {
+      trig_status = trig_to_wait_for;
+      return;
+    }
 #ifndef NO_SLEEP_MODE
-  /* Prep for sleep mode */
-#ifndef VOLUME_INPUT_DIGITAL
-    HAL_TIM_Base_Stop( &htim7 );                // Stop TIM7 to prevent ADC triggers during sleep
-    HAL_ADC_Stop_IT( &hadc1 );                  // Stop ADC in interrupt mode
-#endif
-    LPSystemClock_Config();                     // Reduce clock speed for low power sleep
-    HAL_SuspendTick();                          // Stop SysTick interrupts to prevent wakeups
-    __HAL_GPIO_EXTI_CLEAR_IT( TRIGGER_Pin );    // Clear EXTI pending bit
-#ifndef VOLUME_INPUT_DIGITAL
-    __HAL_TIM_CLEAR_IT( &htim7, TIM_IT_UPDATE );
-#endif
-    
-    /* Memory barrier to ensure all writes complete before sleep */
-    __DSB();
-    __ISB();
+  /* Handle sleep mode, with care to prevent sleeping while playback is active */
+  if( sleep_setting == 1 && ( GetPlaybackState() == PB_Idle ) ) {
+      trig_irq_latched = 0;
+      trig_irq_state = trig_status;
+      EnterSleepMode();  // If sleep is enabled, enter sleep mode on timeout to save power until trigger is received.
 
-    /* Enter low power sleep mode and wait for the trigger */
-    HAL_PWR_EnterSLEEPMode( PWR_LOWPOWERREGULATOR_ON, PWR_SLEEPENTRY_WFI );
+      if( trig_irq_latched && trig_irq_state == trig_to_wait_for ) {
+        trig_status = trig_to_wait_for;
+        trig_timeout_counter = 0;
+        return;
+      }
 
-    /* Rise from your slumber mighty microcontroller! */
-    __HAL_GPIO_EXTI_CLEAR_IT( TRIGGER_Pin );    // Clear EXTI pending bit
-#ifndef VOLUME_INPUT_DIGITAL
-    __HAL_TIM_CLEAR_IT( &htim7, TIM_IT_UPDATE );
-#endif
-    HAL_PWREx_DisableLowPowerRunMode();
-    SystemClock_Config();
-    HAL_ResumeTick();
-#ifndef VOLUME_INPUT_DIGITAL
-    HAL_ADC_Start_IT( &hadc1 );                 // Restart ADC in interrupt mode
-    HAL_TIM_Base_Start( &htim7 );               // Restart TIM7 for ADC triggering
-#endif  
+      if( ReadRawTriggerState() == trig_to_wait_for ) {
+        trig_status = trig_to_wait_for;
+        trig_timeout_counter = 0;
+        return;
+      }
+
+      if( trig_irq_latched ) {
+        trig_status = ReadRawTriggerState();
+      }
+
+      trig_timeout_counter = 0;  // Reset timeout counter after waking up (or if sleep is disabled, just reset for next loop)
+    }
 #endif
   }
 }
@@ -765,6 +817,84 @@ uint8_t GetTriggerOption( void )
 #else
   return HAL_GPIO_ReadPin( OPT4_GPIO_Port, OPT4_Pin );
 #endif
+}
+
+
+/** Enter sleep mode
+ * @params: none
+ * @retval: none
+ */
+
+void EnterSleepMode( void )
+{
+  PB_StatusTypeDef pre_sleep_state = GetPlaybackState();
+  uint8_t paused_for_sleep = 0U;
+
+  if( pre_sleep_state == PB_Playing || pre_sleep_state == PB_Pausing || pre_sleep_state == PB_Stopping ) {
+    (void)PausePlayback();
+
+    uint32_t pause_wait_ms = 0U;
+    while( GetPlaybackState() == PB_Pausing && pause_wait_ms < TRIG_TIMEOUT_MS ) {
+      HAL_Delay( 1 );
+      pause_wait_ms++;
+    }
+
+    if( GetPlaybackState() == PB_Paused ) {
+      paused_for_sleep = 1U;
+    }
+  }
+
+  /* Prep for sleep mode */
+#ifndef VOLUME_INPUT_DIGITAL
+    HAL_TIM_Base_Stop( &htim7 );                // Stop TIM7 to prevent ADC triggers during sleep
+    HAL_ADC_Stop_IT( &hadc1 );                  // Stop ADC in interrupt mode
+#endif
+    LPSystemClock_Config();                     // Reduce clock speed for low power sleep
+    HAL_SuspendTick();                          // Stop SysTick interrupts to prevent wakeups
+    NVIC_DisableIRQ( DMA1_Channel1_IRQn);  // Disable audio DMA interrupt to prevent wakeups during sleep
+#ifndef VOLUME_INPUT_DIGITAL
+    __HAL_TIM_CLEAR_IT( &htim7, TIM_IT_UPDATE );
+#endif
+    
+    /* Memory barrier to ensure all writes complete before sleep */
+    __DSB();
+    __ISB();
+
+    /* Enter low power sleep mode and wait for the trigger */
+    HAL_PWR_EnterSLEEPMode( PWR_LOWPOWERREGULATOR_ON, PWR_SLEEPENTRY_WFI );
+
+    /* Rise from your slumber mighty microcontroller! */
+#ifndef VOLUME_INPUT_DIGITAL
+    __HAL_TIM_CLEAR_IT( &htim7, TIM_IT_UPDATE );
+#endif
+    HAL_PWREx_DisableLowPowerRunMode();
+    SystemClock_Config();
+    HAL_ResumeTick();
+#ifndef VOLUME_INPUT_DIGITAL
+    HAL_ADC_Start_IT( &hadc1 );                 // Restart ADC in interrupt mode
+    HAL_TIM_Base_Start( &htim7 );               // Restart TIM7 for ADC triggering
+#endif
+  NVIC_EnableIRQ( DMA1_Channel1_IRQn );   // Re-enable audio DMA interrupt after waking up
+
+  if( paused_for_sleep && GetPlaybackState() == PB_Paused ) {
+    (void)ResumePlayback();
+  }
+}
+
+
+/** EXTI callback for trigger input.
+  *
+  * Latches that a trigger edge occurred while sleeping and snapshots current
+  * physical level so WaitForTrigger can make progress immediately after wake.
+  */
+void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
+{
+  if( GPIO_Pin == TRIGGER_Pin ) {
+    uint8_t raw_state = ReadRawTriggerState();
+    trig_irq_latched = 1;
+    trig_irq_state = raw_state;
+    trig_status = raw_state;
+  }
 }
 
 

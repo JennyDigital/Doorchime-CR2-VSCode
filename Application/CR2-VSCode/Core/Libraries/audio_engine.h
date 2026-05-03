@@ -142,6 +142,7 @@ typedef enum {
   PB_Error,
   PB_Playing,
   PB_Pausing,
+  PB_Stopping,
   PB_Paused,
   PB_PlayingFailed
 } PB_StatusTypeDef;
@@ -216,12 +217,12 @@ extern I2S_InitFunc   AudioEngine_I2SInit;
 void AudioEngine_OnPlaybackEnd( void );
 
 /**
- * @brief Initialize the audio engine with hardware interface callbacks
- * @param[in] dac_switch   Function to control DAC amplifier power (GPIO)
- * @param[in] read_volume  Function to read current volume setting (0-255)
- * @param[in] i2s_init     Function to initialize I2S peripheral
- * @return PB_Idle on success, PB_Error on failure
- */
+  * @brief Initialize the audio engine with hardware interface callbacks
+  * @param[in] dac_switch   Function to control DAC amplifier power (GPIO)
+  * @param[in] read_volume  Function to read current volume setting (0-255)
+  * @param[in] i2s_init     Function to initialize I2S peripheral
+  * @return PB_Idle on success, PB_Error on failure
+  */
 PB_StatusTypeDef    AudioEngine_Init                  (
                                                         DAC_SwitchFunc dac_switch,
                                                         ReadVolumeFunc read_volume,
@@ -459,8 +460,8 @@ PB_StatusTypeDef    PlaySample                        (
 
 /**
  * @brief Block until current sample playback completes
- * @return PB_Idle when playback finished, PB_Error on playback failure
- * @note This blocks while paused/pausing as well. For non-blocking, poll GetPlaybackState().
+ * @return PB_Idle when playback finished, PB_Paused when playback is paused, PB_Error on playback failure
+ * @note This blocks while playback is active or stopping. For non-blocking, poll GetPlaybackState().
  */
 PB_StatusTypeDef    WaitForSampleEnd                  ( void );
 
@@ -480,7 +481,7 @@ PB_StatusTypeDef    ResumePlayback                    ( void );
 
 /**
  * @brief Stop playback asynchronously with normal end-of-play fade-out
- * @return Current playback state, PB_Idle if already idle
+ * @return Current playback state, or PB_Stopping once a stop request has been accepted
  * @note Returns immediately. Use GetPlaybackState() to poll for completion.
  */
 PB_StatusTypeDef    StopPlayback                      ( void );
@@ -637,7 +638,7 @@ void                 HAL_I2S_TxCpltCallback           ( I2S_HandleTypeDef *hi2s 
 /* Playback state accessors (for internal use or advanced applications) */
 /**
  * @brief Get current playback state
- * @return PB_Idle, PB_Error, PB_Playing, PB_Paused, or PB_PlayingFailed
+ * @return PB_Idle, PB_Error, PB_Playing, PB_Pausing, PB_Stopping, PB_Paused, or PB_PlayingFailed
  */
 PB_StatusTypeDef    GetPlaybackState                  ( void );
 
